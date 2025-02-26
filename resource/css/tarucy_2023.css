@@ -1,0 +1,67 @@
+/* font */
+@font-face {
+    font-family:"IBMPlexSansKR";
+    src:url("/resource/font/IBMPlexSansKR-Medium.woff2") format('woff2'),
+	    url("/resource/font/IBMPlexSansKR-Medium.woff") format('woff');	    
+}
+/* common & basic */
+html {box-sizing: border-box;scroll-behavior: smooth;}
+*, *::before, *::after {font-family:'IBMPlexSansKR', serif;font-size:16px;font-weight:400;color:#EEE;box-sizing: inherit;margin:0; padding:0;outline:none;-webkit-font-smoothing: antialiased;list-style:none;}
+body {width:100%;position:relative;overflow-x:hidden;}
+table {border-collapse: collapse;border-spacing: 0;}
+h1 {font-size:30px;}
+a:link    {text-decoration:none;}
+a:visited {text-decoration:none;}
+a:active  {text-decoration:none;}
+a:hover  {text-decoration:none;font-weight:800;}
+a {outline:none;}
+
+:root {--clip-position: center;}
+
+.ismobile {display:none;}
+
+/* button */
+button {
+	border:none;
+	background:none;
+	text-decoration:none;
+	cursor:pointer;
+}
+
+/* background */
+.bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index:-1;
+}
+
+/* header */
+header {position:fixed;right:2vw;top:2vw;text-align:right;z-index:100;}
+header > h1 {padding:0 0 10px 0;}
+header > nav > ul > li {padding:5px 0;}
+
+/* section */
+section {position:relative;width:100vw;height:100vh;display:flex;align-items: center;justify-content: center;z-index:1;}
+section h2 {font-size:12vw;position:absolute;left:0;top:0;opacity:0.3;}
+section article ul {position:relative;width:100vw;height:250px;overflow:hidden;}
+section article ul li {position:absolute;left:0;top:0;width:100vw;height:250px;display:flex;align-items: center;justify-content: center;transition:0.5s;}
+section article ul li:nth-child(1){left:0;}
+section article ul li:nth-child(2){left:100vw;}
+section article ul li:nth-child(3){left:200vw;}
+section article div.nav {position:relative;width:300px;margin:0 auto;}
+section article div.nav button:hover {font-weight:800;}
+section article div.nav button:nth-child(1) {display:none;}
+section article div.nav button:nth-child(2) {position:absolute;right:0;top:0;}
+
+section h3 {font-size:20px;margin-bottom:10px;}
+section dl {width:300px;border-right:1px solid rgba(255, 255,255, 0.5);}
+section dt {font-size:12px;opacity:0.9;}
+section dd {margin-bottom:10px;}
+
+@media screen and (max-width: 768px) {
+	h1 {font-size:25px;}
+	section h2 {font-size:15vw;}
+}
