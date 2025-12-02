@@ -1,40 +1,97 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <title>tarucy.net*</title>
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
-  <meta name="title" content="tarucy.net*">
-  <meta name="keywords" content="tarucy.net, tarucy, 개발자, 프리랜서, 백엔드, 프론트엔드">
-  <meta name="description" content="웹개발자 이은규입니다.">
-  <meta name="Publisher" content="이은규">
-  <meta property="og:title" content="tarucy.net*" />
-  <meta property="og:description" content="웹개발자 이은규입니다." />
-  <meta property="og:type" content="website" />
-  <link rel="apple-touch-icon" href="./resource/image/icon.png"/>
-  <link rel="shortcut icon" href="./resource/image/favicon.ico" />
+
+  <!-- Primary Meta Tags -->
+  <title>이은규 - 풀스택 웹 개발자 | React, Node.js, AWS 전문가</title>
+  <meta name="title" content="이은규 - 풀스택 웹 개발자 | React, Node.js, AWS 전문가">
+  <meta name="description" content="풀스택 웹 개발자 이은규입니다. React, Next.js, Node.js, AWS를 활용한 플랫폼, 쇼핑몰, 업무시스템 개발 전문. 프리랜서 개발자로 다양한 웹 솔루션을 제공합니다.">
+  <meta name="keywords" content="웹개발자, 풀스택개발자, 프리랜서개발자, React개발자, Node.js개발자, Next.js, AWS, 쇼핑몰개발, 플랫폼개발, 이은규, hada0127">
+  <meta name="author" content="이은규">
+  <meta name="publisher" content="이은규">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://tarucy.net/">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tarucy.net/">
+  <meta property="og:site_name" content="이은규 포트폴리오">
+  <meta property="og:title" content="이은규 - 풀스택 웹 개발자 | React, Node.js, AWS 전문가">
+  <meta property="og:description" content="풀스택 웹 개발자 이은규입니다. React, Next.js, Node.js, AWS를 활용한 플랫폼, 쇼핑몰, 업무시스템 개발 전문. 프리랜서 개발자로 다양한 웹 솔루션을 제공합니다.">
+  <meta property="og:image" content="https://tarucy.net/resource/image/icon.png">
+  <meta property="og:locale" content="ko_KR">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://tarucy.net/">
+  <meta name="twitter:title" content="이은규 - 풀스택 웹 개발자 | React, Node.js, AWS 전문가">
+  <meta name="twitter:description" content="풀스택 웹 개발자 이은규입니다. React, Next.js, Node.js, AWS를 활용한 플랫폼, 쇼핑몰, 업무시스템 개발 전문.">
+  <meta name="twitter:image" content="https://tarucy.net/resource/image/icon.png">
+
+  <!-- Structured Data (Schema.org) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "이은규",
+    "alternateName": "Lee Eunkyu",
+    "url": "https://tarucy.net",
+    "image": "https://tarucy.net/resource/image/icon.png",
+    "jobTitle": "풀스택 웹 개발자",
+    "worksFor": {
+      "@type": "Organization",
+      "name": "프리랜서"
+    },
+    "description": "풀스택 웹 개발자로 React, Next.js, Node.js, AWS를 활용한 플랫폼, 쇼핑몰, 업무시스템 개발 전문",
+    "sameAs": [
+      "http://qr.kakao.com/talk/48OseS94_3hQVN871mquJ.sifik-"
+    ],
+    "email": "work@tarucy.net",
+    "telephone": "+82-10-8454-0026",
+    "knowsAbout": [
+      "React",
+      "Next.js",
+      "Node.js",
+      "TypeScript",
+      "JavaScript",
+      "AWS",
+      "Docker",
+      "PostgreSQL",
+      "MongoDB",
+      "웹 개발",
+      "풀스택 개발"
+    ],
+    "knowsLanguage": ["ko", "en"]
+  }
+  </script>
+
+  <link rel="apple-touch-icon" href="./resource/image/icon.png">
+  <link rel="icon" type="image/x-icon" href="./resource/image/favicon.ico">
+  <link rel="shortcut icon" href="./resource/image/favicon.ico">
   <link type="text/css" rel="stylesheet" href="./resource/css/tarucy_2023.css">
-  
+
   <script src="./resource/js/smoothscroll.min.js"></script>
   <script src="./resource/js/tarucy_2023.js"></script>
 </head>
 <body>
 <canvas id="bg" class="bg"></canvas>
 <header>
-	<h1>tarucy.net*</h1>
-	<nav id="menu_list">
+	<h1>hada0127.net*</h1>
+	<nav id="menu_list" aria-label="주요 메뉴">
 		<ul class="menu">
-			<li><a data-scroll data-target="profile" href="#profile">_profile*</a></li>
-			<li><a data-scroll data-target="solution" href="#solution">_solution*</a></li>
-			<li><a data-scroll data-target="skill" href="#skill">_skill*</a></li>
-			<li><a data-scroll data-target="contact" href="#contact">_contact*</a></li>
+			<li><a data-scroll data-target="profile" href="#profile" aria-label="프로필 섹션으로 이동">_profile*</a></li>
+			<li><a data-scroll data-target="solution" href="#solution" aria-label="솔루션 섹션으로 이동">_solution*</a></li>
+			<li><a data-scroll data-target="skill" href="#skill" aria-label="기술스택 섹션으로 이동">_skill*</a></li>
+			<li><a data-scroll data-target="contact" href="#contact" aria-label="연락처 섹션으로 이동">_contact*</a></li>
 		</ul>
 	</nav>
 </header>
 <main>
-	<section id="profile">
-		<h2>_profile*</h2>
+	<section id="profile" aria-labelledby="profile-heading">
+		<h2 id="profile-heading">_profile*</h2>
 		<article>
 			<dl>
 			  <dt>Name</dt>
@@ -44,8 +101,8 @@
 			</dl>
 		</article>
 	</section>
-	<section id="solution">
-		<h2>_solution*</h2>
+	<section id="solution" aria-labelledby="solution-heading">
+		<h2 id="solution-heading">_solution*</h2>
 		<article>
 			<dl>
 				<dt>Solution</dt>
@@ -62,8 +119,8 @@
 			</dl>
 		</article>
 	</section>
-	<section id="skill">
-		<h2>_skill*</h2>
+	<section id="skill" aria-labelledby="skill-heading">
+		<h2 id="skill-heading">_skill*</h2>
 		<article>
 			<ul>
 				<li>
@@ -87,7 +144,7 @@
 					<dl>
 						<dt>BackEnd / Server</dt>
 						<dd>
-							Node.js, Nest.js, Express<br>
+							Node.js, hono, Nest.js, Express<br>
 							PHP, Python, JAVA, Classic ASP<br>
 							PostgreSQL, MySQL, MariaDB, MongoDB<br>
 							Prisma, TypeORM<br>
@@ -110,22 +167,22 @@
 					</dl>
 				</li>
 			</ul>
-			<div class="nav">
-				<button id="btn_skill_prev">&lt; Prev</button>
-				<button id="btn_skill_next">Next &gt;</button>
+			<div class="nav" role="group" aria-label="기술스택 네비게이션">
+				<button id="btn_skill_prev" aria-label="이전 기술스택">&lt; Prev</button>
+				<button id="btn_skill_next" aria-label="다음 기술스택">Next &gt;</button>
 			</div>
 		</article>
 	</section>
-	<section id="contact">
-		<h2>_contact*</h2>
+	<section id="contact" aria-labelledby="contact-heading">
+		<h2 id="contact-heading">_contact*</h2>
 		<article>
 			<dl>
 			  <dt>Phone</dt>
-			  <dd><a href="tel:01084540026">010-8454-0026</a></dd>
+			  <dd><a href="tel:01084540026" aria-label="전화번호 010-8454-0026">010-8454-0026</a></dd>
 			  <dt>E-Mail</dt>
-			  <dd><a href="mailto:work@tarucy.net">work@tarucy.net</a></dd>
+			  <dd><a href="mailto:work@tarucy.net" aria-label="이메일 work@tarucy.net">work@tarucy.net</a></dd>
 			  <dt>Kakao</dt>
-			  <dd><a href="http://qr.kakao.com/talk/48OseS94_3hQVN871mquJ.sifik-">@tarucy</a></dd>
+			  <dd><a href="http://qr.kakao.com/talk/48OseS94_3hQVN871mquJ.sifik-" target="_blank" rel="noopener noreferrer" aria-label="카카오톡 채팅 @tarucy">@tarucy</a></dd>
 			</dl>
 		</article>
 	</section>
