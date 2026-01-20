@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로우폴리 도시 풍경</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      overflow-x: hidden;
+    }
+    
+    #canvas-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      z-index: -1;
+    }
+    
+    .scroll-container {
+      height: 500vh;
+      position: relative;
+    }
+    
+    .section {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    
+    .section-content {
+      background: rgba(255, 255, 255, 0.85);
+      padding: 2rem 3rem;
+      border-radius: 16px;
+      max-width: 400px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    
+    .section-content h2 {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+      color: #2d3436;
+    }
+    
+    .section-content p {
+      color: #636e72;
+      line-height: 1.6;
+    }
+    
+    .progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #6c5ce7, #a29bfe);
+      z-index: 100;
+      transition: width 0.1s ease-out;
+    }
+    
+    .scroll-hint {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #2d3436;
+      font-size: 0.9rem;
+      opacity: 0.7;
+      animation: bounce 2s infinite;
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-10px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progress"></div>
+  <div id="canvas-container"></div>
+  
+  <div class="scroll-container">
+    <div class="section">
+      <div class="section-content">
+        <h2>🏙️ 도시의 아침</h2>
+        <p>스크롤하여 도시를 탐험해보세요</p>
+      </div>
+    </div>
+    
+    <div class="section">
+      <div class="section-content">
+        <h2>🚶 거리의 사람들</h2>
+        <p>로우폴리 스타일로 표현된 도시 풍경</p>
+      </div>
+    </div>
+    
+    <div class="section">
+      <div class="section-content">
+        <h2>🏢 빌딩 숲</h2>
+        <p>다양한 높이의 건물들이 도시를 이룹니다</p>
+      </div>
+    </div>
+    
+    <div class="section">
+      <div class="section-content">
+        <h2>🌳 도시 공원</h2>
+        <p>녹지 공간이 도시에 생기를 불어넣습니다</p>
+      </div>
+    </div>
+    
+    <div class="section">
+      <div class="section-content">
+        <h2>🌅 여정의 끝</h2>
+        <p>도시 탐험을 마칩니다</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="scroll-hint">↓ 스크롤하여 탐험하기</div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
+  
+  <script type="module">
+    import * as THREE from 'three';
+    
+    // Scene setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87CEEB);
+    scene.fog = new THREE.Fog(0x87CEEB, 50, 150);
+    
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+    
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(50, 100, 50);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.camera.near = 0.5;
+    directionalLight.shadow.camera.far = 500;
+    directionalLight.shadow.camera.left = -100;
+    directionalLight.shadow.camera.right = 100;
+    directionalLight.shadow.camera.top = 100;
+    directionalLight.shadow.camera.bottom = -100;
+    scene.add(directionalLight);
+    
+    // Colors palette
+    const colors = {
+      buildings: [0x2d3436, 0x636e72, 0xb2bec3, 0xdfe6e9, 0x74b9ff, 0xa29bfe, 0xfd79a8, 0xffeaa7],
+      ground: 0x55aa55,
+      road: 0x2d3436,
+      sidewalk: 0xb2bec3,
+      tree: 0x00b894,
+      treeTrunk: 0x6d4c41,
+      skin: [0xffdbac, 0xf1c27d, 0xe0ac69, 0xc68642, 0x8d5524],
+      clothes: [0xe74c3c, 0x3498db, 0x2ecc71, 0xf39c12, 0x9b59b6, 0x1abc9c, 0xe91e63, 0x00bcd4]
+    };
+    
+    // Ground
+    const groundGeometry = new THREE.PlaneGeometry(200, 200);
+    const groundMaterial = new THREE.MeshLambertMaterial({ color: colors.ground });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+    
+    // Road
+    function createRoad(x, z, width, length, rotation = 0) {
+      const roadGeometry = new THREE.PlaneGeometry(width, length);
+      const roadMaterial = new THREE.MeshLambertMaterial({ color: colors.road });
+      const road = new THREE.Mesh(roadGeometry, roadMaterial);
+      road.rotation.x = -Math.PI / 2;
+      road.rotation.z = rotation;
+      road.position.set(x, 0.01, z);
+      road.receiveShadow = true;
+      scene.add(road);
+      
+      // Road lines
+      const lineGeometry = new THREE.PlaneGeometry(0.3, length * 0.8);
+      const lineMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+      const line = new THREE.Mesh(lineGeometry, lineMaterial);
+      line.rotation.x = -Math.PI / 2;
+      line.rotation.z = rotation;
+      line.position.set(x, 0.02, z);
+      scene.add(line);
+    }
+    
+    // Main roads
+    createRoad(0, 0, 8, 200);
+    createRoad(0, 0, 200, 8, Math.PI / 2);
+    createRoad(-30, 0, 8, 200);
+    createRoad(30, 0, 8, 200);
+    
+    // Building creation
+    function createBuilding(x, z, width, depth, height, color) {
+      const group = new THREE.Group();
+      
+      // Main building
+      const geometry = new THREE.BoxGeometry(width, height, depth);
+      const material = new THREE.MeshLambertMaterial({ color: color });
+      const building = new THREE.Mesh(geometry, material);
+      building.position.y = height / 2;
+      building.castShadow = true;
+      building.receiveShadow = true;
+      group.add(building);
+      
+      // Windows
+      const windowRows = Math.floor(height / 3);
+      const windowCols = Math.floor(width / 2.5);
+      const windowGeometry = new THREE.BoxGeometry(1, 1.5, 0.1);
+      const windowMaterial = new THREE.MeshLambertMaterial({ color: 0x74b9ff });
+      
+      for (let row = 0; row < windowRows; row++) {
+        for (let col = 0; col < windowCols; col++) {
+          const windowMesh = new THREE.Mesh(windowGeometry, windowMaterial);
+          windowMesh.position.set(
+            -width/2 + 1.5 + col * 2.5,
+            2 + row * 3,
+            depth/2 + 0.05
+          );
+          group.add(windowMesh);
+          
+          // Back windows
+          const backWindow = windowMesh.clone();
+          backWindow.position.z = -depth/2 - 0.05;
+          group.add(backWindow);
+        }
+      }
+      
+      group.position.set(x, 0, z);
+      scene.add(group);
+      return group;
+    }
+    
+    // Create buildings
+    const buildingPositions = [
+      // Left side
+      { x: -50, z: -40, w: 12, d: 10, h: 25 },
+      { x: -50, z: -20, w: 10, d: 12, h: 35 },
+      { x: -50, z: 10, w: 14, d: 10, h: 20 },
+      { x: -50, z: 35, w: 10, d: 14, h: 40 },
+      { x: -50, z: 60, w: 12, d: 10, h: 28 },
+      
+      // Right side
+      { x: 50, z: -35, w: 14, d: 12, h: 45 },
+      { x: 50, z: -10, w: 10, d: 10, h: 22 },
+      { x: 50, z: 15, w: 12, d: 14, h: 38 },
+      { x: 50, z: 40, w: 10, d: 10, h: 30 },
+      { x: 50, z: 65, w: 14, d: 12, h: 35 },
+      
+      // Middle buildings
+      { x: -15, z: -45, w: 8, d: 8, h: 18 },
+      { x: 15, z: -45, w: 10, d: 8, h: 25 },
+      { x: -15, z: 45, w: 10, d: 10, h: 32 },
+      { x: 15, z: 45, w: 8, d: 10, h: 22 },
+      
+      // Far buildings
+      { x: -70, z: -50, w: 15, d: 12, h: 50 },
+      { x: 70, z: -50, w: 12, d: 15, h: 55 },
+      { x: -70, z: 50, w: 14, d: 14, h: 42 },
+      { x: 70, z: 50, w: 16, d: 12, h: 48 },
+    ];
+    
+    buildingPositions.forEach((pos, i) => {
+      const color = colors.buildings[i % colors.buildings.length];
+      createBuilding(pos.x, pos.z, pos.w, pos.d, pos.h, color);
+    });
+    
+    // Tree creation
+    function createTree(x, z, scale = 1) {
+      const group = new THREE.Group();
+      
+      // Trunk
+      const trunkGeometry = new THREE.CylinderGeometry(0.3 * scale, 0.5 * scale, 3 * scale, 6);
+      const trunkMaterial = new THREE.MeshLambertMaterial({ color: colors.treeTrunk });
+      const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+      trunk.position.y = 1.5 * scale;
+      trunk.castShadow = true;
+      group.add(trunk);
+      
+      // Foliage (low poly cone)
+      const foliageGeometry = new THREE.ConeGeometry(2.5 * scale, 5 * scale, 6);
+      const foliageMaterial = new THREE.MeshLambertMaterial({ color: colors.tree });
+      const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
+      foliage.position.y = 5 * scale;
+      foliage.castShadow = true;
+      group.add(foliage);
+      
+      group.position.set(x, 0, z);
+      scene.add(group);
+      return group;
+    }
+    
+    // Create trees along the streets
+    const treePositions = [
+      { x: -6, z: -30 }, { x: -6, z: -10 }, { x: -6, z: 10 }, { x: -6, z: 30 }, { x: -6, z: 50 },
+      { x: 6, z: -25 }, { x: 6, z: -5 }, { x: 6, z: 15 }, { x: 6, z: 35 }, { x: 6, z: 55 },
+      { x: -25, z: 6 }, { x: 25, z: 6 }, { x: -25, z: -6 }, { x: 25, z: -6 },
+    ];
+    
+    treePositions.forEach(pos => {
+      createTree(pos.x, pos.z, 0.8 + Math.random() * 0.4);
+    });
+    
+    // Person creation (low poly)
+    function createPerson(x, z, rotation = 0) {
+      const group = new THREE.Group();
+      const skinColor = colors.skin[Math.floor(Math.random() * colors.skin.length)];
+      const clothColor = colors.clothes[Math.floor(Math.random() * colors.clothes.length)];
+      const pantsColor = colors.clothes[Math.floor(Math.random() * colors.clothes.length)];
+      
+      // Head
+      const headGeometry = new THREE.BoxGeometry(0.4, 0.45, 0.4);
+      const headMaterial = new THREE.MeshLambertMaterial({ color: skinColor });
+      const head = new THREE.Mesh(headGeometry, headMaterial);
+      head.position.y = 1.65;
+      head.castShadow = true;
+      group.add(head);
+      
+      // Body
+      const bodyGeometry = new THREE.BoxGeometry(0.5, 0.7, 0.3);
+      const bodyMaterial = new THREE.MeshLambertMaterial({ color: clothColor });
+      const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+      body.position.y = 1.1;
+      body.castShadow = true;
+      group.add(body);
+      
+      // Legs
+      const legGeometry = new THREE.BoxGeometry(0.18, 0.7, 0.2);
+      const legMaterial = new THREE.MeshLambertMaterial({ color: pantsColor });
+      
+      const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
+      leftLeg.position.set(-0.12, 0.35, 0);
+      leftLeg.castShadow = true;
+      group.add(leftLeg);
+      
+      const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
+      rightLeg.position.set(0.12, 0.35, 0);
+      rightLeg.castShadow = true;
+      group.add(rightLeg);
+      
+      // Arms
+      const armGeometry = new THREE.BoxGeometry(0.15, 0.55, 0.15);
+      const armMaterial = new THREE.MeshLambertMaterial({ color: skinColor });
+      
+      const leftArm = new THREE.Mesh(armGeometry, armMaterial);
+      leftArm.position.set(-0.35, 1.05, 0);
+      leftArm.castShadow = true;
+      group.add(leftArm);
+      
+      const rightArm = new THREE.Mesh(armGeometry, armMaterial);
+      rightArm.position.set(0.35, 1.05, 0);
+      rightArm.castShadow = true;
+      group.add(rightArm);
+      
+      group.position.set(x, 0, z);
+      group.rotation.y = rotation;
+      group.userData.walkOffset = Math.random() * Math.PI * 2;
+      group.userData.walkSpeed = 0.5 + Math.random() * 0.5;
+      scene.add(group);
+      return group;
+    }
+    
+    // Create people
+    const people = [];
+    const peoplePositions = [
+      { x: 3, z: -20, r: 0 },
+      { x: -3, z: -15, r: Math.PI },
+      { x: 4, z: 0, r: 0.5 },
+      { x: -4, z: 5, r: -0.5 },
+      { x: 2, z: 20, r: 0.3 },
+      { x: -2, z: 25, r: Math.PI + 0.3 },
+      { x: 3, z: 40, r: -0.2 },
+      { x: -3, z: 45, r: Math.PI - 0.2 },
+      { x: 5, z: 60, r: 0 },
+      { x: -5, z: 55, r: Math.PI },
+      { x: 20, z: 3, r: Math.PI / 2 },
+      { x: -20, z: -3, r: -Math.PI / 2 },
+      { x: 25, z: -2, r: Math.PI / 2 },
+      { x: -25, z: 2, r: -Math.PI / 2 },
+    ];
+    
+    peoplePositions.forEach(pos => {
+      people.push(createPerson(pos.x, pos.z, pos.r));
+    });
+    
+    // Bench creation
+    function createBench(x, z, rotation = 0) {
+      const group = new THREE.Group();
+      
+      // Seat
+      const seatGeometry = new THREE.BoxGeometry(2, 0.1, 0.5);
+      const woodMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+      const seat = new THREE.Mesh(seatGeometry, woodMaterial);
+      seat.position.y = 0.5;
+      seat.castShadow = true;
+      group.add(seat);
+      
+      // Back
+      const backGeometry = new THREE.BoxGeometry(2, 0.6, 0.08);
+      const back = new THREE.Mesh(backGeometry, woodMaterial);
+      back.position.set(0, 0.8, -0.2);
+      back.castShadow = true;
+      group.add(back);
+      
+      // Legs
+      const legGeometry = new THREE.BoxGeometry(0.1, 0.5, 0.4);
+      const metalMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+      
+      const leg1 = new THREE.Mesh(legGeometry, metalMaterial);
+      leg1.position.set(-0.8, 0.25, 0);
+      group.add(leg1);
+      
+      const leg2 = new THREE.Mesh(legGeometry, metalMaterial);
+      leg2.position.set(0.8, 0.25, 0);
+      group.add(leg2);
+      
+      group.position.set(x, 0, z);
+      group.rotation.y = rotation;
+      scene.add(group);
+      return group;
+    }
+    
+    // Add benches
+    createBench(-8, 20, Math.PI / 2);
+    createBench(8, 30, -Math.PI / 2);
+    createBench(-8, 50, Math.PI / 2);
+    
+    // Street lamp
+    function createStreetLamp(x, z) {
+      const group = new THREE.Group();
+      
+      const poleGeometry = new THREE.CylinderGeometry(0.1, 0.15, 5, 6);
+      const poleMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+      const pole = new THREE.Mesh(poleGeometry, poleMaterial);
+      pole.position.y = 2.5;
+      pole.castShadow = true;
+      group.add(pole);
+      
+      const lampGeometry = new THREE.SphereGeometry(0.4, 8, 6);
+      const lampMaterial = new THREE.MeshLambertMaterial({ color: 0xffffcc, emissive: 0xffffcc, emissiveIntensity: 0.3 });
+      const lamp = new THREE.Mesh(lampGeometry, lampMaterial);
+      lamp.position.y = 5.2;
+      group.add(lamp);
+      
+      group.position.set(x, 0, z);
+      scene.add(group);
+      return group;
+    }
+    
+    // Add street lamps
+    const lampPositions = [
+      { x: -6, z: -40 }, { x: 6, z: -20 }, { x: -6, z: 0 }, 
+      { x: 6, z: 20 }, { x: -6, z: 40 }, { x: 6, z: 60 }
+    ];
+    lampPositions.forEach(pos => createStreetLamp(pos.x, pos.z));
+    
+    // Camera path - 구불구불한 경로로 도시를 걸어가는 느낌
+    // 카메라는 항상 앞(+z 방향)을 바라봄
+    const cameraPath = [
+      // 시작: 높은 곳에서 도시 진입
+      { pos: new THREE.Vector3(0, 12, -70), lookAt: new THREE.Vector3(0, 3, -50) },
+      // 오른쪽으로 휘어지며 하강
+      { pos: new THREE.Vector3(18, 6, -55), lookAt: new THREE.Vector3(10, 3, -35) },
+      // 왼쪽으로 크게 휘어짐
+      { pos: new THREE.Vector3(-15, 4, -40), lookAt: new THREE.Vector3(-8, 2, -20) },
+      // 오른쪽으로 다시 휘어지며 거리 레벨
+      { pos: new THREE.Vector3(12, 3, -25), lookAt: new THREE.Vector3(5, 2, -5) },
+      // 왼쪽으로 휘며 살짝 상승
+      { pos: new THREE.Vector3(-10, 5, -10), lookAt: new THREE.Vector3(-3, 3, 10) },
+      // 중앙으로 돌아오며 교차로 통과
+      { pos: new THREE.Vector3(5, 4, 5), lookAt: new THREE.Vector3(0, 2, 25) },
+      // 오른쪽으로 휘어지며 상승
+      { pos: new THREE.Vector3(20, 7, 20), lookAt: new THREE.Vector3(12, 4, 40) },
+      // 왼쪽으로 크게 휘어짐
+      { pos: new THREE.Vector3(-12, 5, 35), lookAt: new THREE.Vector3(-5, 3, 55) },
+      // 오른쪽으로 휘며 상승
+      { pos: new THREE.Vector3(15, 8, 50), lookAt: new THREE.Vector3(8, 5, 70) },
+      // 끝: 중앙으로 돌아오며 앞을 바라봄
+      { pos: new THREE.Vector3(0, 10, 65), lookAt: new THREE.Vector3(0, 5, 85) },
+    ];
+    
+    // Scroll handling
+    let scrollProgress = 0;
+    const progressBar = document.getElementById('progress');
+    const scrollHint = document.querySelector('.scroll-hint');
+    
+    function updateScroll() {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      scrollProgress = window.scrollY / maxScroll;
+      progressBar.style.width = (scrollProgress * 100) + '%';
+      
+      // Hide scroll hint after scrolling
+      if (scrollProgress > 0.05) {
+        scrollHint.style.opacity = '0';
+      } else {
+        scrollHint.style.opacity = '0.7';
+      }
+    }
+    
+    window.addEventListener('scroll', updateScroll);
+    
+    // Smooth interpolation between camera points
+    function getCameraPosition(progress) {
+      const numSegments = cameraPath.length - 1;
+      const segment = Math.min(Math.floor(progress * numSegments), numSegments - 1);
+      const segmentProgress = (progress * numSegments) - segment;
+      
+      const start = cameraPath[segment];
+      const end = cameraPath[segment + 1];
+      
+      // Smooth easing
+      const eased = segmentProgress * segmentProgress * (3 - 2 * segmentProgress);
+      
+      const pos = new THREE.Vector3().lerpVectors(start.pos, end.pos, eased);
+      const lookAt = new THREE.Vector3().lerpVectors(start.lookAt, end.lookAt, eased);
+      
+      return { pos, lookAt };
+    }
+    
+    // Animation
+    let time = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      time += 0.016;
+      
+      // Update camera based on scroll
+      const { pos, lookAt } = getCameraPosition(scrollProgress);
+      camera.position.lerp(pos, 0.1);
+      
+      const currentLookAt = new THREE.Vector3();
+      camera.getWorldDirection(currentLookAt);
+      currentLookAt.add(camera.position);
+      currentLookAt.lerp(lookAt, 0.1);
+      camera.lookAt(lookAt);
+      
+      // Animate people (subtle walking motion)
+      people.forEach(person => {
+        const offset = person.userData.walkOffset;
+        const speed = person.userData.walkSpeed;
+        
+        // Subtle bobbing
+        person.position.y = Math.abs(Math.sin(time * speed * 3 + offset)) * 0.05;
+        
+        // Leg animation
+        if (person.children[2] && person.children[3]) {
+          person.children[2].rotation.x = Math.sin(time * speed * 4 + offset) * 0.3;
+          person.children[3].rotation.x = Math.sin(time * speed * 4 + offset + Math.PI) * 0.3;
+        }
+        
+        // Arm animation
+        if (person.children[4] && person.children[5]) {
+          person.children[4].rotation.x = Math.sin(time * speed * 4 + offset + Math.PI) * 0.2;
+          person.children[5].rotation.x = Math.sin(time * speed * 4 + offset) * 0.2;
+        }
+      });
+      
+      renderer.render(scene, camera);
+    }
+    
+    // Handle resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+    
+    // Start
+    updateScroll();
+    animate();
+  </script>
+</body>
+</html>

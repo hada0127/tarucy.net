@@ -28,15 +28,7 @@ button {
 	cursor:pointer;
 }
 
-/* background */
-.bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index:-1;
-}
+/* background - removed, using Three.js night sky */
 
 /* header */
 header {position:fixed;right:2vw;top:2vw;text-align:right;z-index:100;}
@@ -64,4 +56,67 @@ section dd {margin-bottom:10px;}
 @media screen and (max-width: 768px) {
 	h1 {font-size:25px;}
 	section h2 {font-size:15vw;}
+}
+
+/* 3D City Styles */
+#city-container {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100vh;
+	z-index: 0;
+}
+
+#city-container canvas {
+	display: block;
+}
+
+.scroll-driver {
+	height: 500vh;
+	position: relative;
+	z-index: 2;
+	pointer-events: none;
+}
+
+.progress-bar {
+	position: fixed;
+	top: 0;
+	left: 0;
+	height: 4px;
+	background: linear-gradient(90deg, #ffffff, #ffcccc);
+	z-index: 100;
+	transition: width 0.1s ease-out;
+	width: 0%;
+}
+
+.scroll-hint {
+	position: fixed;
+	bottom: 30px;
+	left: 50%;
+	transform: translateX(-50%);
+	color: #ffffff;
+	font-size: 0.9rem;
+	opacity: 0.8;
+	animation: bounce 2s infinite;
+	z-index: 10;
+	text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+@keyframes bounce {
+	0%, 100% { transform: translateX(-50%) translateY(0); }
+	50% { transform: translateX(-50%) translateY(-10px); }
+}
+
+/* Screen Reader Only - for SEO */
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
 }

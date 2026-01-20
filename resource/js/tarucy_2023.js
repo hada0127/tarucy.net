@@ -4,56 +4,7 @@ if (window.navigator.userAgent.match(/MSIE|Internet Explorer|Trident/i)) {
     window.location = 'https://support.microsoft.com/ko-kr/office/%ec%97%b0%ea%b2%b0%ed%95%98%eb%a0%a4%eb%8a%94-%ec%9b%b9-%ec%82%ac%ec%9d%b4%ed%8a%b8%ea%b0%80-internet-explorer%ec%97%90%ec%84%9c-%ec%9e%91%eb%8f%99%ed%95%98%ec%a7%80-%ec%95%8a%ec%8a%b5%eb%8b%88%eb%8b%a4-8f5fc675-cd47-414c-9535-12821ddfc554?ui=ko-kr&rs=ko-kr&ad=kr';
 }
 
-let now_skill = 1;
-const max_skill = 3;
-
-document.addEventListener("DOMContentLoaded", function(){	
-    let menu = document.querySelectorAll('.menu a');
-    let btn_skill_prev = document.querySelector('#btn_skill_prev');
-    let btn_skill_next = document.querySelector('#btn_skill_next');
-    let skill_area = document.querySelectorAll('section#skill article ul li');
-
-	menu.forEach(function(menuItem) {
-	    menuItem.addEventListener('click', function (event) {
-	        var target_name = menuItem.getAttribute('data-target');
-	        var target_scroll = document.querySelector('#'+target_name).offsetTop;
-	        window.scroll({ top: target_scroll, left: 0, behavior: 'smooth' });
-	    });    	
-	});
-
-    btn_skill_prev.addEventListener('click', function (event) {
-	    if(now_skill > 1) {
-		    now_skill --;
-		    set_skill();
-	    }
-    });    	
-    
-    btn_skill_next.addEventListener('click', function (event) {
-	    if(now_skill < max_skill) {
-		    now_skill ++;
-		    set_skill();
-	    }
-    });    	
-    
-
-	function set_skill(){
-	    let left_trans = (now_skill -1) * -100;
-		skill_area.forEach(function(skillItem) {
-		    skillItem.style.transform = 'translateX('+left_trans+'vw)';
-	    });
-		if(now_skill == 1){
-			btn_skill_prev.style.display = 'none';
-		} else {
-			btn_skill_prev.style.display = 'block';
-		}
-	
-		if(now_skill == max_skill){
-			btn_skill_next.style.display = 'none';
-		} else {
-			btn_skill_next.style.display = 'block';
-		}
-	}
-
+document.addEventListener("DOMContentLoaded", function(){
 /**
   background
 */
@@ -61,7 +12,7 @@ document.addEventListener("DOMContentLoaded", function(){
   const ctx = canvas.getContext('2d');
   let hue = 0;
   let angle = 0;
-  
+
   function draw() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -81,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function(){
     }
   }
 
-  ctx.putImageData(imageData, 0, 0);  
+  ctx.putImageData(imageData, 0, 0);
   ctx.globalAlpha = 0.75;
 
   // gradient
@@ -101,6 +52,5 @@ document.addEventListener("DOMContentLoaded", function(){
 
   requestAnimationFrame(draw);
 }
-  draw();	
+  draw();
 });
-

@@ -73,23 +73,23 @@
   <link rel="shortcut icon" href="./resource/image/favicon.ico">
   <link type="text/css" rel="stylesheet" href="./resource/css/tarucy_2023.css">
 
-  <script src="./resource/js/smoothscroll.min.js"></script>
-  <script src="./resource/js/tarucy_2023.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
 </head>
 <body>
-<canvas id="bg" class="bg"></canvas>
-<header>
-	<h1>hada0127*</h1>
-	<nav id="menu_list" aria-label="주요 메뉴">
-		<ul class="menu">
-			<li><a data-scroll data-target="profile" href="#profile" aria-label="프로필 섹션으로 이동">_profile*</a></li>
-			<li><a data-scroll data-target="solution" href="#solution" aria-label="솔루션 섹션으로 이동">_solution*</a></li>
-			<li><a data-scroll data-target="skill" href="#skill" aria-label="기술스택 섹션으로 이동">_skill*</a></li>
-			<li><a data-scroll data-target="contact" href="#contact" aria-label="연락처 섹션으로 이동">_contact*</a></li>
-		</ul>
-	</nav>
-</header>
-<main>
+<div class="progress-bar" id="progress"></div>
+<div id="city-container"></div>
+
+<div class="scroll-driver"></div>
+<div class="scroll-hint">↓ 스크롤하여 탐험하기</div>
+
+<!-- SEO용 숨김 콘텐츠 -->
+<main class="sr-only">
 	<section id="profile" aria-labelledby="profile-heading">
 		<h2 id="profile-heading">_profile*</h2>
 		<article>
@@ -187,5 +187,7 @@
 		</article>
 	</section>
 </main>
+
+<script type="module" src="./resource/js/city/city-main.js"></script>
 </body>
 </html>
