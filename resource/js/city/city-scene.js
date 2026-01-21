@@ -70,8 +70,8 @@ function createNightSky() {
 export function createScene() {
   const scene = new THREE.Scene();
   scene.background = createNightSky();
-  // 안개 없음 (건물이 투명하게 보이지 않도록)
-  // scene.fog = new THREE.FogExp2(0x0a0a20, 0.005);
+  // 사이버펑크 안개 (먼 곳이 어둡게 사라지는 효과)
+  scene.fog = new THREE.Fog(0x0a0a18, 60, 180);
   return scene;
 }
 
@@ -118,8 +118,8 @@ export function createLighting(scene) {
  * 바닥
  */
 export function createGround(scene) {
-  // 바닥 (인도 - 어두운 남색 계열)
-  const groundGeometry = new THREE.PlaneGeometry(300, 300);
+  // 바닥 (인도 - 어두운 남색 계열) - 확장된 크기
+  const groundGeometry = new THREE.PlaneGeometry(400, 400);
   const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x1a1a28 });
   const ground = new THREE.Mesh(groundGeometry, groundMaterial);
   ground.rotation.x = -Math.PI / 2;
@@ -177,6 +177,72 @@ export function createRoads(scene) {
 
   createRoad(0, 0, 14, 300);
   createRoad(0, 0, 300, 12, Math.PI / 2);
+}
+
+/**
+ * 횡단보도 생성
+ */
+export function createCrosswalks(scene) {
+  const crosswalks = [];
+
+  // 횡단보도 줄무늬 색상
+  const stripeMat = new THREE.MeshBasicMaterial({ color: 0xeeeeee });
+
+  // 교차로 기준 4방향 횡단보도
+  const crosswalkPositions = [
+    { x: 0, z: 12, rotation: 0, width: 10, length: 4 },    // 북쪽 (세로도로 위)
+    { x: 0, z: -12, rotation: 0, width: 10, length: 4 },   // 남쪽 (세로도로 아래)
+    { x: 12, z: 0, rotation: Math.PI / 2, width: 8, length: 4 },   // 동쪽 (가로도로 오른쪽)
+    { x: -12, z: 0, rotation: Math.PI / 2, width: 8, length: 4 }   // 서쪽 (가로도로 왼쪽)
+  ];
+
+  crosswalkPositions.forEach(pos => {
+    const stripeCount = 8;
+    const stripeWidth = pos.width / (stripeCount * 2 - 1);
+
+    for (let i = 0; i < stripeCount; i++) {
+      const stripeGeom = new THREE.PlaneGeometry(stripeWidth * 0.9, pos.length);
+      const stripe = new THREE.Mesh(stripeGeom, stripeMat);
+      stripe.rotation.x = -Math.PI / 2;
+      stripe.rotation.z = pos.rotation;
+
+      if (pos.rotation === 0) {
+        stripe.position.set(
+          pos.x - pos.width / 2 + stripeWidth / 2 + i * stripeWidth * 2,
+          0.025,
+          pos.z
+        );
+      } else {
+        stripe.position.set(
+          pos.x,
+          0.025,
+          pos.z - pos.width / 2 + stripeWidth / 2 + i * stripeWidth * 2
+        );
+      }
+      scene.add(stripe);
+    }
+
+    // 횡단보도 경계 정보 저장
+    const halfW = pos.width / 2;
+    const halfL = pos.length / 2;
+    if (pos.rotation === 0) {
+      crosswalks.push({
+        xMin: pos.x - halfW,
+        xMax: pos.x + halfW,
+        zMin: pos.z - halfL,
+        zMax: pos.z + halfL
+      });
+    } else {
+      crosswalks.push({
+        xMin: pos.x - halfL,
+        xMax: pos.x + halfL,
+        zMin: pos.z - halfW,
+        zMax: pos.z + halfW
+      });
+    }
+  });
+
+  return crosswalks;
 }
 
 /**

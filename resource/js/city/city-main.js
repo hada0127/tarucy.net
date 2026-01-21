@@ -4,9 +4,10 @@
  */
 
 import * as THREE from 'three';
-import { createScene, createRenderer, createCamera, createGround, createRoads, createLighting, handleResize } from './city-scene.js';
-import { createAllBuildings, createAllTrees, createAllStreetLamps } from './city-buildings.js';
+import { createScene, createRenderer, createCamera, createGround, createRoads, createCrosswalks, createLighting, handleResize } from './city-scene.js';
+import { createAllBuildings, createAllTrees, createAllStreetLamps, createStandingSign } from './city-buildings.js';
 import { createAllPeople, updateAllPeople } from './city-people.js';
+import { createAllCars, updateAllCars, createParkedTruck } from './city-vehicles.js';
 import { createAllContent, updateContent } from './city-content.js';
 import { createScrollTracker, updateCamera } from './city-camera.js';
 
@@ -25,9 +26,11 @@ export function initCity() {
   const renderer = createRenderer(container);
   const camera = createCamera();
 
-  // 초기 카메라 위치
-  camera.position.set(0, 15, -70);
-  camera.lookAt(0, 8, 0);
+  // 초기 카메라 위치 (키프레임 0과 일치)
+  camera.position.set(5, 16, -72);
+  const initialLookAt = new THREE.Vector3(-9, 18, -72);
+  camera.lookAt(initialLookAt);
+  camera.userData.targetLookAt = initialLookAt.clone();
 
   // 조명 추가
   createLighting(scene);
@@ -36,13 +39,26 @@ export function initCity() {
   createGround(scene);
   createRoads(scene);
 
+  // 횡단보도 생성
+  const crosswalkBounds = createCrosswalks(scene);
+
   // 도시 요소 생성
   createAllBuildings(scene);
   createAllTrees(scene);
   createAllStreetLamps(scene);
 
+  // 골목 요소 생성
+  // 정지된 트럭 (골목 입구)
+  createParkedTruck(scene, -14, 25, Math.PI / 2);
+
+  // 입간판 (골목 안)
+  createStandingSign(scene, -16, 30, Math.PI / 4);
+
   // 사람 생성
   const people = createAllPeople(scene);
+
+  // 자동차 생성
+  const cars = createAllCars(scene);
 
   // 콘텐츠 생성
   const content = createAllContent(scene);
@@ -76,8 +92,11 @@ export function initCity() {
     // 카메라 업데이트
     updateCamera(camera, scrollProgress);
 
-    // 사람 업데이트
-    updateAllPeople(people, deltaTime, time);
+    // 사람 업데이트 (횡단보도 정보 전달)
+    updateAllPeople(people, deltaTime, time, crosswalkBounds);
+
+    // 자동차 업데이트 (사람, 횡단보도 정보 전달)
+    updateAllCars(cars, deltaTime, people, crosswalkBounds);
 
     // 콘텐츠 업데이트 (카메라와 스크롤 진행률 전달)
     updateContent(content, time, camera, scrollProgress);

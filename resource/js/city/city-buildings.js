@@ -19,6 +19,9 @@ const neonColors = [
 
 const signTexts = ['CAFE', 'BAR', 'SHOP', '24H', 'OPEN', 'HOTEL', 'GYM', 'CLUB'];
 
+// 골목 영역 정의
+const alleyZone = { zMin: 23, zMax: 37 };
+
 /**
  * 사이버펑크 건물
  */
@@ -223,6 +226,70 @@ function createBillboard(scene, x, z, height) {
 }
 
 /**
+ * 입간판 생성
+ */
+export function createStandingSign(scene, x, z, rotation = 0) {
+  const group = new THREE.Group();
+  const color = neonColors[Math.floor(Math.random() * neonColors.length)];
+
+  // 기둥 (어두운 금속)
+  const poleGeom = new THREE.CylinderGeometry(0.15, 0.2, 3.5, 8);
+  const poleMat = new THREE.MeshBasicMaterial({ color: 0x1a1a28 });
+  const pole = new THREE.Mesh(poleGeom, poleMat);
+  pole.position.y = 1.75;
+  group.add(pole);
+
+  // 받침대 (넓은 박스)
+  const baseGeom = new THREE.BoxGeometry(1.2, 0.2, 1.2);
+  const baseMat = new THREE.MeshBasicMaterial({ color: 0x252535 });
+  const base = new THREE.Mesh(baseGeom, baseMat);
+  base.position.y = 0.1;
+  group.add(base);
+
+  // 간판 패널 배경
+  const panelBgGeom = new THREE.BoxGeometry(3.5, 2.8, 0.15);
+  const panelBgMat = new THREE.MeshBasicMaterial({ color: 0x0d0d18 });
+  const panelBg = new THREE.Mesh(panelBgGeom, panelBgMat);
+  panelBg.position.y = 4.5;
+  group.add(panelBg);
+
+  // 간판 콘텐츠 영역 (contentSurface)
+  const panelGeom = new THREE.PlaneGeometry(3.2, 2.5);
+  const panelMat = new THREE.MeshBasicMaterial({
+    color: color,
+    transparent: true,
+    opacity: 0.9
+  });
+  const panel = new THREE.Mesh(panelGeom, panelMat);
+  panel.position.set(0, 4.5, 0.1);
+  group.add(panel);
+
+  group.position.set(x, 0, z);
+  group.rotation.y = rotation;
+
+  // contentSurface로 참조 가능
+  group.userData.contentSurface = panel;
+  group.userData.type = 'standing-sign';
+
+  scene.add(group);
+  return group;
+}
+
+/**
+ * 골목 양쪽 낮은 건물 생성
+ */
+function createAlleyBuildings(scene, buildings) {
+  // 골목 왼쪽 벽 (깊은 곳에 낮은 건물)
+  for (let z = alleyZone.zMin; z <= alleyZone.zMax; z += 6) {
+    const h = 10 + Math.random() * 8;
+    buildings.push(createCyberpunkBuilding(scene, -28 + Math.random() * 2, z + Math.random() * 3, 6 + Math.random() * 3, 6 + Math.random() * 3, h));
+  }
+
+  // 골목 끝 벽면 건물 (뮤럴용)
+  buildings.push(createCyberpunkBuilding(scene, -32, 32, 8, 8, 18));
+}
+
+/**
  * 모든 건물 생성
  */
 export function createAllBuildings(scene) {
@@ -231,8 +298,16 @@ export function createAllBuildings(scene) {
   // === 메인 도로 양쪽 ===
   for (let z = -80; z <= 100; z += 15) {
     const h = 20 + Math.random() * 35;
-    buildings.push(createCyberpunkBuilding(scene, -18 + Math.random() * 4, z + Math.random() * 8, 10 + Math.random() * 5, 10 + Math.random() * 5, h));
-    buildings.push(createCyberpunkBuilding(scene, 18 + Math.random() * 4, z + Math.random() * 8, 10 + Math.random() * 5, 10 + Math.random() * 5, h));
+    const zPos = z + Math.random() * 8;
+
+    // 골목 영역에서는 왼쪽 건물을 뒤로 밀기 또는 생략
+    if (zPos >= alleyZone.zMin && zPos <= alleyZone.zMax) {
+      // 골목 영역: 왼쪽 건물을 X=-35로 뒤로 밀기 (낮은 건물)
+      buildings.push(createCyberpunkBuilding(scene, -35 + Math.random() * 3, zPos, 10 + Math.random() * 5, 10 + Math.random() * 5, 12 + Math.random() * 8));
+    } else {
+      buildings.push(createCyberpunkBuilding(scene, -18 + Math.random() * 4, zPos, 10 + Math.random() * 5, 10 + Math.random() * 5, h));
+    }
+    buildings.push(createCyberpunkBuilding(scene, 18 + Math.random() * 4, zPos, 10 + Math.random() * 5, 10 + Math.random() * 5, h));
   }
 
   // === 2열 ===
@@ -259,19 +334,50 @@ export function createAllBuildings(scene) {
     buildings.push(createCyberpunkBuilding(scene, 115 + Math.random() * 8, z, 18 + Math.random() * 12, 18 + Math.random() * 12, 50 + Math.random() * 60));
   }
 
-  // === 도로 끝 ===
-  for (let x = -100; x <= 100; x += 15) {
-    if (Math.abs(x) > 12) {
-      buildings.push(createCyberpunkBuilding(scene, x, -95 + Math.random() * 10, 14 + Math.random() * 8, 16 + Math.random() * 8, 30 + Math.random() * 40));
-      buildings.push(createCyberpunkBuilding(scene, x, 105 + Math.random() * 10, 14 + Math.random() * 8, 16 + Math.random() * 8, 30 + Math.random() * 40));
+  // === 도로 끝 (남쪽 벽) ===
+  for (let x = -120; x <= 120; x += 12) {
+    if (Math.abs(x) > 10) {
+      buildings.push(createCyberpunkBuilding(scene, x + Math.random() * 4, -100 + Math.random() * 5, 14 + Math.random() * 8, 18 + Math.random() * 10, 40 + Math.random() * 50));
+      buildings.push(createCyberpunkBuilding(scene, x + Math.random() * 4, -120 + Math.random() * 5, 16 + Math.random() * 10, 20 + Math.random() * 12, 50 + Math.random() * 60));
     }
   }
+  // 도로 끝 막는 건물 (남쪽)
+  buildings.push(createCyberpunkBuilding(scene, -8, -110, 12, 20, 35 + Math.random() * 25));
+  buildings.push(createCyberpunkBuilding(scene, 8, -115, 12, 20, 40 + Math.random() * 30));
 
-  // === 코너 건물들 ===
-  buildings.push(createCyberpunkBuilding(scene, -100, -100, 20, 20, 60 + Math.random() * 30));
-  buildings.push(createCyberpunkBuilding(scene, 100, -100, 20, 20, 60 + Math.random() * 30));
-  buildings.push(createCyberpunkBuilding(scene, -100, 100, 20, 20, 60 + Math.random() * 30));
-  buildings.push(createCyberpunkBuilding(scene, 100, 100, 20, 20, 60 + Math.random() * 30));
+  // === 도로 끝 (북쪽 벽) ===
+  for (let x = -120; x <= 120; x += 12) {
+    if (Math.abs(x) > 10) {
+      buildings.push(createCyberpunkBuilding(scene, x + Math.random() * 4, 110 + Math.random() * 5, 14 + Math.random() * 8, 18 + Math.random() * 10, 40 + Math.random() * 50));
+      buildings.push(createCyberpunkBuilding(scene, x + Math.random() * 4, 130 + Math.random() * 5, 16 + Math.random() * 10, 20 + Math.random() * 12, 50 + Math.random() * 60));
+    }
+  }
+  // 도로 끝 막는 건물 (북쪽)
+  buildings.push(createCyberpunkBuilding(scene, -8, 115, 12, 20, 35 + Math.random() * 25));
+  buildings.push(createCyberpunkBuilding(scene, 8, 120, 12, 20, 40 + Math.random() * 30));
+
+  // === 가로 도로 끝 (동쪽 벽) ===
+  for (let z = -20; z <= 20; z += 12) {
+    buildings.push(createCyberpunkBuilding(scene, 110 + Math.random() * 5, z + Math.random() * 4, 18 + Math.random() * 10, 14 + Math.random() * 8, 40 + Math.random() * 50));
+    buildings.push(createCyberpunkBuilding(scene, 130 + Math.random() * 5, z + Math.random() * 4, 20 + Math.random() * 12, 16 + Math.random() * 10, 50 + Math.random() * 60));
+  }
+
+  // === 가로 도로 끝 (서쪽 벽) ===
+  for (let z = -20; z <= 20; z += 12) {
+    buildings.push(createCyberpunkBuilding(scene, -110 + Math.random() * 5, z + Math.random() * 4, 18 + Math.random() * 10, 14 + Math.random() * 8, 40 + Math.random() * 50));
+    buildings.push(createCyberpunkBuilding(scene, -130 + Math.random() * 5, z + Math.random() * 4, 20 + Math.random() * 12, 16 + Math.random() * 10, 50 + Math.random() * 60));
+  }
+
+  // === 코너 건물들 (더 조밀하게) ===
+  const corners = [
+    { x: -100, z: -100 }, { x: 100, z: -100 },
+    { x: -100, z: 100 }, { x: 100, z: 100 },
+    { x: -120, z: -120 }, { x: 120, z: -120 },
+    { x: -120, z: 120 }, { x: 120, z: 120 }
+  ];
+  corners.forEach(c => {
+    buildings.push(createCyberpunkBuilding(scene, c.x + Math.random() * 10, c.z + Math.random() * 10, 20 + Math.random() * 15, 20 + Math.random() * 15, 60 + Math.random() * 40));
+  });
 
   // === 빌보드 & 세로 간판 ===
   for (let z = -60; z <= 80; z += 40) {
@@ -280,6 +386,9 @@ export function createAllBuildings(scene) {
     createVerticalSign(scene, -16, z + 10, 8 + Math.random() * 4);
     createVerticalSign(scene, 16, z + 30, 8 + Math.random() * 4);
   }
+
+  // === 골목 양쪽 건물 ===
+  createAlleyBuildings(scene, buildings);
 
   return buildings;
 }

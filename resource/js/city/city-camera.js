@@ -13,44 +13,98 @@ function smootherStep(t) {
 }
 
 /**
- * 카메라 키프레임 - S자 곡선으로 구불구불 이동, 항상 앞을 바라봄
+ * 카메라 키프레임 - 건물 간판을 따라 이동
  */
 export const cameraKeyframes = [
-  // 0: 인트로 - 높이서 도시 전경
+  // 0: 인트로 - hada0127 간판 (도로에서 왼쪽 건물 정면 바라보기)
   {
-    pos: new THREE.Vector3(0, 20, -80),
-    lookAt: new THREE.Vector3(0, 8, -60),
+    pos: new THREE.Vector3(5, 16, -72),
+    lookAt: new THREE.Vector3(-9, 18, -72),
     label: 'intro'
   },
-  // 1: Profile - 오른쪽으로 휘어짐
+  // 1: Profile 보기 (아래로)
   {
-    pos: new THREE.Vector3(15, 10, -50),
-    lookAt: new THREE.Vector3(10, 8, -30),
+    pos: new THREE.Vector3(5, 12, -78),
+    lookAt: new THREE.Vector3(-11, 12, -78),
+    label: 'intro'
+  },
+  // 2: 앞으로 이동
+  {
+    pos: new THREE.Vector3(2, 10, -50),
+    lookAt: new THREE.Vector3(0, 10, -30),
     label: 'profile'
   },
-  // 2: Solution - 왼쪽으로 휘어짐
+  // 3: 시선 전환
   {
-    pos: new THREE.Vector3(-12, 8, -15),
-    lookAt: new THREE.Vector3(-5, 6, 10),
+    pos: new THREE.Vector3(0, 10, -25),
+    lookAt: new THREE.Vector3(10, 14, -10),
+    label: 'profile'
+  },
+  // 4: Solution 간판 (오른쪽 건물)
+  {
+    pos: new THREE.Vector3(-3, 14, -5),
+    lookAt: new THREE.Vector3(13, 18, -5),
     label: 'solution'
   },
-  // 3: Skill - 오른쪽으로 휘어짐
+  // 5: SERVICE 간판
   {
-    pos: new THREE.Vector3(15, 10, 25),
-    lookAt: new THREE.Vector3(8, 8, 50),
+    pos: new THREE.Vector3(-3, 10, -5),
+    lookAt: new THREE.Vector3(13, 10, -5),
+    label: 'solution'
+  },
+  // 6: 앞으로 이동
+  {
+    pos: new THREE.Vector3(0, 10, 10),
+    lookAt: new THREE.Vector3(-5, 14, 20),
     label: 'skill'
   },
-  // 4: Contact - 왼쪽으로 휘어짐
+  // 7: Frontend 간판 (왼쪽 건물)
   {
-    pos: new THREE.Vector3(-10, 7, 55),
-    lookAt: new THREE.Vector3(-3, 5, 80),
-    label: 'contact'
+    pos: new THREE.Vector3(5, 14, 21),
+    lookAt: new THREE.Vector3(-11, 18, 21),
+    label: 'skill'
   },
-  // 5: 엔딩 - 중앙으로 돌아오며 앞을 바라봄
+  // 8: 골목 입구 - 트럭 짐칸 콘텐츠 (왼쪽으로 진입)
   {
-    pos: new THREE.Vector3(0, 12, 85),
-    lookAt: new THREE.Vector3(0, 8, 110),
-    label: 'ending'
+    pos: new THREE.Vector3(2, 8, 25),
+    lookAt: new THREE.Vector3(-14, 4, 25),
+    label: 'alley'
+  },
+  // 9: 골목 안 - 입간판
+  {
+    pos: new THREE.Vector3(-10, 5, 28),
+    lookAt: new THREE.Vector3(-16, 4.5, 30),
+    label: 'alley'
+  },
+  // 10: 골목 깊숙이 - 벽면 뮤럴
+  {
+    pos: new THREE.Vector3(-20, 6, 32),
+    lookAt: new THREE.Vector3(-30, 8, 32),
+    label: 'alley'
+  },
+  // 11: U턴 지점
+  {
+    pos: new THREE.Vector3(-25, 8, 35),
+    lookAt: new THREE.Vector3(-15, 10, 30),
+    label: 'alley'
+  },
+  // 12: 대로 복귀
+  {
+    pos: new THREE.Vector3(-10, 10, 34),
+    lookAt: new THREE.Vector3(12, 15, 36),
+    label: 'skill'
+  },
+  // 13: Backend 간판 (오른쪽 건물)
+  {
+    pos: new THREE.Vector3(-3, 12, 36),
+    lookAt: new THREE.Vector3(12, 15, 36),
+    label: 'skill'
+  },
+  // 14: Contact 간판 (마지막 - 오른쪽 건물)
+  {
+    pos: new THREE.Vector3(-3, 14, 51),
+    lookAt: new THREE.Vector3(12, 14, 51),
+    label: 'contact'
   }
 ];
 
