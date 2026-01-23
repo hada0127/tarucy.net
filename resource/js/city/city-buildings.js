@@ -3635,6 +3635,38 @@ function createHotelBackForestAndMountains(scene) {
     }
   }
 
+  // === Hills covering road area between tunnel and back mountains ===
+  // Hills placed on the road (z=-20) to fill empty space after tunnel
+  createMountain(240, -20, 25, 30);
+  createMountain(250, -15, 22, 28);
+  createMountain(245, -25, 20, 25);
+  createMountain(255, -22, 24, 32);
+  createMountain(248, -18, 18, 22);
+  createMountain(260, -20, 26, 35);
+
+  // === Mountains at road end to completely cover the road ===
+  createMountain(280, -20, 40, 50);
+  createMountain(290, -15, 35, 45);
+  createMountain(285, -25, 38, 48);
+  createMountain(295, -20, 42, 55);
+  createMountain(300, -18, 45, 60);
+
+  // === Fill remaining gap on opposite side of tunnel ===
+  createMountain(265, -35, 30, 40);
+  createMountain(270, -45, 35, 45);
+  createMountain(275, -30, 28, 38);
+  createMountain(265, 0, 30, 40);
+  createMountain(270, 10, 35, 45);
+  createMountain(275, -5, 28, 38);
+
+  // === Closer to tunnel ===
+  createMountain(235, -40, 25, 30);
+  createMountain(240, -50, 28, 35);
+  createMountain(235, 5, 25, 30);
+  createMountain(240, 15, 28, 35);
+  createMountain(245, -45, 22, 28);
+  createMountain(245, 10, 22, 28);
+
   // === Back mountains (behind hotel, +X direction) ===
   createMountain(250, -55, 50, 60);
   createMountain(245, 45, 55, 70);
