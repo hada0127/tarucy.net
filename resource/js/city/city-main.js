@@ -1,18 +1,20 @@
 /**
  * city-main.js
- * 3D 밤의 도시 메인 진입점
+ * Hong Kong Citypop Night City - Main Entry Point
+ *
+ * Camera Controls:
+ * - W/S: Move forward/backward
+ * - A/D: Move left/right
+ * - Arrow Up/Down: Look up/down (pitch)
+ * - Arrow Left/Right: Rotate camera
  */
 
 import * as THREE from 'three';
 import { createScene, createRenderer, createCamera, createGround, createRoads, createCrosswalks, createLighting, handleResize } from './city-scene.js';
-import { createAllBuildings, createAllTrees, createAllStreetLamps, createStandingSign } from './city-buildings.js';
-import { createAllPeople, updateAllPeople } from './city-people.js';
-import { createAllCars, updateAllCars, createParkedTruck } from './city-vehicles.js';
-import { createAllContent, updateContent } from './city-content.js';
-import { createScrollTracker, updateCamera } from './city-camera.js';
+import { createAllBuildings, createAllTrees, createAllStreetLamps } from './city-buildings.js';
 
 /**
- * 3D 도시 초기화
+ * Initialize 3D City
  */
 export function initCity() {
   const container = document.getElementById('city-container');
@@ -21,96 +23,176 @@ export function initCity() {
     return;
   }
 
-  // 씬, 렌더러, 카메라 생성
+  // Create scene, renderer, camera
   const scene = createScene();
   const renderer = createRenderer(container);
   const camera = createCamera();
 
-  // 초기 카메라 위치 (키프레임 0과 일치)
-  camera.position.set(5, 16, -72);
-  const initialLookAt = new THREE.Vector3(-9, 18, -72);
-  camera.lookAt(initialLookAt);
-  camera.userData.targetLookAt = initialLookAt.clone();
+  // Initial camera position (overview of the city)
+  camera.position.set(0, 50, 80);
+  camera.lookAt(0, 0, 0);
 
-  // 조명 추가
+  // Add lighting
   createLighting(scene);
 
-  // 환경 생성
+  // Create environment
   createGround(scene);
   createRoads(scene);
 
-  // 횡단보도 생성
-  const crosswalkBounds = createCrosswalks(scene);
+  // Create crosswalks
+  createCrosswalks(scene);
 
-  // 도시 요소 생성
+  // Create city elements
   createAllBuildings(scene);
   createAllTrees(scene);
   createAllStreetLamps(scene);
 
-  // 골목 요소 생성
-  // 정지된 트럭 (골목 입구)
-  createParkedTruck(scene, -14, 25, Math.PI / 2);
-
-  // 입간판 (골목 안)
-  createStandingSign(scene, -16, 30, Math.PI / 4);
-
-  // 사람 생성
-  const people = createAllPeople(scene);
-
-  // 자동차 생성
-  const cars = createAllCars(scene);
-
-  // 콘텐츠 생성
-  const content = createAllContent(scene);
-
-  // 스크롤 추적
-  let scrollProgress = 0;
-  const scrollTracker = createScrollTracker((progress) => {
-    scrollProgress = progress;
-  });
-
-  // 리사이즈 핸들러
+  // Resize handler
   handleResize(camera, renderer);
 
-  // 애니메이션 상태
+  // === Keyboard Camera Controls ===
+  const keys = {
+    w: false, s: false, a: false, d: false,
+    ArrowUp: false, ArrowDown: false,
+    ArrowLeft: false, ArrowRight: false
+  };
+
+  // Camera movement state
+  const cameraState = {
+    yaw: 0,      // Horizontal rotation (radians)
+    pitch: -0.5, // Vertical angle (looking slightly down)
+    speed: 1.5,  // Movement speed
+    rotSpeed: 0.03 // Rotation speed
+  };
+
+  // Key event handlers
+  window.addEventListener('keydown', (e) => {
+    if (keys.hasOwnProperty(e.key)) {
+      keys[e.key] = true;
+      e.preventDefault();
+    }
+    // Also handle lowercase
+    if (keys.hasOwnProperty(e.key.toLowerCase())) {
+      keys[e.key.toLowerCase()] = true;
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (keys.hasOwnProperty(e.key)) {
+      keys[e.key] = false;
+    }
+    if (keys.hasOwnProperty(e.key.toLowerCase())) {
+      keys[e.key.toLowerCase()] = false;
+    }
+  });
+
+  // Hide scroll hint if exists
+  const scrollHint = document.querySelector('.scroll-hint');
+  if (scrollHint) {
+    scrollHint.style.display = 'none';
+  }
+
+  // Add control instructions
+  const instructions = document.createElement('div');
+  instructions.id = 'camera-instructions';
+  instructions.innerHTML = `
+    <div style="position: fixed; bottom: 20px; left: 20px; color: white; font-family: monospace; font-size: 14px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; z-index: 1000;">
+      <div style="margin-bottom: 8px; font-weight: bold; color: #ff66aa;">Camera Controls</div>
+      <div>W/S - Forward / Backward</div>
+      <div>A/D - Left / Right</div>
+      <div>↑/↓ - Look Up / Down</div>
+      <div>←/→ - Rotate</div>
+    </div>
+  `;
+  document.body.appendChild(instructions);
+
+  // Animation state
   let lastTime = 0;
-  let time = 0;
 
   /**
-   * 애니메이션 루프
+   * Update camera based on keyboard input
+   */
+  function updateCameraControls(deltaTime) {
+    const speed = cameraState.speed * deltaTime * 60;
+    const rotSpeed = cameraState.rotSpeed;
+
+    // Rotation (Arrow Left/Right)
+    if (keys.ArrowLeft) {
+      cameraState.yaw += rotSpeed;
+    }
+    if (keys.ArrowRight) {
+      cameraState.yaw -= rotSpeed;
+    }
+
+    // Calculate forward and right vectors based on yaw
+    const forward = new THREE.Vector3(
+      -Math.sin(cameraState.yaw),
+      0,
+      -Math.cos(cameraState.yaw)
+    );
+    const right = new THREE.Vector3(
+      Math.cos(cameraState.yaw),
+      0,
+      -Math.sin(cameraState.yaw)
+    );
+
+    // Movement (WASD)
+    if (keys.w) {
+      camera.position.addScaledVector(forward, speed);
+    }
+    if (keys.s) {
+      camera.position.addScaledVector(forward, -speed);
+    }
+    if (keys.a) {
+      camera.position.addScaledVector(right, -speed);
+    }
+    if (keys.d) {
+      camera.position.addScaledVector(right, speed);
+    }
+
+    // Pitch (Arrow Up/Down) - Look up/down
+    if (keys.ArrowUp) {
+      cameraState.pitch += rotSpeed;
+      // Limit pitch to prevent flipping
+      if (cameraState.pitch > Math.PI / 2 - 0.1) cameraState.pitch = Math.PI / 2 - 0.1;
+    }
+    if (keys.ArrowDown) {
+      cameraState.pitch -= rotSpeed;
+      // Limit pitch to prevent flipping
+      if (cameraState.pitch < -Math.PI / 2 + 0.1) cameraState.pitch = -Math.PI / 2 + 0.1;
+    }
+
+    // Update camera look direction
+    const lookTarget = new THREE.Vector3(
+      camera.position.x + forward.x * 10,
+      camera.position.y + Math.sin(cameraState.pitch) * 10,
+      camera.position.z + forward.z * 10
+    );
+    camera.lookAt(lookTarget);
+  }
+
+  /**
+   * Animation loop
    */
   function animate(currentTime) {
     requestAnimationFrame(animate);
 
     const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.1);
     lastTime = currentTime;
-    time += deltaTime;
 
-    // 스크롤 진행률 업데이트 (lerp 계속 적용)
-    scrollTracker.update();
+    // Update camera based on keyboard input
+    updateCameraControls(deltaTime);
 
-    // 카메라 업데이트
-    updateCamera(camera, scrollProgress);
-
-    // 사람 업데이트 (횡단보도 정보 전달)
-    updateAllPeople(people, deltaTime, time, crosswalkBounds);
-
-    // 자동차 업데이트 (사람, 횡단보도 정보 전달)
-    updateAllCars(cars, deltaTime, people, crosswalkBounds);
-
-    // 콘텐츠 업데이트 (카메라와 스크롤 진행률 전달)
-    updateContent(content, time, camera, scrollProgress);
-
-    // 렌더링
+    // Render
     renderer.render(scene, camera);
   }
 
   animate(0);
 
-  return { scene, camera, renderer, content };
+  return { scene, camera, renderer };
 }
 
-// DOM 준비되면 초기화
+// Initialize when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initCity);
 } else {

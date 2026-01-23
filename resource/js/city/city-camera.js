@@ -1,115 +1,116 @@
 /**
  * city-camera.js
- * 부드러운 카메라 이동
+ * Overhead Bird's Eye Camera System
+ *
+ * Camera orbits around the city from above, always looking at the center.
+ * This provides a clear view of the entire layout structure.
  */
 
 import * as THREE from 'three';
 
 /**
- * 부드러운 이징
+ * Smooth easing function
  */
 function smootherStep(t) {
   return t * t * t * (t * (t * 6 - 15) + 10);
 }
 
 /**
- * 카메라 키프레임 - 건물 간판을 따라 이동
+ * Catmull-Rom spline interpolation
+ */
+function catmullRom(p0, p1, p2, p3, t) {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return (
+    0.5 * (
+      (2 * p1) +
+      (-p0 + p2) * t +
+      (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
+      (-p0 + 3 * p1 - 3 * p2 + p3) * t3
+    )
+  );
+}
+
+/**
+ * Vector3 Catmull-Rom interpolation
+ */
+function catmullRomVector(v0, v1, v2, v3, t) {
+  return new THREE.Vector3(
+    catmullRom(v0.x, v1.x, v2.x, v3.x, t),
+    catmullRom(v0.y, v1.y, v2.y, v3.y, t),
+    catmullRom(v0.z, v1.z, v2.z, v3.z, t)
+  );
+}
+
+/**
+ * Overhead bird's eye camera keyframes
+ * Camera orbits around the city from above, always looking at center
  */
 export const cameraKeyframes = [
-  // 0: 인트로 - hada0127 간판 (도로에서 왼쪽 건물 정면 바라보기)
+  // Start: Front right (positive X, positive Z)
   {
-    pos: new THREE.Vector3(5, 16, -72),
-    lookAt: new THREE.Vector3(-9, 18, -72),
+    pos: new THREE.Vector3(40, 45, 40),
+    lookAt: new THREE.Vector3(0, 5, 0),
     label: 'intro'
   },
-  // 1: Profile 보기 (아래로)
+  // Front center (looking down at shopping district)
   {
-    pos: new THREE.Vector3(5, 12, -78),
-    lookAt: new THREE.Vector3(-11, 12, -78),
-    label: 'intro'
-  },
-  // 2: 앞으로 이동
-  {
-    pos: new THREE.Vector3(2, 10, -50),
-    lookAt: new THREE.Vector3(0, 10, -30),
+    pos: new THREE.Vector3(0, 50, 50),
+    lookAt: new THREE.Vector3(0, 5, 5),
     label: 'profile'
   },
-  // 3: 시선 전환
+  // Front left (negative X, positive Z)
   {
-    pos: new THREE.Vector3(0, 10, -25),
-    lookAt: new THREE.Vector3(10, 14, -10),
-    label: 'profile'
-  },
-  // 4: Solution 간판 (오른쪽 건물)
-  {
-    pos: new THREE.Vector3(-3, 14, -5),
-    lookAt: new THREE.Vector3(13, 18, -5),
+    pos: new THREE.Vector3(-40, 45, 40),
+    lookAt: new THREE.Vector3(0, 5, 0),
     label: 'solution'
   },
-  // 5: SERVICE 간판
+  // Left side (looking at left buildings cluster)
   {
-    pos: new THREE.Vector3(-3, 10, -5),
-    lookAt: new THREE.Vector3(13, 10, -5),
-    label: 'solution'
+    pos: new THREE.Vector3(-50, 45, 0),
+    lookAt: new THREE.Vector3(-10, 5, 0),
+    label: 'service'
   },
-  // 6: 앞으로 이동
+  // Back left (negative X, negative Z)
   {
-    pos: new THREE.Vector3(0, 10, 10),
-    lookAt: new THREE.Vector3(-5, 14, 20),
-    label: 'skill'
+    pos: new THREE.Vector3(-40, 45, -30),
+    lookAt: new THREE.Vector3(0, 5, -10),
+    label: 'project'
   },
-  // 7: Frontend 간판 (왼쪽 건물)
+  // Back center (looking at high-rise buildings)
   {
-    pos: new THREE.Vector3(5, 14, 21),
-    lookAt: new THREE.Vector3(-11, 18, 21),
-    label: 'skill'
+    pos: new THREE.Vector3(0, 50, -40),
+    lookAt: new THREE.Vector3(0, 10, -15),
+    label: 'frontend'
   },
-  // 8: 골목 입구 - 트럭 짐칸 콘텐츠 (왼쪽으로 진입)
+  // Back right (positive X, negative Z)
   {
-    pos: new THREE.Vector3(2, 8, 25),
-    lookAt: new THREE.Vector3(-14, 4, 25),
-    label: 'alley'
+    pos: new THREE.Vector3(40, 45, -30),
+    lookAt: new THREE.Vector3(0, 5, -10),
+    label: 'design'
   },
-  // 9: 골목 안 - 입간판
+  // Right side (looking at right buildings cluster)
   {
-    pos: new THREE.Vector3(-10, 5, 28),
-    lookAt: new THREE.Vector3(-16, 4.5, 30),
-    label: 'alley'
+    pos: new THREE.Vector3(50, 45, 0),
+    lookAt: new THREE.Vector3(10, 5, 0),
+    label: 'backend'
   },
-  // 10: 골목 깊숙이 - 벽면 뮤럴
+  // Return to start for smooth loop
   {
-    pos: new THREE.Vector3(-20, 6, 32),
-    lookAt: new THREE.Vector3(-30, 8, 32),
-    label: 'alley'
+    pos: new THREE.Vector3(45, 46, 35),
+    lookAt: new THREE.Vector3(0, 5, 0),
+    label: 'works'
   },
-  // 11: U턴 지점
+  // Final: close to start position (loop connection)
   {
-    pos: new THREE.Vector3(-25, 8, 35),
-    lookAt: new THREE.Vector3(-15, 10, 30),
-    label: 'alley'
-  },
-  // 12: 대로 복귀
-  {
-    pos: new THREE.Vector3(-10, 10, 34),
-    lookAt: new THREE.Vector3(12, 15, 36),
-    label: 'skill'
-  },
-  // 13: Backend 간판 (오른쪽 건물)
-  {
-    pos: new THREE.Vector3(-3, 12, 36),
-    lookAt: new THREE.Vector3(12, 15, 36),
-    label: 'skill'
-  },
-  // 14: Contact 간판 (마지막 - 오른쪽 건물)
-  {
-    pos: new THREE.Vector3(-3, 14, 51),
-    lookAt: new THREE.Vector3(12, 14, 51),
+    pos: new THREE.Vector3(42, 45, 38),
+    lookAt: new THREE.Vector3(0, 5, 0),
     label: 'contact'
   }
 ];
 
 /**
- * 스크롤 진행률에 따른 카메라 위치
+ * Get camera position based on scroll progress (Catmull-Rom spline)
  */
 export function getCameraPosition(progress) {
   const numSegments = cameraKeyframes.length - 1;
@@ -117,19 +118,33 @@ export function getCameraPosition(progress) {
   const segment = Math.min(Math.floor(scaledProgress), numSegments - 1);
   const segmentProgress = scaledProgress - segment;
 
-  const start = cameraKeyframes[segment];
-  const end = cameraKeyframes[Math.min(segment + 1, cameraKeyframes.length - 1)];
+  // Select 4 points for Catmull-Rom (with loop handling)
+  const getIndex = (i) => {
+    const len = cameraKeyframes.length;
+    return ((i % len) + len) % len;
+  };
+
+  const i0 = getIndex(segment - 1);
+  const i1 = getIndex(segment);
+  const i2 = getIndex(segment + 1);
+  const i3 = getIndex(segment + 2);
+
+  const p0 = cameraKeyframes[i0];
+  const p1 = cameraKeyframes[i1];
+  const p2 = cameraKeyframes[i2];
+  const p3 = cameraKeyframes[i3];
 
   const eased = smootherStep(segmentProgress);
 
-  const pos = new THREE.Vector3().lerpVectors(start.pos, end.pos, eased);
-  const lookAt = new THREE.Vector3().lerpVectors(start.lookAt, end.lookAt, eased);
+  // Catmull-Rom spline for smooth curve interpolation
+  const pos = catmullRomVector(p0.pos, p1.pos, p2.pos, p3.pos, eased);
+  const lookAt = catmullRomVector(p0.lookAt, p1.lookAt, p2.lookAt, p3.lookAt, eased);
 
-  return { pos, lookAt, currentSection: start.label };
+  return { pos, lookAt, currentSection: p1.label };
 }
 
 /**
- * 카메라 업데이트
+ * Update camera position
  */
 export function updateCamera(camera, progress, lerpFactor = 0.08) {
   const { pos, lookAt } = getCameraPosition(progress);
@@ -144,7 +159,7 @@ export function updateCamera(camera, progress, lerpFactor = 0.08) {
 }
 
 /**
- * 현재 섹션
+ * Get current section label
  */
 export function getCurrentSection(progress) {
   const numSegments = cameraKeyframes.length - 1;
@@ -153,7 +168,7 @@ export function getCurrentSection(progress) {
 }
 
 /**
- * 스크롤 트래커
+ * Create scroll tracker
  */
 export function createScrollTracker(onProgressChange) {
   let scrollProgress = 0;

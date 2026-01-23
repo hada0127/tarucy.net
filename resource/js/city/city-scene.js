@@ -1,59 +1,79 @@
 /**
  * city-scene.js
- * 사이버펑크/네온 스타일 밤 도시
+ * Hong Kong Citypop Night City - Linear Corridor Layout
+ *
+ * Layout (top to bottom):
+ * - Level 5 (y=12): Residential District ground
+ * - Level 4 (y=10): Residential road
+ * - Level 2 (y=2): Shopping district ground
+ * - Level 1 (y=0): Main road
+ *
+ * Coordinate system:
+ * - X: -50 ~ 50
+ * - Z: -36 ~ 36
  */
 
 import * as THREE from 'three';
 
 /**
- * 바포웨이브/사이버펑크 밤하늘 + 달
+ * Vaporwave/Cyberpunk night sky texture for sky sphere
  */
-function createNightSky() {
+function createNightSkyTexture() {
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 512;
+  canvas.width = 2048;
+  canvas.height = 1024;
   const ctx = canvas.getContext('2d');
 
-  // 그라데이션 하늘 (짙은 남색 → 보라)
-  const gradient = ctx.createLinearGradient(0, 0, 0, 512);
-  gradient.addColorStop(0, '#0d0d1a');
-  gradient.addColorStop(0.2, '#141428');
-  gradient.addColorStop(0.4, '#1a1a35');
-  gradient.addColorStop(0.6, '#252040');
-  gradient.addColorStop(0.8, '#2d2848');
-  gradient.addColorStop(1, '#352850');
+  // Gradient sky - darker at top, reddish/warm glow at horizon (0.5 = horizon)
+  const gradient = ctx.createLinearGradient(0, 0, 0, 1024);
+  gradient.addColorStop(0, '#050508');    // Very dark at top (zenith)
+  gradient.addColorStop(0.15, '#08080f');
+  gradient.addColorStop(0.25, '#0a0a14');
+  gradient.addColorStop(0.35, '#0f0f1a');
+  gradient.addColorStop(0.42, '#151520');
+  gradient.addColorStop(0.46, '#1a1525');  // Transition to warm
+  gradient.addColorStop(0.48, '#251828');
+  gradient.addColorStop(0.5, '#352838');   // Horizon - reddish
+  gradient.addColorStop(0.52, '#453040');  // Below horizon - warm reddish
+  gradient.addColorStop(0.55, '#352838');
+  gradient.addColorStop(0.6, '#1a1525');
+  gradient.addColorStop(1, '#0a0a14');     // Below (mirror)
 
   ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 512, 512);
+  ctx.fillRect(0, 0, 2048, 1024);
 
-  // 큰 달 (분홍/살몬색)
-  const moonGradient = ctx.createRadialGradient(256, 200, 0, 256, 200, 70);
+  // Moon (pink/salmon) - positioned behind hotel (+X direction)
+  const moonX = 1050; // Behind hotel direction
+  const moonY = 380; // Upper sky, not too high to avoid distortion
+  const moonRadius = 15; // Small moon
+
+  const moonGradient = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, moonRadius);
   moonGradient.addColorStop(0, '#ffb8a8');
-  moonGradient.addColorStop(0.4, '#ff9080');
-  moonGradient.addColorStop(0.8, '#e87878');
+  moonGradient.addColorStop(0.5, '#ff9080');
+  moonGradient.addColorStop(0.85, '#e87878');
   moonGradient.addColorStop(1, 'rgba(200, 100, 120, 0)');
 
   ctx.fillStyle = moonGradient;
   ctx.beginPath();
-  ctx.arc(256, 200, 70, 0, Math.PI * 2);
+  ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
   ctx.fill();
 
-  // 달 glow (분홍색)
-  const glowGradient = ctx.createRadialGradient(256, 200, 50, 256, 200, 140);
-  glowGradient.addColorStop(0, 'rgba(255, 150, 140, 0.25)');
-  glowGradient.addColorStop(0.5, 'rgba(230, 120, 140, 0.1)');
+  // Moon glow (pink) - subtle
+  const glowGradient = ctx.createRadialGradient(moonX, moonY, moonRadius * 0.5, moonX, moonY, moonRadius * 2);
+  glowGradient.addColorStop(0, 'rgba(255, 150, 140, 0.12)');
+  glowGradient.addColorStop(0.5, 'rgba(230, 120, 140, 0.04)');
   glowGradient.addColorStop(1, 'rgba(200, 100, 150, 0)');
   ctx.fillStyle = glowGradient;
   ctx.beginPath();
-  ctx.arc(256, 200, 140, 0, Math.PI * 2);
+  ctx.arc(moonX, moonY, moonRadius * 2, 0, Math.PI * 2);
   ctx.fill();
 
-  // 별들
-  for (let i = 0; i < 200; i++) {
-    const x = Math.random() * 512;
-    const y = Math.random() * 300;
-    const size = Math.random() * 1.5;
-    const brightness = 0.3 + Math.random() * 0.5;
+  // Stars - many tiny stars spread across upper sky
+  for (let i = 0; i < 4500; i++) {
+    const x = Math.random() * 2048;
+    const y = Math.random() * 650; // Upper portion of sky
+    const size = Math.random() * 0.4 + 0.1; // Very tiny stars (0.1 ~ 0.5)
+    const brightness = 0.1 + Math.random() * 0.4;
     ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
     ctx.beginPath();
     ctx.arc(x, y, size, 0, Math.PI * 2);
@@ -61,22 +81,52 @@ function createNightSky() {
   }
 
   const texture = new THREE.CanvasTexture(canvas);
+  texture.mapping = THREE.EquirectangularReflectionMapping;
   return texture;
 }
 
 /**
- * 씬 생성
+ * Create sky sphere that surrounds the scene
+ */
+function createSkySphere(scene) {
+  const skyGeometry = new THREE.SphereGeometry(1000, 64, 64);
+  const skyTexture = createNightSkyTexture();
+
+  const skyMaterial = new THREE.MeshBasicMaterial({
+    map: skyTexture,
+    side: THREE.BackSide, // Render inside of sphere
+    fog: false, // Sky should not be affected by fog
+    depthWrite: false
+  });
+
+  const skySphere = new THREE.Mesh(skyGeometry, skyMaterial);
+  skySphere.renderOrder = -1; // Render first (behind everything)
+  scene.add(skySphere);
+
+  return skySphere;
+}
+
+/**
+ * Create scene
  */
 export function createScene() {
   const scene = new THREE.Scene();
-  scene.background = createNightSky();
-  // 사이버펑크 안개 (먼 곳이 어둡게 사라지는 효과)
-  scene.fog = new THREE.Fog(0x0a0a18, 60, 180);
+
+  // Use sky sphere instead of fixed background
+  createSkySphere(scene);
+
+  // No scene.background - sky sphere handles it
+
+  // Distant silhouettes (mountains north, buildings south)
+  createDistantSilhouettes(scene);
+
+  // Cyberpunk fog (only at edges, not center)
+  scene.fog = new THREE.Fog(0x0a0a15, 100, 300);
   return scene;
 }
 
 /**
- * 렌더러
+ * Renderer
  */
 export function createRenderer(container) {
   const renderer = new THREE.WebGLRenderer({
@@ -92,161 +142,491 @@ export function createRenderer(container) {
 }
 
 /**
- * 카메라
+ * Camera
  */
 export function createCamera() {
   const camera = new THREE.PerspectiveCamera(
     60,
     window.innerWidth / window.innerHeight,
     0.1,
-    500
+    1500
   );
   return camera;
 }
 
 /**
- * 조명 (모든 재질이 MeshBasicMaterial이므로 조명 불필요)
- * 함수는 호환성을 위해 유지하되 빈 객체 반환
+ * Lighting (MeshBasicMaterial doesn't need lights, but we add ambient for future use)
  */
 export function createLighting(scene) {
-  // 모든 재질이 MeshBasicMaterial이므로 조명이 필요 없음
-  // uniform 제한 초과 방지를 위해 모든 광원 제거
   return {};
 }
 
 /**
- * 바닥
+ * Create ground levels
  */
 export function createGround(scene) {
-  // 바닥 (인도 - 어두운 남색 계열) - 확장된 크기
-  const groundGeometry = new THREE.PlaneGeometry(400, 400);
-  const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x1a1a28 });
-  const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -0.02;
-  scene.add(ground);
+  // Distant ground - extends to silhouette panels (radius 500)
+  const distantGroundGeometry = new THREE.CircleGeometry(550, 64);
+  const distantGroundMaterial = new THREE.MeshBasicMaterial({ color: 0x0a0a12 });
+  const distantGround = new THREE.Mesh(distantGroundGeometry, distantGroundMaterial);
+  distantGround.rotation.x = -Math.PI / 2;
+  distantGround.position.set(0, -0.1, 0);
+  scene.add(distantGround);
+
+  // Level 1: Main road level base (y=0) - dark blue-gray sidewalk (expanded left area 2x)
+  const level1Geometry = new THREE.PlaneGeometry(500, 320);
+  const level1Material = new THREE.MeshBasicMaterial({ color: 0x3a3a4a });
+  const level1 = new THREE.Mesh(level1Geometry, level1Material);
+  level1.rotation.x = -Math.PI / 2;
+  level1.position.set(-50, -0.02, 0);
+  scene.add(level1);
+
+  // Level 2: Shopping district ground (y=2)
+  // z: 4 ~ 11 (depth 7), x: -22 ~ 22 (width 44)
+  const level2Geometry = new THREE.PlaneGeometry(44, 14.5);
+  const level2Material = new THREE.MeshBasicMaterial({ color: 0x40404f });
+  const level2 = new THREE.Mesh(level2Geometry, level2Material);
+  level2.rotation.x = -Math.PI / 2;
+  level2.position.set(0, 2, 7.25);
+  scene.add(level2);
+
+  // Level 4: Residential road area (y=10) - expanded width
+  // z: 18 ~ 28 (depth 10), x: -47.5 ~ 47.5 (width 95)
+  const level4Geometry = new THREE.PlaneGeometry(95, 10);
+  const level4Material = new THREE.MeshBasicMaterial({ color: 0x3a3a4a });
+  const level4 = new THREE.Mesh(level4Geometry, level4Material);
+  level4.rotation.x = -Math.PI / 2;
+  level4.position.set(0, 10, 23);
+  scene.add(level4);
+
+  // Level 5: Residential district ground (y=10) - same as road level
+  // z: 30 ~ 50 (depth 20), x: -50 ~ 50 (width 100)
+  const level5Geometry = new THREE.PlaneGeometry(100, 20);
+  const level5Material = new THREE.MeshBasicMaterial({ color: 0x454555 });
+  const level5 = new THREE.Mesh(level5Geometry, level5Material);
+  level5.rotation.x = -Math.PI / 2;
+  level5.position.set(0, 10.01, 40);
+  scene.add(level5);
 }
 
 /**
- * 도로
+ * Create road helper
+ */
+function createRoad(scene, x, z, y, width, length, rotation = 0) {
+  // Road (dark navy)
+  const roadGeometry = new THREE.PlaneGeometry(width, length);
+  const roadMaterial = new THREE.MeshBasicMaterial({ color: 0x252530 });
+  const road = new THREE.Mesh(roadGeometry, roadMaterial);
+  road.rotation.x = -Math.PI / 2;
+  road.rotation.z = rotation;
+  road.position.set(x, y + 0.01, z);
+  scene.add(road);
+
+  // Center line removed - using dashed yellow line for main road instead
+
+  // Road edges (light pink)
+  const edgeGeom = new THREE.PlaneGeometry(0.15, length);
+  const edgeMat = new THREE.MeshBasicMaterial({ color: 0xddaaaa });
+
+  const leftEdge = new THREE.Mesh(edgeGeom, edgeMat);
+  leftEdge.rotation.x = -Math.PI / 2;
+  leftEdge.rotation.z = rotation;
+  if (rotation === 0) {
+    leftEdge.position.set(x - width/2 + 0.2, y + 0.02, z);
+  } else {
+    leftEdge.position.set(x, y + 0.02, z - width/2 + 0.2);
+  }
+  scene.add(leftEdge);
+
+  const rightEdge = new THREE.Mesh(edgeGeom, edgeMat);
+  rightEdge.rotation.x = -Math.PI / 2;
+  rightEdge.rotation.z = rotation;
+  if (rotation === 0) {
+    rightEdge.position.set(x + width/2 - 0.2, y + 0.02, z);
+  } else {
+    rightEdge.position.set(x, y + 0.02, z + width/2 - 0.2);
+  }
+  scene.add(rightEdge);
+}
+
+/**
+ * Create roads - Main road + Residential road + Shopping alley
  */
 export function createRoads(scene) {
-  function createRoad(x, z, width, length, rotation = 0) {
-    // 도로 (어두운 남색)
-    const roadGeometry = new THREE.PlaneGeometry(width, length);
-    const roadMaterial = new THREE.MeshBasicMaterial({ color: 0x12121e });
-    const road = new THREE.Mesh(roadGeometry, roadMaterial);
-    road.rotation.x = -Math.PI / 2;
-    road.rotation.z = rotation;
-    road.position.set(x, 0.01, z);
-    scene.add(road);
+  // Main road (y=0): 2-lane road, extended to tunnel entrance, centered at x=0
+  createRoad(scene, 0, -20, 0, 600, 10);
 
-    // 중앙선 (연한 분홍)
-    const lineGeom = new THREE.PlaneGeometry(0.3, length);
-    const lineMat = new THREE.MeshBasicMaterial({ color: 0xff8888 });
-    const centerLine = new THREE.Mesh(lineGeom, lineMat);
-    centerLine.rotation.x = -Math.PI / 2;
-    centerLine.rotation.z = rotation;
-    centerLine.position.set(x, 0.02, z);
-    scene.add(centerLine);
+  // === Main road markings ===
+  const roadY = 0.03;
+  const roadZ = -20;
+  const roadLength = 600;
+  const roadWidth = 10;
+  const roadCenterX = 0;
 
-    // 도로 가장자리 (연한 핑크)
-    const edgeGeom = new THREE.PlaneGeometry(0.2, length);
-    const edgeMat = new THREE.MeshBasicMaterial({ color: 0xddaaaa });
+  // Dashed yellow center line
+  const dashLength = 3;
+  const dashGap = 2;
+  const numDashes = Math.floor(roadLength / (dashLength + dashGap));
+  const centerLineMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
 
-    const leftEdge = new THREE.Mesh(edgeGeom, edgeMat);
-    leftEdge.rotation.x = -Math.PI / 2;
-    leftEdge.rotation.z = rotation;
-    if (rotation === 0) {
-      leftEdge.position.set(x - width/2 + 0.3, 0.02, z);
-    } else {
-      leftEdge.position.set(x, 0.02, z - width/2 + 0.3);
-    }
-    scene.add(leftEdge);
-
-    const rightEdge = new THREE.Mesh(edgeGeom, edgeMat);
-    rightEdge.rotation.x = -Math.PI / 2;
-    rightEdge.rotation.z = rotation;
-    if (rotation === 0) {
-      rightEdge.position.set(x + width/2 - 0.3, 0.02, z);
-    } else {
-      rightEdge.position.set(x, 0.02, z + width/2 - 0.3);
-    }
-    scene.add(rightEdge);
+  for (let i = 0; i < numDashes; i++) {
+    const dashGeom = new THREE.PlaneGeometry(dashLength, 0.2);
+    const dash = new THREE.Mesh(dashGeom, centerLineMat);
+    dash.rotation.x = -Math.PI / 2;
+    dash.position.set(roadCenterX - roadLength/2 + dashLength/2 + i * (dashLength + dashGap), roadY, roadZ);
+    scene.add(dash);
   }
 
-  createRoad(0, 0, 14, 300);
-  createRoad(0, 0, 300, 12, Math.PI / 2);
-}
+  // Yellow no-parking lines on both sides
+  const noStopLineMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+  const sideLineGeom = new THREE.PlaneGeometry(roadLength, 0.15);
 
-/**
- * 횡단보도 생성
- */
-export function createCrosswalks(scene) {
-  const crosswalks = [];
+  const leftSideLine = new THREE.Mesh(sideLineGeom, noStopLineMat);
+  leftSideLine.rotation.x = -Math.PI / 2;
+  leftSideLine.position.set(roadCenterX, roadY, roadZ - roadWidth/2 + 0.8);
+  scene.add(leftSideLine);
 
-  // 횡단보도 줄무늬 색상
-  const stripeMat = new THREE.MeshBasicMaterial({ color: 0xeeeeee });
+  const rightSideLine = new THREE.Mesh(sideLineGeom, noStopLineMat);
+  rightSideLine.rotation.x = -Math.PI / 2;
+  rightSideLine.position.set(roadCenterX, roadY, roadZ + roadWidth/2 - 0.8);
+  scene.add(rightSideLine);
 
-  // 교차로 기준 4방향 횡단보도
-  const crosswalkPositions = [
-    { x: 0, z: 12, rotation: 0, width: 10, length: 4 },    // 북쪽 (세로도로 위)
-    { x: 0, z: -12, rotation: 0, width: 10, length: 4 },   // 남쪽 (세로도로 아래)
-    { x: 12, z: 0, rotation: Math.PI / 2, width: 8, length: 4 },   // 동쪽 (가로도로 오른쪽)
-    { x: -12, z: 0, rotation: Math.PI / 2, width: 8, length: 4 }   // 서쪽 (가로도로 왼쪽)
-  ];
+  // Crosswalks (zebra crossings) - 2 crosswalks
+  const crosswalkMat = new THREE.MeshBasicMaterial({ color: 0xeeeeee });
+  const crosswalkPositions = [-25, 25]; // X positions for crosswalks
 
-  crosswalkPositions.forEach(pos => {
-    const stripeCount = 8;
-    const stripeWidth = pos.width / (stripeCount * 2 - 1);
+  crosswalkPositions.forEach(xPos => {
+    // Each crosswalk has multiple stripes running along X axis
+    const stripeLength = 4; // Length along X
+    const stripeWidth = 0.5; // Width along Z
+    const stripeGap = 0.4;
+    const numStripes = 10; // Fit within road width
 
-    for (let i = 0; i < stripeCount; i++) {
-      const stripeGeom = new THREE.PlaneGeometry(stripeWidth * 0.9, pos.length);
-      const stripe = new THREE.Mesh(stripeGeom, stripeMat);
+    for (let i = 0; i < numStripes; i++) {
+      const stripeGeom = new THREE.PlaneGeometry(stripeLength, stripeWidth);
+      const stripe = new THREE.Mesh(stripeGeom, crosswalkMat);
       stripe.rotation.x = -Math.PI / 2;
-      stripe.rotation.z = pos.rotation;
-
-      if (pos.rotation === 0) {
-        stripe.position.set(
-          pos.x - pos.width / 2 + stripeWidth / 2 + i * stripeWidth * 2,
-          0.025,
-          pos.z
-        );
-      } else {
-        stripe.position.set(
-          pos.x,
-          0.025,
-          pos.z - pos.width / 2 + stripeWidth / 2 + i * stripeWidth * 2
-        );
-      }
+      stripe.position.set(
+        xPos,
+        roadY + 0.01,
+        roadZ - roadWidth/2 + 1 + i * (stripeWidth + stripeGap)
+      );
       scene.add(stripe);
-    }
-
-    // 횡단보도 경계 정보 저장
-    const halfW = pos.width / 2;
-    const halfL = pos.length / 2;
-    if (pos.rotation === 0) {
-      crosswalks.push({
-        xMin: pos.x - halfW,
-        xMax: pos.x + halfW,
-        zMin: pos.z - halfL,
-        zMax: pos.z + halfL
-      });
-    } else {
-      crosswalks.push({
-        xMin: pos.x - halfL,
-        xMax: pos.x + halfL,
-        zMin: pos.z - halfW,
-        zMax: pos.z + halfW
-      });
     }
   });
 
+  // Residential pedestrian path (y=10): x=-47.5~47.5 (width 95, length 8) - sidewalk style, no center line
+  const resPedestrianGeom = new THREE.PlaneGeometry(95, 8);
+  const resPedestrianMat = new THREE.MeshBasicMaterial({ color: 0x3a3a4a }); // Same as sidewalk
+  const resPedestrian = new THREE.Mesh(resPedestrianGeom, resPedestrianMat);
+  resPedestrian.rotation.x = -Math.PI / 2;
+  resPedestrian.position.set(0, 10.01, 24);
+  scene.add(resPedestrian);
+
+  // === Right side sloped road extension (smooth diagonal using BufferGeometry) ===
+  const slopeStartX = 47.5;
+  const slopeEndX = 92.5;
+  const slopeStartY = 10.01;
+  const slopeEndY = 16;
+  const roadHalfWidth = 4; // Half of road width (8/2)
+
+  // Create sloped road using BufferGeometry with explicit vertices
+  const slopeRoadVertices = new Float32Array([
+    // Triangle 1
+    slopeStartX, slopeStartY, 24 - roadHalfWidth,  // bottom-left-front
+    slopeEndX, slopeEndY, 24 - roadHalfWidth,      // bottom-right-front
+    slopeStartX, slopeStartY, 24 + roadHalfWidth,  // bottom-left-back
+    // Triangle 2
+    slopeEndX, slopeEndY, 24 - roadHalfWidth,      // bottom-right-front
+    slopeEndX, slopeEndY, 24 + roadHalfWidth,      // bottom-right-back
+    slopeStartX, slopeStartY, 24 + roadHalfWidth,  // bottom-left-back
+  ]);
+
+  const slopeRoadGeom = new THREE.BufferGeometry();
+  slopeRoadGeom.setAttribute('position', new THREE.BufferAttribute(slopeRoadVertices, 3));
+  slopeRoadGeom.computeVertexNormals();
+  const slopeRoad = new THREE.Mesh(slopeRoadGeom, new THREE.MeshBasicMaterial({
+    color: 0x3a3a4a,
+    side: THREE.DoubleSide
+  }));
+  scene.add(slopeRoad);
+
+  // Sloped ground behind the road (residential area) - same level as road
+  const groundStartZ = 28;
+  const groundEndZ = 48;
+  const slopeGroundVertices = new Float32Array([
+    // Triangle 1
+    slopeStartX, slopeStartY + 0.01, groundStartZ,
+    slopeEndX, slopeEndY + 0.01, groundStartZ,
+    slopeStartX, slopeStartY + 0.01, groundEndZ,
+    // Triangle 2
+    slopeEndX, slopeEndY + 0.01, groundStartZ,
+    slopeEndX, slopeEndY + 0.01, groundEndZ,
+    slopeStartX, slopeStartY + 0.01, groundEndZ,
+  ]);
+
+  const slopeGroundGeom = new THREE.BufferGeometry();
+  slopeGroundGeom.setAttribute('position', new THREE.BufferAttribute(slopeGroundVertices, 3));
+  slopeGroundGeom.computeVertexNormals();
+  const slopeGroundMat = new THREE.MeshBasicMaterial({ color: 0x454555, side: THREE.DoubleSide });
+  const slopeGround = new THREE.Mesh(slopeGroundGeom, slopeGroundMat);
+  scene.add(slopeGround);
+
+  // Flat area at top of slope (y=16, x=92.5~122.5) - same level as road
+  const flatTopGeom = new THREE.PlaneGeometry(30, 20);
+  const flatTop = new THREE.Mesh(flatTopGeom, slopeGroundMat);
+  flatTop.rotation.x = -Math.PI / 2;
+  flatTop.position.set(slopeEndX + 15, slopeEndY + 0.01, 38);
+  scene.add(flatTop);
+
+  // Flat road at top (connected to slope)
+  const flatRoadGeom = new THREE.PlaneGeometry(30, 8);
+  const flatRoad = new THREE.Mesh(flatRoadGeom, resPedestrianMat);
+  flatRoad.rotation.x = -Math.PI / 2;
+  flatRoad.position.set(slopeEndX + 15, slopeEndY + 0.02, 24);
+  scene.add(flatRoad);
+
+  // === Guardrails along slope and flat top (z=18.5 to match main road guardrail) ===
+  const guardZ = 18.5;
+  const slopeRailMat = new THREE.MeshBasicMaterial({ color: 0x656575 });
+  const slopePostMat = new THREE.MeshBasicMaterial({ color: 0x555565 });
+  const slopeRise = slopeEndY - slopeStartY;
+  const slopeHorizontalLength = slopeEndX - slopeStartX;
+
+  // Sloped guardrail posts (every 3 units along slope)
+  const numSlopePosts = 15;
+  for (let i = 0; i <= numSlopePosts; i++) {
+    const t = i / numSlopePosts;
+    const postX = slopeStartX + t * slopeHorizontalLength;
+    const postY = slopeStartY + t * slopeRise;
+
+    const postGeom = new THREE.BoxGeometry(0.1, 0.8, 0.1);
+    const post = new THREE.Mesh(postGeom, slopePostMat);
+    post.position.set(postX, postY + 0.4, guardZ);
+    scene.add(post);
+  }
+
+  // Sloped guardrail bars (using BufferGeometry)
+  const slopeRailVertices1 = new Float32Array([
+    slopeStartX, slopeStartY + 0.7, guardZ - 0.04,
+    slopeEndX, slopeEndY + 0.7, guardZ - 0.04,
+    slopeStartX, slopeStartY + 0.7, guardZ + 0.04,
+    slopeEndX, slopeEndY + 0.7, guardZ - 0.04,
+    slopeEndX, slopeEndY + 0.7, guardZ + 0.04,
+    slopeStartX, slopeStartY + 0.7, guardZ + 0.04,
+  ]);
+  const slopeRailGeom1 = new THREE.BufferGeometry();
+  slopeRailGeom1.setAttribute('position', new THREE.BufferAttribute(slopeRailVertices1, 3));
+  const slopeRail1 = new THREE.Mesh(slopeRailGeom1, new THREE.MeshBasicMaterial({ color: 0x656575, side: THREE.DoubleSide }));
+  scene.add(slopeRail1);
+
+  const slopeRailVertices2 = new Float32Array([
+    slopeStartX, slopeStartY + 0.4, guardZ - 0.04,
+    slopeEndX, slopeEndY + 0.4, guardZ - 0.04,
+    slopeStartX, slopeStartY + 0.4, guardZ + 0.04,
+    slopeEndX, slopeEndY + 0.4, guardZ - 0.04,
+    slopeEndX, slopeEndY + 0.4, guardZ + 0.04,
+    slopeStartX, slopeStartY + 0.4, guardZ + 0.04,
+  ]);
+  const slopeRailGeom2 = new THREE.BufferGeometry();
+  slopeRailGeom2.setAttribute('position', new THREE.BufferAttribute(slopeRailVertices2, 3));
+  const slopeRail2 = new THREE.Mesh(slopeRailGeom2, new THREE.MeshBasicMaterial({ color: 0x656575, side: THREE.DoubleSide }));
+  scene.add(slopeRail2);
+
+  // Flat top guardrail
+  const flatRailBarGeom = new THREE.BoxGeometry(30, 0.12, 0.08);
+  const flatRailBar1 = new THREE.Mesh(flatRailBarGeom, slopeRailMat);
+  flatRailBar1.position.set(slopeEndX + 15, slopeEndY + 0.7, guardZ);
+  scene.add(flatRailBar1);
+  const flatRailBar2 = new THREE.Mesh(flatRailBarGeom, slopeRailMat);
+  flatRailBar2.position.set(slopeEndX + 15, slopeEndY + 0.4, guardZ);
+  scene.add(flatRailBar2);
+
+  // Flat top guardrail posts
+  for (let i = 0; i < 10; i++) {
+    const postGeom = new THREE.BoxGeometry(0.1, 0.8, 0.1);
+    const post = new THREE.Mesh(postGeom, slopePostMat);
+    post.position.set(slopeEndX + 1.5 + i * 3, slopeEndY + 0.4, guardZ);
+    scene.add(post);
+  }
+
+  // Thick retaining wall below residential road (from y=0 to y=9.9, at z=20)
+  const retainingWallGeom = new THREE.BoxGeometry(95, 9.9, 2); // width 95, height 9.9, depth 2
+  const retainingWallMat = new THREE.MeshBasicMaterial({ color: 0x2a2a32 }); // Darker than road
+  const retainingWall = new THREE.Mesh(retainingWallGeom, retainingWallMat);
+  retainingWall.position.set(0, 4.95, 19); // Center at y=4.95 (from y=0 to y=9.9), z=19
+  scene.add(retainingWall);
+
+  // Vertical pillar segments on retaining wall for texture
+  const pillarMat = new THREE.MeshBasicMaterial({ color: 0x252528 });
+  for (let i = 0; i < 16; i++) {
+    const pillarGeom = new THREE.BoxGeometry(0.8, 9.9, 0.3);
+    const pillar = new THREE.Mesh(pillarGeom, pillarMat);
+    pillar.position.set(-42 + i * 6, 4.95, 18);
+    scene.add(pillar);
+  }
+
+  // Horizontal bands on wall
+  const bandMat = new THREE.MeshBasicMaterial({ color: 0x303038 });
+  const band1Geom = new THREE.BoxGeometry(95, 0.2, 0.2);
+  const band1 = new THREE.Mesh(band1Geom, bandMat);
+  band1.position.set(0, 3, 18);
+  scene.add(band1);
+  const band2 = new THREE.Mesh(band1Geom, bandMat);
+  band2.position.set(0, 7, 18);
+  scene.add(band2);
+
+  // Guardrail on outer side of lamps/poles (toward shopping district, z=18.5)
+  // Main rail bar
+  const railMat = new THREE.MeshBasicMaterial({ color: 0x656575 });
+  const railBarGeom = new THREE.BoxGeometry(95, 0.12, 0.08);
+  const railBar1 = new THREE.Mesh(railBarGeom, railMat);
+  railBar1.position.set(0, 10.7, 18.5);
+  scene.add(railBar1);
+  const railBar2 = new THREE.Mesh(railBarGeom, railMat);
+  railBar2.position.set(0, 10.4, 18.5);
+  scene.add(railBar2);
+
+  // Guardrail posts
+  const postMat = new THREE.MeshBasicMaterial({ color: 0x555565 });
+  for (let i = 0; i < 32; i++) {
+    const postGeom = new THREE.BoxGeometry(0.1, 0.8, 0.1);
+    const post = new THREE.Mesh(postGeom, postMat);
+    post.position.set(-46.5 + i * 3, 10.4, 18.5);
+    scene.add(post);
+  }
+
+  // Shopping alley (y=2): x=-22~22, z=4~6 (width 44, length 2)
+  // This is narrower, more like a pedestrian path
+  const alleyGeometry = new THREE.PlaneGeometry(44, 2);
+  const alleyMaterial = new THREE.MeshBasicMaterial({ color: 0x2a2a35 });
+  const alley = new THREE.Mesh(alleyGeometry, alleyMaterial);
+  alley.rotation.x = -Math.PI / 2;
+  alley.position.set(0, 2.01, 5);
+  scene.add(alley);
+}
+
+/**
+ * Create crosswalks (simplified for new layout)
+ */
+export function createCrosswalks(scene) {
+  const crosswalks = [];
+  // No crosswalks in this linear layout for now
   return crosswalks;
 }
 
 /**
- * 리사이즈
+ * Create distant silhouette panels around the city
+ * North: Triangle panels (mountains)
+ * South: Rectangle panels (buildings)
+ */
+function createDistantSilhouettes(scene) {
+  const silhouetteMat = new THREE.MeshBasicMaterial({
+    color: 0x080810,
+    side: THREE.DoubleSide,
+    fog: false
+  });
+
+  const radius = 400; // Distance from center
+  const numPanels = 60; // Number of panels around circle
+
+  for (let i = 0; i < numPanels; i++) {
+    const angle = (i / numPanels) * Math.PI * 2;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+
+    // Determine if north (z > 0) or south (z < 0)
+    const isNorth = z > 0;
+
+    // Random height variation
+    const baseHeight = 30 + Math.random() * 50;
+    const width = 30 + Math.random() * 20;
+
+    let mesh;
+
+    if (isNorth) {
+      // Mountain shape - triangle with narrower base
+      const shape = new THREE.Shape();
+      const height = baseHeight + Math.random() * 40;
+      const baseWidth = height * (0.6 + Math.random() * 0.4); // Base proportional to height
+      const halfBase = baseWidth / 2;
+
+      shape.moveTo(-halfBase, 0);
+      shape.lineTo(halfBase, 0);
+      shape.lineTo((Math.random() - 0.5) * baseWidth * 0.15, height);
+      shape.closePath();
+
+      const geometry = new THREE.ShapeGeometry(shape);
+      mesh = new THREE.Mesh(geometry, silhouetteMat);
+    } else {
+      // Rectangle (building)
+      const height = baseHeight + Math.random() * 30;
+      const geometry = new THREE.PlaneGeometry(width, height);
+      mesh = new THREE.Mesh(geometry, silhouetteMat);
+      mesh.position.y = height / 2;
+    }
+
+    // Position and rotate to face center
+    mesh.position.x = x;
+    mesh.position.z = z;
+    mesh.rotation.y = -angle + Math.PI / 2;
+
+    if (isNorth) {
+      mesh.position.y = 0;
+    }
+
+    scene.add(mesh);
+  }
+
+  // Add additional layer for depth
+  const radius2 = 500;
+  const numPanels2 = 40;
+
+  for (let i = 0; i < numPanels2; i++) {
+    const angle = (i / numPanels2) * Math.PI * 2 + 0.05;
+    const x = Math.cos(angle) * radius2;
+    const z = Math.sin(angle) * radius2;
+
+    const isNorth = z > 0;
+    const baseHeight = 50 + Math.random() * 80;
+    const width = 40 + Math.random() * 30;
+
+    let mesh;
+
+    if (isNorth) {
+      const shape = new THREE.Shape();
+      const height = baseHeight + Math.random() * 60;
+      const baseWidth = height * (0.5 + Math.random() * 0.4);
+      const halfBase = baseWidth / 2;
+
+      shape.moveTo(-halfBase, 0);
+      shape.lineTo(halfBase, 0);
+      shape.lineTo((Math.random() - 0.5) * baseWidth * 0.15, height);
+      shape.closePath();
+
+      const geometry = new THREE.ShapeGeometry(shape);
+      mesh = new THREE.Mesh(geometry, silhouetteMat);
+    } else {
+      const height = baseHeight + Math.random() * 50;
+      const geometry = new THREE.PlaneGeometry(width, height);
+      mesh = new THREE.Mesh(geometry, silhouetteMat);
+      mesh.position.y = height / 2;
+    }
+
+    mesh.position.x = x;
+    mesh.position.z = z;
+    mesh.rotation.y = -angle + Math.PI / 2;
+
+    if (isNorth) {
+      mesh.position.y = 0;
+    }
+
+    scene.add(mesh);
+  }
+}
+
+/**
+ * Resize handler
  */
 export function handleResize(camera, renderer) {
   window.addEventListener('resize', () => {

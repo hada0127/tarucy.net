@@ -1,38 +1,41 @@
 /**
  * city-content.js
- * 건물 벽면에 부착된 간판/포스터 형태의 콘텐츠
+ * Hong Kong Citypop Night City - Content Signs
+ *
+ * Content positioned within the new linear corridor layout:
+ * - Residential area (y=12)
+ * - Shopping district (y=2)
+ * - Main road area (y=0)
+ * - High-rise building area (y=0)
  */
 
 import * as THREE from 'three';
 
-// 콘텐츠 데이터 - 건물 벽면에 직접 부착
-// 건물 중심 X: 왼쪽 약 -16~-18, 오른쪽 약 +18~22
-// 건물 너비: 10~15, 높이: 20~55
-// 간판은 건물보다 작게 (너비 8 이하)
+// Content data - positioned within the new layout
 const contentData = [
-  // 인트로 - hada0127 메인 간판 (왼쪽 건물 측면)
+  // === Main Intro Sign (high visibility) ===
   {
     id: 'intro',
     title: 'hada0127',
     lines: ['DEVELOPER', 'STUDIO'],
-    position: { x: -9, y: 18, z: -72 },
-    rotation: { y: Math.PI / 2 },
-    scale: 0.7,
+    position: { x: 0, y: 18, z: 15 },
+    rotation: { y: 0 },
+    scale: 0.9,
     glowColor: 0xff00ff,
     type: 'main-sign'
   },
-  // Profile - 같은 건물 아래쪽
+
+  // === Shopping District Signs (y=2 area) ===
   {
     id: 'profile',
     title: 'PROFILE',
     lines: ['Lee Eunkyu', 'Full-Stack Dev'],
-    position: { x: -11, y: 12, z: -78 },
-    rotation: { y: Math.PI / 2 },
+    position: { x: -15, y: 8, z: 8 },
+    rotation: { y: Math.PI / 6 },
     scale: 0.6,
     glowColor: 0xff4488,
     type: 'poster'
   },
-  // Solution - 오른쪽 건물 정면
   {
     id: 'solution',
     title: 'SOLUTION',
@@ -41,91 +44,92 @@ const contentData = [
       '숙박예약 / 수강신청',
       'ERP / CMS / API'
     ],
-    position: { x: 13, y: 18, z: -5 },
-    rotation: { y: -Math.PI / 2 },
-    scale: 0.7,
+    position: { x: 12, y: 8, z: 8 },
+    rotation: { y: -Math.PI / 6 },
+    scale: 0.6,
     glowColor: 0x00ffff,
     type: 'sign'
   },
-  // SERVICE - 같은 건물 아래쪽
   {
-    id: 'solution-back',
+    id: 'service',
     title: 'SERVICE',
     lines: [
       '웹사이트 제작',
       'IOT / KIOSK',
       '미디어 아트'
     ],
-    position: { x: 13, y: 10, z: -5 },
-    rotation: { y: -Math.PI / 2 },
-    scale: 0.6,
+    position: { x: 0, y: 6, z: 4 },
+    rotation: { y: 0 },
+    scale: 0.55,
     glowColor: 0x00ffcc,
     type: 'poster'
   },
-  // Skill Frontend - 왼쪽 건물 (행 10-18과 25-33 사이 gap)
+
+  // === Left Building Area Signs ===
   {
-    id: 'skill-frontend',
+    id: 'frontend',
     title: 'FRONTEND',
     lines: [
       'React / Next.js',
       'TypeScript',
       'Svelte / GSAP'
     ],
-    position: { x: -11, y: 18, z: 21 },
-    rotation: { y: Math.PI / 2 },
-    scale: 0.7,
+    position: { x: -35, y: 20, z: -10 },
+    rotation: { y: Math.PI / 4 },
+    scale: 0.65,
     glowColor: 0xff0066,
     type: 'sign'
   },
-  // 골목 - 트럭 짐칸 패널
+
+  // === Right Building Area Signs ===
   {
-    id: 'alley-truck',
-    title: 'PROJECT',
-    lines: ['포트폴리오', 'Gallery'],
-    position: { x: -12, y: 4, z: 25 },
-    rotation: { y: 0 },
-    scale: 0.55,
-    glowColor: 0x888899,
-    type: 'truck-panel'
-  },
-  // 골목 - 입간판
-  {
-    id: 'alley-sign',
-    title: 'WORKS',
-    lines: ['웹사이트', '앱 개발'],
-    position: { x: -16, y: 4.5, z: 30 },
-    rotation: { y: Math.PI / 4 },
-    scale: 0.5,
-    glowColor: 0xffffff,
-    type: 'standing-sign'
-  },
-  // 골목 - 벽면 뮤럴
-  {
-    id: 'alley-wall',
-    title: 'DESIGN',
-    lines: ['UI/UX', 'Creative'],
-    position: { x: -28, y: 8, z: 32 },
-    rotation: { y: Math.PI / 2 },
-    scale: 0.65,
-    glowColor: 0xff6699,
-    type: 'wall-mural'
-  },
-  // Backend - 대로 복귀 후 (오른쪽 건물)
-  {
-    id: 'skill-backend',
+    id: 'backend',
     title: 'BACKEND',
     lines: [
       'Node.js / Nest.js',
       'PostgreSQL',
       'AWS / Docker'
     ],
-    position: { x: 12, y: 15, z: 36 },
-    rotation: { y: -Math.PI / 2 },
-    scale: 0.7,
+    position: { x: 35, y: 20, z: -10 },
+    rotation: { y: -Math.PI / 4 },
+    scale: 0.65,
     glowColor: 0x00ff88,
     type: 'sign'
   },
-  // Contact - 오른쪽 건물 (BACKEND 다음, 건물 행 사이 gap에 배치)
+
+  // === Center High-Rise Area Signs ===
+  {
+    id: 'project',
+    title: 'PROJECT',
+    lines: ['포트폴리오', 'Gallery', 'Works'],
+    position: { x: -8, y: 15, z: -20 },
+    rotation: { y: Math.PI / 8 },
+    scale: 0.6,
+    glowColor: 0xff6699,
+    type: 'sign'
+  },
+  {
+    id: 'design',
+    title: 'DESIGN',
+    lines: ['UI/UX', 'Creative', 'Motion'],
+    position: { x: 8, y: 15, z: -20 },
+    rotation: { y: -Math.PI / 8 },
+    scale: 0.6,
+    glowColor: 0xff6699,
+    type: 'wall-mural'
+  },
+
+  // === Main Road Area Signs ===
+  {
+    id: 'works',
+    title: 'WORKS',
+    lines: ['웹사이트', '앱 개발', '시스템'],
+    position: { x: 20, y: 6, z: -5 },
+    rotation: { y: -Math.PI / 5 },
+    scale: 0.5,
+    glowColor: 0xffffff,
+    type: 'standing-sign'
+  },
   {
     id: 'contact',
     title: 'CONTACT',
@@ -134,16 +138,16 @@ const contentData = [
       'work@tarucy.net',
       '@tarucy'
     ],
-    position: { x: 12, y: 14, z: 51 },
-    rotation: { y: -Math.PI / 2 },
-    scale: 0.7,
+    position: { x: -20, y: 6, z: -5 },
+    rotation: { y: Math.PI / 5 },
+    scale: 0.55,
     glowColor: 0xffff00,
     type: 'sign'
   }
 ];
 
 /**
- * 네온 간판 텍스처 생성 - 타입별 다른 스타일
+ * Create neon sign texture - different styles per type
  */
 function createNeonSignTexture(title, lines, glowColor, type = 'sign') {
   const r = (glowColor >> 16) & 255;
@@ -172,38 +176,31 @@ function createNeonSignTexture(title, lines, glowColor, type = 'sign') {
   canvas.height = height;
   const ctx = canvas.getContext('2d');
 
-  // 배경 - 타입별 다른 스타일
+  // Background - different styles per type
   if (type === 'main-sign') {
-    // 메인 간판 - 그라데이션 배경
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
     gradient.addColorStop(0, 'rgba(20, 10, 30, 0.95)');
     gradient.addColorStop(1, 'rgba(10, 5, 20, 0.98)');
     ctx.fillStyle = gradient;
   } else if (type === 'poster') {
-    // 포스터 - 살짝 밝은 배경
     ctx.fillStyle = 'rgba(25, 20, 40, 0.9)';
   } else if (type === 'truck-panel') {
-    // 트럭 짐칸 - 무광 회색 배경
     ctx.fillStyle = 'rgba(60, 60, 75, 0.95)';
   } else if (type === 'standing-sign') {
-    // 입간판 - 밝은 배경
     ctx.fillStyle = 'rgba(40, 35, 55, 0.92)';
   } else if (type === 'wall-mural') {
-    // 벽면 뮤럴 - 반투명 배경
     ctx.fillStyle = 'rgba(20, 15, 30, 0.7)';
   } else {
     ctx.fillStyle = 'rgba(15, 15, 35, 0.95)';
   }
   ctx.fillRect(0, 0, width, height);
 
-  // 테두리 스타일 - 타입별 다름
+  // Border style - different per type
   if (type === 'truck-panel') {
-    // 트럭 패널 - 흰색 실선 테두리, 글로우 없음
     ctx.strokeStyle = '#cccccc';
     ctx.lineWidth = 4;
     ctx.strokeRect(12, 12, width - 24, height - 24);
   } else if (type === 'standing-sign') {
-    // 입간판 - 둥근 테두리, 글로우 없음
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 3;
     const radius = 15;
@@ -211,11 +208,9 @@ function createNeonSignTexture(title, lines, glowColor, type = 'sign') {
     ctx.roundRect(10, 10, width - 20, height - 20, radius);
     ctx.stroke();
   } else if (type === 'wall-mural') {
-    // 뮤럴 - 테두리 없음, 약한 글로우
     ctx.shadowColor = glowColorStr;
     ctx.shadowBlur = 10;
   } else {
-    // 기존 네온 스타일
     ctx.shadowColor = glowColorStr;
     ctx.shadowBlur = type === 'main-sign' ? 40 : 25;
     ctx.strokeStyle = glowColorStr;
@@ -224,7 +219,7 @@ function createNeonSignTexture(title, lines, glowColor, type = 'sign') {
   }
   ctx.shadowBlur = 0;
 
-  // 타이틀
+  // Title
   ctx.fillStyle = '#ffffff';
   if (type !== 'truck-panel' && type !== 'standing-sign') {
     ctx.shadowColor = glowColorStr;
@@ -237,7 +232,7 @@ function createNeonSignTexture(title, lines, glowColor, type = 'sign') {
   const titleY = type === 'main-sign' ? 60 : (type === 'truck-panel' ? 35 : (type === 'wall-mural' ? 50 : 40));
   ctx.fillText(title, width / 2, titleY);
 
-  // 구분선 - 일부 타입만
+  // Separator line - some types only
   if (type !== 'wall-mural') {
     const lineY = titleY + titleSize + 15;
     ctx.beginPath();
@@ -249,7 +244,7 @@ function createNeonSignTexture(title, lines, glowColor, type = 'sign') {
   }
   ctx.shadowBlur = 0;
 
-  // 내용 텍스트
+  // Content text
   ctx.fillStyle = type === 'main-sign' ? '#ffffff' : (type === 'wall-mural' ? '#ffccdd' : '#cccccc');
   ctx.font = `${lineSize}px Arial, sans-serif`;
   if (type !== 'truck-panel' && type !== 'standing-sign') {
@@ -270,7 +265,7 @@ function createNeonSignTexture(title, lines, glowColor, type = 'sign') {
 }
 
 /**
- * 네온 간판 메시 생성 - 타입별 다른 크기와 스타일
+ * Create neon sign mesh - different sizes per type
  */
 function createNeonSign(data) {
   const group = new THREE.Group();
@@ -280,7 +275,7 @@ function createNeonSign(data) {
     data.title, data.lines, data.glowColor, type
   );
 
-  // 타입별 실제 3D 크기
+  // 3D size per type
   let meshWidth, meshHeight;
   if (type === 'main-sign') {
     meshWidth = 14 * data.scale;
@@ -302,9 +297,8 @@ function createNeonSign(data) {
     meshHeight = 8 * data.scale;
   }
 
-  // 간판 배경 프레임 (타입별 다른 스타일)
+  // Background frame (not for wall-mural)
   if (type !== 'wall-mural') {
-    // 뮤럴은 프레임 없음
     const frameGeom = new THREE.BoxGeometry(meshWidth + 0.4, meshHeight + 0.4, 0.5);
     let frameColor = 0x151525;
     if (type === 'main-sign') frameColor = 0x0a0a15;
@@ -317,7 +311,7 @@ function createNeonSign(data) {
     group.add(frame);
   }
 
-  // 간판 본체
+  // Sign body
   const geometry = new THREE.PlaneGeometry(meshWidth, meshHeight);
   const material = new THREE.MeshBasicMaterial({
     map: texture,
@@ -328,9 +322,8 @@ function createNeonSign(data) {
   const mesh = new THREE.Mesh(geometry, material);
   group.add(mesh);
 
-  // 타입별 글로우 효과
+  // Glow effect per type
   if (type === 'main-sign') {
-    // 메인 간판 - 강한 글로우
     const glowGeom = new THREE.PlaneGeometry(meshWidth + 1, meshHeight + 1);
     const glowMat = new THREE.MeshBasicMaterial({
       color: data.glowColor,
@@ -341,7 +334,6 @@ function createNeonSign(data) {
     glow.position.z = -0.1;
     group.add(glow);
   } else if (type === 'wall-mural') {
-    // 뮤럴 - 약한 글로우
     const glowGeom = new THREE.PlaneGeometry(meshWidth + 0.5, meshHeight + 0.5);
     const glowMat = new THREE.MeshBasicMaterial({
       color: data.glowColor,
@@ -352,9 +344,8 @@ function createNeonSign(data) {
     glow.position.z = -0.05;
     group.add(glow);
   }
-  // truck-panel, standing-sign은 글로우 없음
 
-  // 위치 및 회전 설정
+  // Position and rotation
   group.position.set(data.position.x, data.position.y, data.position.z);
   if (data.rotation) {
     group.rotation.y = data.rotation.y || 0;
@@ -371,7 +362,7 @@ function createNeonSign(data) {
 }
 
 /**
- * 모든 콘텐츠 간판 생성
+ * Create all content signs
  */
 export function createAllContent(scene) {
   const signs = [];
@@ -386,8 +377,8 @@ export function createAllContent(scene) {
 }
 
 /**
- * 콘텐츠 업데이트 (고정 - 애니메이션 없음)
+ * Update content (fixed - no animation)
  */
 export function updateContent(content, time, camera, scrollProgress) {
-  // 간판은 건물에 고정되어 있으므로 업데이트 불필요
+  // Signs are fixed to buildings, no update needed
 }
