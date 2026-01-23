@@ -29,15 +29,15 @@ const colors = {
     0xff7098, 0xf05078, 0xe85090,
     0x50d0e0, 0x60c8d8, 0x70e0f0
   ],
-  // Neon sign colors
+  // Neon sign colors (muted/desaturated, dimmer)
   neon: {
-    pink: 0xff4080,
-    cyan: 0x00ffff,
-    yellow: 0xffff00,
-    magenta: 0xff00ff,
-    blue: 0x4080ff,
-    green: 0x00ff88,
-    red: 0xff3030
+    pink: 0x905060,
+    cyan: 0x508088,
+    yellow: 0x908050,
+    magenta: 0x805070,
+    blue: 0x506088,
+    green: 0x508060,
+    red: 0x884848
   },
   // Wall/fence colors
   concrete: 0x4a4a5a,
@@ -598,10 +598,10 @@ function createShoppingDistrict(scene) {
     colors.neon.magenta, colors.neon.blue, colors.neon.green
   ];
 
-  // Upper row shops (8 shops at z=9)
+  // Upper row shops (8 shops at z=13, closer to stairs)
   const upperStartX = -19;
   for (let i = 0; i < 8; i++) {
-    const shop = createShopBuilding(scene, upperStartX + i * 5.2, 9, groundY, {
+    const shop = createShopBuilding(scene, upperStartX + i * 5.2, 13, groundY, {
       width: 4.8,
       depth: 4,
       height: 5 + Math.random() * 2,
@@ -622,54 +622,14 @@ function createShoppingDistrict(scene) {
     shops.push(shop);
   }
 
-  // Vertical signs between shops
+  // Vertical signs - split into upper and lower rows
+  // Upper row (near upper shops)
   for (let i = 0; i < 7; i++) {
-    createVerticalSign(scene, upperStartX + 2.5 + i * 5.2, 7.5, groundY);
+    createVerticalSign(scene, upperStartX + 2.5 + i * 5.2, 10, groundY);
   }
-
-  // Trees behind the shopping district (z=12 ~ 17) - skip stairs area
-  const treeColors = [0x2a4040, 0x254038, 0x2a4530, 0x223838, 0x1f3530];
-  for (let row = 0; row < 3; row++) {
-    for (let col = 0; col < 12; col++) {
-      const treeX = -22 + col * 4 + (row % 2) * 2; // Staggered
-      const treeZ = 13 + row * 2;
-
-      // Skip trees in stairs area (x=-24 ~ 24, z >= 14)
-      if (treeX > -24 && treeX < 24 && treeZ >= 14) {
-        continue;
-      }
-
-      // Create simple tree
-      const treeGroup = new THREE.Group();
-      const scale = 0.8 + Math.random() * 0.6;
-
-      // Trunk
-      const trunkGeom = new THREE.CylinderGeometry(0.15 * scale, 0.25 * scale, 2 * scale, 6);
-      const trunkMat = new THREE.MeshBasicMaterial({ color: 0x3a3530 });
-      const trunk = new THREE.Mesh(trunkGeom, trunkMat);
-      trunk.position.y = scale;
-      treeGroup.add(trunk);
-
-      // Foliage
-      const foliageColor = treeColors[Math.floor(Math.random() * treeColors.length)];
-      const foliageGeom = new THREE.SphereGeometry(1.2 * scale, 8, 6);
-      const foliageMat = new THREE.MeshBasicMaterial({ color: foliageColor });
-      const foliage = new THREE.Mesh(foliageGeom, foliageMat);
-      foliage.position.y = 2.5 * scale;
-      treeGroup.add(foliage);
-
-      // Second foliage layer for variety
-      if (Math.random() > 0.4) {
-        const foliage2Geom = new THREE.SphereGeometry(0.9 * scale, 8, 6);
-        const foliage2 = new THREE.Mesh(foliage2Geom, foliageMat);
-        foliage2.position.set(0.5 * scale, 3 * scale, 0.3 * scale);
-        treeGroup.add(foliage2);
-      }
-
-      treeGroup.position.set(treeX, groundY, treeZ);
-      scene.add(treeGroup);
-      shops.push(treeGroup);
-    }
+  // Lower row (near lower shops)
+  for (let i = 0; i < 7; i++) {
+    createVerticalSign(scene, upperStartX + 2.5 + i * 5.2, 3, groundY);
   }
 
   return shops;
@@ -1989,14 +1949,14 @@ function createVendorStalls(scene) {
   const stalls = [];
   const groundY = 2;
 
-  // Upper row (z=5.5): 11 stalls
+  // Upper row (closer to upper shops at z=13): 11 stalls
   for (let i = 0; i < 11; i++) {
-    stalls.push(createVendorStall(scene, -18 + i * 3.6, 6.5, groundY));
+    stalls.push(createVendorStall(scene, -18 + i * 3.6, 9, groundY));
   }
 
-  // Lower row (z=3.3): 11 stalls
+  // Lower row (closer to lower shops at z=0): 11 stalls
   for (let i = 0; i < 11; i++) {
-    stalls.push(createVendorStall(scene, -16.2 + i * 3.6, 3.5, groundY));
+    stalls.push(createVendorStall(scene, -16.2 + i * 3.6, 2, groundY));
   }
 
   return stalls;
@@ -3867,9 +3827,6 @@ export function createAllBuildings(scene) {
   // Sloped residential area on right side
   buildings.push(...createSlopedResidentialArea(scene));
 
-  // Shopping district (16 shops)
-  buildings.push(...createShoppingDistrict(scene));
-
   // High-rise buildings (3 clusters - expanded)
   buildings.push(...createLeftBuildings(scene));
   buildings.push(...createRightBuildings(scene));
@@ -3880,6 +3837,9 @@ export function createAllBuildings(scene) {
 
   // Remove overlapping buildings (keep larger ones)
   buildings = removeOverlappingBuildings(scene, buildings);
+
+  // Shopping district (16 shops) - added AFTER overlap removal to preserve all shops
+  buildings.push(...createShoppingDistrict(scene));
 
   // Forest behind residential district
   createForest(scene);
