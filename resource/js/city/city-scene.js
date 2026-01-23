@@ -200,12 +200,12 @@ export function createGround(scene) {
   scene.add(level4);
 
   // Level 5: Residential district ground (y=10) - same as road level
-  // z: 30 ~ 50 (depth 20), x: -50 ~ 50 (width 100)
-  const level5Geometry = new THREE.PlaneGeometry(100, 20);
+  // z: 28 ~ 50 (depth 22), x: -47.5 ~ 47.5 (width 95) - matches road width
+  const level5Geometry = new THREE.PlaneGeometry(95, 22);
   const level5Material = new THREE.MeshBasicMaterial({ color: 0x454555 });
   const level5 = new THREE.Mesh(level5Geometry, level5Material);
   level5.rotation.x = -Math.PI / 2;
-  level5.position.set(0, 10.01, 40);
+  level5.position.set(0, 10.01, 39);
   scene.add(level5);
 }
 
@@ -328,18 +328,19 @@ export function createRoads(scene) {
   const slopeEndX = 92.5;
   const slopeStartY = 10.01;
   const slopeEndY = 16;
-  const roadHalfWidth = 4; // Half of road width (8/2)
+  const roadFrontZ = 18; // Match Level 4 front edge (z=18) to reach guardrail
+  const roadBackZ = 28;  // Match Level 4 back edge
 
   // Create sloped road using BufferGeometry with explicit vertices
   const slopeRoadVertices = new Float32Array([
     // Triangle 1
-    slopeStartX, slopeStartY, 24 - roadHalfWidth,  // bottom-left-front
-    slopeEndX, slopeEndY, 24 - roadHalfWidth,      // bottom-right-front
-    slopeStartX, slopeStartY, 24 + roadHalfWidth,  // bottom-left-back
+    slopeStartX, slopeStartY, roadFrontZ,  // bottom-left-front
+    slopeEndX, slopeEndY, roadFrontZ,      // bottom-right-front
+    slopeStartX, slopeStartY, roadBackZ,   // bottom-left-back
     // Triangle 2
-    slopeEndX, slopeEndY, 24 - roadHalfWidth,      // bottom-right-front
-    slopeEndX, slopeEndY, 24 + roadHalfWidth,      // bottom-right-back
-    slopeStartX, slopeStartY, 24 + roadHalfWidth,  // bottom-left-back
+    slopeEndX, slopeEndY, roadFrontZ,      // bottom-right-front
+    slopeEndX, slopeEndY, roadBackZ,       // bottom-right-back
+    slopeStartX, slopeStartY, roadBackZ,   // bottom-left-back
   ]);
 
   const slopeRoadGeom = new THREE.BufferGeometry();
@@ -379,11 +380,11 @@ export function createRoads(scene) {
   flatTop.position.set(slopeEndX + 15, slopeEndY + 0.01, 38);
   scene.add(flatTop);
 
-  // Flat road at top (connected to slope)
-  const flatRoadGeom = new THREE.PlaneGeometry(30, 8);
+  // Flat road at top (connected to slope) - width 10 to match Level 4 (z=18 to z=28)
+  const flatRoadGeom = new THREE.PlaneGeometry(30, 10);
   const flatRoad = new THREE.Mesh(flatRoadGeom, resPedestrianMat);
   flatRoad.rotation.x = -Math.PI / 2;
-  flatRoad.position.set(slopeEndX + 15, slopeEndY + 0.02, 24);
+  flatRoad.position.set(slopeEndX + 15, slopeEndY + 0.02, 23); // Center at z=23 for z=18~28
   scene.add(flatRoad);
 
   // === Guardrails along slope and flat top (z=18.5 to match main road guardrail) ===
@@ -475,6 +476,115 @@ export function createRoads(scene) {
   const band2 = new THREE.Mesh(band1Geom, bandMat);
   band2.position.set(0, 7, 18);
   scene.add(band2);
+
+  // === Sloped retaining wall extension (from x=47.5 to x=92.5) ===
+  // Wall extends along the slope to match guardrail end position
+  const slopeWallZ = 19;
+  const slopeWallFrontZ = 18;
+  const wallBottomY = 0;
+  const wallTopStartY = 9.9;  // Matches main wall height at start
+  const wallTopEndY = 15.9;   // Follows slope (6 units rise over 45 units)
+
+  // Sloped retaining wall using BufferGeometry (trapezoidal cross-section when viewed from side)
+  const slopeWallVertices = new Float32Array([
+    // Front face (z=18)
+    // Triangle 1: bottom-left, bottom-right, top-left
+    slopeStartX, wallBottomY, slopeWallFrontZ,
+    slopeEndX, wallBottomY, slopeWallFrontZ,
+    slopeStartX, wallTopStartY, slopeWallFrontZ,
+    // Triangle 2: bottom-right, top-right, top-left
+    slopeEndX, wallBottomY, slopeWallFrontZ,
+    slopeEndX, wallTopEndY, slopeWallFrontZ,
+    slopeStartX, wallTopStartY, slopeWallFrontZ,
+    // Back face (z=20)
+    // Triangle 1
+    slopeStartX, wallBottomY, slopeWallZ + 1,
+    slopeStartX, wallTopStartY, slopeWallZ + 1,
+    slopeEndX, wallBottomY, slopeWallZ + 1,
+    // Triangle 2
+    slopeEndX, wallBottomY, slopeWallZ + 1,
+    slopeStartX, wallTopStartY, slopeWallZ + 1,
+    slopeEndX, wallTopEndY, slopeWallZ + 1,
+    // Top face (sloped)
+    // Triangle 1
+    slopeStartX, wallTopStartY, slopeWallFrontZ,
+    slopeEndX, wallTopEndY, slopeWallFrontZ,
+    slopeStartX, wallTopStartY, slopeWallZ + 1,
+    // Triangle 2
+    slopeEndX, wallTopEndY, slopeWallFrontZ,
+    slopeEndX, wallTopEndY, slopeWallZ + 1,
+    slopeStartX, wallTopStartY, slopeWallZ + 1,
+    // Bottom face
+    // Triangle 1
+    slopeStartX, wallBottomY, slopeWallFrontZ,
+    slopeStartX, wallBottomY, slopeWallZ + 1,
+    slopeEndX, wallBottomY, slopeWallFrontZ,
+    // Triangle 2
+    slopeEndX, wallBottomY, slopeWallFrontZ,
+    slopeStartX, wallBottomY, slopeWallZ + 1,
+    slopeEndX, wallBottomY, slopeWallZ + 1,
+  ]);
+
+  const slopeWallGeom = new THREE.BufferGeometry();
+  slopeWallGeom.setAttribute('position', new THREE.BufferAttribute(slopeWallVertices, 3));
+  slopeWallGeom.computeVertexNormals();
+  const slopeWall = new THREE.Mesh(slopeWallGeom, new THREE.MeshBasicMaterial({
+    color: 0x2a2a32,
+    side: THREE.DoubleSide
+  }));
+  scene.add(slopeWall);
+
+  // Vertical pillar segments on sloped retaining wall
+  const slopePillarMat = new THREE.MeshBasicMaterial({ color: 0x252528 });
+  const slopeWallLength = slopeEndX - slopeStartX;
+  const numSlopePillars = 8; // 8 pillars along the slope
+  for (let i = 0; i < numSlopePillars; i++) {
+    const t = (i + 0.5) / numSlopePillars;
+    const pillarX = slopeStartX + t * slopeWallLength;
+    const pillarTopY = wallTopStartY + t * (wallTopEndY - wallTopStartY);
+    const pillarHeight = pillarTopY - wallBottomY;
+    const pillarCenterY = pillarHeight / 2;
+
+    const slopePillarGeom = new THREE.BoxGeometry(0.8, pillarHeight, 0.3);
+    const slopePillar = new THREE.Mesh(slopePillarGeom, slopePillarMat);
+    slopePillar.position.set(pillarX, pillarCenterY, slopeWallFrontZ);
+    scene.add(slopePillar);
+  }
+
+  // Horizontal bands on sloped wall (using BufferGeometry for angled bands)
+  const slopeBandMat = new THREE.MeshBasicMaterial({ color: 0x303038, side: THREE.DoubleSide });
+
+  // Lower band (at y=3 start, following slope proportionally)
+  const band1StartY = 3;
+  const band1EndY = 3 + (wallTopEndY - wallTopStartY) * (3 / wallTopStartY);
+  const slopeBand1Vertices = new Float32Array([
+    slopeStartX, band1StartY - 0.1, slopeWallFrontZ - 0.1,
+    slopeEndX, band1EndY - 0.1, slopeWallFrontZ - 0.1,
+    slopeStartX, band1StartY + 0.1, slopeWallFrontZ - 0.1,
+    slopeEndX, band1EndY - 0.1, slopeWallFrontZ - 0.1,
+    slopeEndX, band1EndY + 0.1, slopeWallFrontZ - 0.1,
+    slopeStartX, band1StartY + 0.1, slopeWallFrontZ - 0.1,
+  ]);
+  const slopeBand1Geom = new THREE.BufferGeometry();
+  slopeBand1Geom.setAttribute('position', new THREE.BufferAttribute(slopeBand1Vertices, 3));
+  const slopeBand1 = new THREE.Mesh(slopeBand1Geom, slopeBandMat);
+  scene.add(slopeBand1);
+
+  // Upper band (at y=7 start, following slope proportionally)
+  const band2StartY = 7;
+  const band2EndY = 7 + (wallTopEndY - wallTopStartY) * (7 / wallTopStartY);
+  const slopeBand2Vertices = new Float32Array([
+    slopeStartX, band2StartY - 0.1, slopeWallFrontZ - 0.1,
+    slopeEndX, band2EndY - 0.1, slopeWallFrontZ - 0.1,
+    slopeStartX, band2StartY + 0.1, slopeWallFrontZ - 0.1,
+    slopeEndX, band2EndY - 0.1, slopeWallFrontZ - 0.1,
+    slopeEndX, band2EndY + 0.1, slopeWallFrontZ - 0.1,
+    slopeStartX, band2StartY + 0.1, slopeWallFrontZ - 0.1,
+  ]);
+  const slopeBand2Geom = new THREE.BufferGeometry();
+  slopeBand2Geom.setAttribute('position', new THREE.BufferAttribute(slopeBand2Vertices, 3));
+  const slopeBand2 = new THREE.Mesh(slopeBand2Geom, slopeBandMat);
+  scene.add(slopeBand2);
 
   // Guardrail on outer side of lamps/poles (toward shopping district, z=18.5)
   // Main rail bar
