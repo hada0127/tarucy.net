@@ -2759,25 +2759,6 @@ function createParks(scene) {
   playground.position.set(-40, groundY + 0.01, 6);
   scene.add(playground);
 
-  // Gray sidewalk ground extension (west of playground, under hills)
-  // South road is at x=-55 center, width 10, so x=-60 to x=-50
-  // Curved road corner around x=-35, z=-35
-  const sidewalkMat = new THREE.MeshBasicMaterial({ color: 0x3a3a4a });
-
-  // Under hills area (far west, x=-65 to x=-100)
-  const hillGroundGeom = new THREE.PlaneGeometry(40, 55);
-  const hillGround = new THREE.Mesh(hillGroundGeom, sidewalkMat);
-  hillGround.rotation.x = -Math.PI / 2;
-  hillGround.position.set(-85, groundY + 0.003, 5);
-  scene.add(hillGround);
-
-  // West of south road (x < -60)
-  const westRoadGroundGeom = new THREE.PlaneGeometry(30, 100);
-  const westRoadGround = new THREE.Mesh(westRoadGroundGeom, sidewalkMat);
-  westRoadGround.rotation.x = -Math.PI / 2;
-  westRoadGround.position.set(-77, groundY + 0.003, -55);
-  scene.add(westRoadGround);
-
   // Rubber safety surface under equipment
   const rubberMat = new THREE.MeshBasicMaterial({ color: 0x664422 });
   const rubberGeom = new THREE.PlaneGeometry(6, 6);

@@ -167,7 +167,7 @@ export function createLighting(scene) {
 export function createGround(scene) {
   // Distant ground - extends to silhouette panels (radius 500)
   const distantGroundGeometry = new THREE.CircleGeometry(550, 64);
-  const distantGroundMaterial = new THREE.MeshBasicMaterial({ color: 0x0a0a12 });
+  const distantGroundMaterial = new THREE.MeshBasicMaterial({ color: 0x3a3a4a });
   const distantGround = new THREE.Mesh(distantGroundGeometry, distantGroundMaterial);
   distantGround.rotation.x = -Math.PI / 2;
   distantGround.position.set(0, -0.1, 0);
