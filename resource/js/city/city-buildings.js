@@ -951,76 +951,52 @@ function createLeftBuildings(scene) {
   const neonPalette = [colors.neon.pink, colors.neon.magenta, colors.neon.cyan, colors.neon.blue];
 
   // Main towers (multiple) - original area - moved down for wider road
-  buildings.push(createMainTower(scene, -38, -35, groundY, {
-    width: 14, depth: 12, height: 45, neonColor: colors.neon.pink
-  }));
-  buildings.push(createMainTower(scene, -55, -45, groundY, {
-    width: 16, depth: 14, height: 55, neonColor: colors.neon.magenta
-  }));
-  buildings.push(createMainTower(scene, -70, -30, groundY, {
-    width: 12, depth: 10, height: 42, neonColor: colors.neon.cyan
-  }));
-  buildings.push(createMainTower(scene, -45, -65, groundY, {
-    width: 14, depth: 12, height: 50, neonColor: colors.neon.pink
-  }));
-  buildings.push(createMainTower(scene, -65, -70, groundY, {
-    width: 15, depth: 13, height: 48, neonColor: colors.neon.blue
-  }));
+  // Removed: createMainTower at -38, -35 - overlaps curve area/mountains
+  // Removed: createMainTower at -55, -45 - on south road
+  // Removed: createMainTower at -70, -30 - overlaps curve area/mountains
+  // Removed: createMainTower at -45, -65 - overlaps south road
+  // Removed: createMainTower at -65, -70 - overlaps south road
 
-  // Extended area main towers (x=-85 to -160)
-  buildings.push(createMainTower(scene, -95, -25, groundY, {
-    width: 14, depth: 12, height: 52, neonColor: colors.neon.pink
-  }));
-  buildings.push(createMainTower(scene, -110, -40, groundY, {
-    width: 16, depth: 14, height: 58, neonColor: colors.neon.magenta
-  }));
-  buildings.push(createMainTower(scene, -125, -20, groundY, {
-    width: 14, depth: 12, height: 48, neonColor: colors.neon.cyan
-  }));
-  buildings.push(createMainTower(scene, -100, -60, groundY, {
-    width: 15, depth: 13, height: 54, neonColor: colors.neon.blue
-  }));
-  buildings.push(createMainTower(scene, -140, -35, groundY, {
-    width: 14, depth: 12, height: 50, neonColor: colors.neon.pink
-  }));
-  buildings.push(createMainTower(scene, -130, -65, groundY, {
-    width: 16, depth: 14, height: 56, neonColor: colors.neon.magenta
-  }));
-  buildings.push(createMainTower(scene, -150, -50, groundY, {
-    width: 13, depth: 11, height: 46, neonColor: colors.neon.cyan
-  }));
+  // Extended area main towers (x=-85 to -160) - removed due to overlap with mountains near curve
+  // Removed: createMainTower at -95, -25
+  // Removed: createMainTower at -110, -40
+  // Removed: createMainTower at -125, -20
+  // Removed: createMainTower at -100, -60
+  // Removed: createMainTower at -140, -35
+  // Removed: createMainTower at -130, -65
+  // Removed: createMainTower at -150, -50
 
   // LEFT SIDE NORTH AREA - removed, replaced with hills (see createLeftNorthHills)
 
   // Secondary buildings (many more) - original area - moved down for wider road
-  // Removed buildings overlapping with main road (z=-25 to z=-15)
+  // Removed buildings overlapping with main road (z=-25 to z=-15) and south road (x=-60 to -50)
   const secondaryPositions = [
-    { x: -32, z: -38, w: 10, d: 8, h: 25 },
-    { x: -42, z: -32, w: 8, d: 6, h: 20 },
+    // Removed: { x: -32, z: -38 } - overlaps curve area/mountains
+    // Removed: { x: -42, z: -32 } - overlaps curve area/mountains
     { x: -35, z: -48, w: 12, d: 10, h: 30 },
-    { x: -50, z: -35, w: 9, d: 7, h: 22 },
-    { x: -75, z: -40, w: 10, d: 8, h: 24 },
-    { x: -48, z: -55, w: 8, d: 7, h: 18 },
-    { x: -58, z: -60, w: 10, d: 8, h: 26 },
-    { x: -72, z: -55, w: 9, d: 7, h: 22 },
-    { x: -80, z: -35, w: 8, d: 6, h: 20 },
+    // Removed: { x: -50, z: -35 } - on south road
+    // Removed: { x: -75, z: -40 } - overlaps with mountains near curve
+    // Removed: { x: -48, z: -55 } - on south road
+    // Removed: { x: -58, z: -60 } - on south road
+    // Removed: { x: -72, z: -55 } - overlaps with mountains near curve
+    // Removed: { x: -80, z: -35 } - overlaps with mountains near curve
     { x: -68, z: -80, w: 11, d: 9, h: 32 },
-    { x: -50, z: -75, w: 9, d: 8, h: 24 },
+    // Removed: { x: -50, z: -75 } - on south road
     { x: -35, z: -70, w: 10, d: 8, h: 28 },
-    { x: -78, z: -65, w: 8, d: 7, h: 18 },
-    { x: -62, z: -28, w: 7, d: 6, h: 16 },
-    // Extended area secondary buildings (x=-85 to -160)
-    { x: -92, z: -45, w: 11, d: 9, h: 28 },
-    { x: -102, z: -52, w: 10, d: 8, h: 26 },
-    { x: -118, z: -58, w: 11, d: 9, h: 30 },
-    { x: -108, z: -72, w: 9, d: 8, h: 24 },
-    { x: -122, z: -45, w: 10, d: 8, h: 26 },
-    { x: -138, z: -55, w: 10, d: 8, h: 28 },
-    { x: -142, z: -70, w: 11, d: 9, h: 30 },
-    { x: -155, z: -60, w: 9, d: 8, h: 26 },
-    { x: -152, z: -42, w: 10, d: 8, h: 28 },
-    { x: -128, z: -78, w: 10, d: 8, h: 26 },
-    { x: -145, z: -80, w: 9, d: 7, h: 24 }
+    // Removed: { x: -78, z: -65 } - overlaps with mountains near curve
+    // Removed: { x: -62, z: -28 } - overlaps curve area/mountains
+    // Extended area secondary buildings (x=-85 to -160) - ALL REMOVED due to overlap with mountains
+    // Removed: { x: -92, z: -45 }
+    // Removed: { x: -102, z: -52 }
+    // Removed: { x: -118, z: -58 }
+    // Removed: { x: -108, z: -72 }
+    // Removed: { x: -122, z: -45 }
+    // Removed: { x: -138, z: -55 }
+    // Removed: { x: -142, z: -70 }
+    // Removed: { x: -155, z: -60 }
+    // Removed: { x: -152, z: -42 }
+    // Removed: { x: -128, z: -78 }
+    // Removed: { x: -145, z: -80 }
     // LEFT SIDE NORTH secondary buildings removed - replaced with hills
   ];
 
@@ -1143,12 +1119,13 @@ function createSouthBuildings(scene) {
   const neonPalette = [colors.neon.pink, colors.neon.magenta, colors.neon.cyan, colors.neon.blue, colors.neon.yellow, colors.neon.green];
 
   // Far south main towers (z = -100 to -180)
+  // Removed buildings on south road (x=-60 to -50, z=-35 to -150)
   const mainTowerPositions = [
     // Left-center area
-    { x: -60, z: -110, w: 16, d: 14, h: 55 },
+    // Removed: { x: -60, z: -110 } - on south road
     { x: -40, z: -125, w: 14, d: 12, h: 48 },
     { x: -80, z: -130, w: 15, d: 13, h: 52 },
-    { x: -55, z: -145, w: 14, d: 12, h: 50 },
+    // Removed: { x: -55, z: -145 } - on south road
     { x: -100, z: -115, w: 16, d: 14, h: 58 },
     { x: -120, z: -135, w: 15, d: 13, h: 54 },
     { x: -90, z: -155, w: 14, d: 12, h: 46 },
@@ -1244,13 +1221,14 @@ function createSouthBuildings(scene) {
   });
 
   // Far south secondary/smaller buildings
+  // Removed buildings on south road (x=-60 to -50, z=-35 to -150)
   const secondaryPositions = [
     // Fill gaps with smaller buildings
     // Left side
-    { x: -50, z: -100, w: 10, d: 8, h: 28 },
+    // Removed: { x: -50, z: -100 } - on south road
     { x: -70, z: -105, w: 9, d: 7, h: 24 },
-    { x: -45, z: -118, w: 10, d: 8, h: 26 },
-    { x: -65, z: -140, w: 11, d: 9, h: 30 },
+    // Removed: { x: -45, z: -118 } - near south road
+    // Removed: { x: -65, z: -140 } - overlaps south road
     { x: -85, z: -145, w: 9, d: 8, h: 24 },
     { x: -75, z: -160, w: 10, d: 8, h: 28 },
     { x: -110, z: -105, w: 10, d: 8, h: 26 },
@@ -1289,7 +1267,7 @@ function createSouthBuildings(scene) {
     // Extra dense fill
     { x: -35, z: -155, w: 8, d: 7, h: 20 },
     { x: 35, z: -150, w: 8, d: 7, h: 22 },
-    { x: -50, z: -165, w: 9, d: 8, h: 24 },
+    // Removed: { x: -50, z: -165 } - near south road extension
     { x: 50, z: -170, w: 9, d: 8, h: 26 },
     { x: -70, z: -175, w: 10, d: 8, h: 28 },
     { x: 40, z: -180, w: 8, d: 7, h: 22 },
@@ -1525,7 +1503,7 @@ function createZigzagStairs(scene) {
 
   // Parameters
   const topY = 10;
-  const bottomY = 2;
+  const bottomY = 0; // Extended to ground level
   const heightDiff = topY - bottomY;
   const stepHeight = 0.2;
   const numSteps = Math.floor(heightDiff / stepHeight);
@@ -1539,13 +1517,34 @@ function createZigzagStairs(scene) {
   topLanding.position.set(0, topY, wallZ - stepDepth / 2);
   group.add(topLanding);
 
-  // Left stairs: from center (x=0) to left (x=-22), attached to wall
+  // Top landing front safety rail (outer side, away from wall)
+  const topRailZ = wallZ - stepDepth - 0.1;
+
+  // Left post
+  const topLeftPostGeom = new THREE.CylinderGeometry(0.05, 0.05, 1, 6);
+  const topLeftPost = new THREE.Mesh(topLeftPostGeom, railMat);
+  topLeftPost.position.set(-3, topY + 0.5, topRailZ);
+  group.add(topLeftPost);
+
+  // Right post
+  const topRightPostGeom = new THREE.CylinderGeometry(0.05, 0.05, 1, 6);
+  const topRightPost = new THREE.Mesh(topRightPostGeom, railMat);
+  topRightPost.position.set(3, topY + 0.5, topRailZ);
+  group.add(topRightPost);
+
+  // Horizontal rail connecting posts
+  const topHorizRailGeom = new THREE.BoxGeometry(6, 0.08, 0.08);
+  const topHorizRail = new THREE.Mesh(topHorizRailGeom, railMat);
+  topHorizRail.position.set(0, topY + 0.95, topRailZ);
+  group.add(topHorizRail);
+
+  // Left stairs: from center (x=0) to left, attached to wall
   for (let i = 0; i < numSteps; i++) {
-    const stepGeom = new THREE.BoxGeometry(stepWidth, 0.15, stepDepth);
+    const stepGeom = new THREE.BoxGeometry(stepWidth, stepHeight, stepDepth);
     const step = new THREE.Mesh(stepGeom, stairMat);
     step.position.set(
       -3 - i * stepWidth, // Moving left
-      topY - i * stepHeight - 0.1,
+      topY - i * stepHeight - stepHeight / 2,
       wallZ - stepDepth / 2
     );
     group.add(step);
@@ -1575,13 +1574,13 @@ function createZigzagStairs(scene) {
   leftRail.rotation.z = Math.atan2(heightDiff, leftRailLength);
   group.add(leftRail);
 
-  // Right stairs: from center (x=0) to right (x=22), attached to wall
+  // Right stairs: from center (x=0) to right, attached to wall
   for (let i = 0; i < numSteps; i++) {
-    const stepGeom = new THREE.BoxGeometry(stepWidth, 0.15, stepDepth);
+    const stepGeom = new THREE.BoxGeometry(stepWidth, stepHeight, stepDepth);
     const step = new THREE.Mesh(stepGeom, stairMat);
     step.position.set(
       3 + i * stepWidth, // Moving right
-      topY - i * stepHeight - 0.1,
+      topY - i * stepHeight - stepHeight / 2,
       wallZ - stepDepth / 2
     );
     group.add(step);
@@ -1609,16 +1608,6 @@ function createZigzagStairs(scene) {
   );
   rightRail.rotation.z = -Math.atan2(heightDiff, leftRailLength);
   group.add(rightRail);
-
-  // Bottom landing platforms
-  const bottomLandingGeom = new THREE.BoxGeometry(4, 0.3, stepDepth + 1);
-  const leftBottomLanding = new THREE.Mesh(bottomLandingGeom, stairMat);
-  leftBottomLanding.position.set(-3 - numSteps * stepWidth, bottomY, wallZ - stepDepth / 2);
-  group.add(leftBottomLanding);
-
-  const rightBottomLanding = new THREE.Mesh(bottomLandingGeom, stairMat);
-  rightBottomLanding.position.set(3 + numSteps * stepWidth, bottomY, wallZ - stepDepth / 2);
-  group.add(rightBottomLanding);
 
   // Fill below stairs (solid wall like retaining wall)
   const fillMat = new THREE.MeshBasicMaterial({ color: 0x18181f });
@@ -1925,21 +1914,44 @@ function createVendorStalls(scene) {
  */
 function createTree(scene, x, z, groundY) {
   const group = new THREE.Group();
-  const scale = 0.6 + Math.random() * 0.4;
+  const scale = 1.0 + Math.random() * 0.5; // Taller base scale
+  const treeType = Math.floor(Math.random() * 3); // 3 types: single cone, layered, round
 
-  // Trunk
-  const trunkGeom = new THREE.CylinderGeometry(0.2 * scale, 0.3 * scale, 2 * scale, 6);
+  // Trunk (taller)
+  const trunkHeight = 3 * scale;
+  const trunkGeom = new THREE.CylinderGeometry(0.25 * scale, 0.4 * scale, trunkHeight, 6);
   const trunkMat = new THREE.MeshBasicMaterial({ color: 0x3a3040 });
   const trunk = new THREE.Mesh(trunkGeom, trunkMat);
-  trunk.position.y = scale;
+  trunk.position.y = trunkHeight / 2;
   group.add(trunk);
 
-  // Foliage
-  const foliageGeom = new THREE.ConeGeometry(1.5 * scale, 3 * scale, 6);
-  const foliageMat = new THREE.MeshBasicMaterial({ color: 0x1a3040 });
-  const foliage = new THREE.Mesh(foliageGeom, foliageMat);
-  foliage.position.y = 3.5 * scale;
-  group.add(foliage);
+  // 3 foliage colors (dark green, teal, olive)
+  const foliageColors = [0x1a4035, 0x2a4555, 0x354530];
+  const foliageColor = foliageColors[Math.floor(Math.random() * foliageColors.length)];
+  const foliageMat = new THREE.MeshBasicMaterial({ color: foliageColor });
+
+  if (treeType === 0) {
+    // Single cone tree (pine-like)
+    const foliageGeom = new THREE.ConeGeometry(1.8 * scale, 4.5 * scale, 6);
+    const foliage = new THREE.Mesh(foliageGeom, foliageMat);
+    foliage.position.y = trunkHeight + 2.2 * scale;
+    group.add(foliage);
+  } else if (treeType === 1) {
+    // 2-tier layered tree
+    for (let i = 0; i < 2; i++) {
+      const layerScale = 1 - i * 0.3;
+      const layerGeom = new THREE.ConeGeometry(2 * scale * layerScale, 2.5 * scale, 6);
+      const layer = new THREE.Mesh(layerGeom, foliageMat);
+      layer.position.y = trunkHeight + 1.2 * scale + i * 2 * scale;
+      group.add(layer);
+    }
+  } else {
+    // Round tree (deciduous-like)
+    const foliageGeom = new THREE.SphereGeometry(2 * scale, 8, 6);
+    const foliage = new THREE.Mesh(foliageGeom, foliageMat);
+    foliage.position.y = trunkHeight + 1.8 * scale;
+    group.add(foliage);
+  }
 
   group.position.set(x, groundY, z);
   scene.add(group);
@@ -2015,6 +2027,77 @@ function createStreetLamp(scene, x, z, groundY, rotation = 0) {
 }
 
 /**
+ * Create T-shaped street lamp (illuminates both sidewalk and road)
+ */
+function createTStreetLamp(scene, x, z, groundY, rotation = 0) {
+  const group = new THREE.Group();
+  const lampColors = [0xffd0e0, 0xd0ffff, 0xffe0a0, 0xffffff];
+  const lampColor = lampColors[Math.floor(Math.random() * lampColors.length)];
+
+  // Pole (taller)
+  const poleHeight = 6.5;
+  const poleGeom = new THREE.CylinderGeometry(0.12, 0.18, poleHeight, 6);
+  const poleMat = new THREE.MeshBasicMaterial({ color: 0x555565 });
+  const pole = new THREE.Mesh(poleGeom, poleMat);
+  pole.position.y = poleHeight / 2;
+  group.add(pole);
+
+  // T-shaped horizontal bar
+  const barGeom = new THREE.BoxGeometry(3.5, 0.15, 0.15);
+  const bar = new THREE.Mesh(barGeom, poleMat);
+  bar.position.set(0, poleHeight, 0);
+  group.add(bar);
+
+  const headMat = new THREE.MeshBasicMaterial({ color: 0x353545 });
+  const lampMat = new THREE.MeshBasicMaterial({ color: lampColor });
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: lampColor,
+    transparent: true,
+    opacity: 0.25,
+    depthWrite: false
+  });
+  const poolMat = new THREE.MeshBasicMaterial({
+    color: 0xffcc44,
+    transparent: true,
+    opacity: 0.1,
+    depthWrite: false
+  });
+
+  // Create lamp heads on both sides
+  [-1, 1].forEach(side => {
+    // Lamp head (box style)
+    const headGeom = new THREE.BoxGeometry(0.5, 0.3, 0.4);
+    const head = new THREE.Mesh(headGeom, headMat);
+    head.position.set(side * 1.5, poleHeight - 0.15, 0);
+    group.add(head);
+
+    // Lamp bulb (bright)
+    const lampGeom = new THREE.SphereGeometry(0.25, 8, 6);
+    const lamp = new THREE.Mesh(lampGeom, lampMat);
+    lamp.position.set(side * 1.5, poleHeight - 0.35, 0);
+    group.add(lamp);
+
+    // Lamp glow
+    const glowGeom = new THREE.SphereGeometry(0.7, 8, 6);
+    const glow = new THREE.Mesh(glowGeom, glowMat);
+    glow.position.set(side * 1.5, poleHeight - 0.35, 0);
+    group.add(glow);
+
+    // Ground light pool effect
+    const poolGeom = new THREE.CircleGeometry(3, 16);
+    const pool = new THREE.Mesh(poolGeom, poolMat);
+    pool.rotation.x = -Math.PI / 2;
+    pool.position.set(side * 4, 0.02, 0);
+    group.add(pool);
+  });
+
+  group.position.set(x, groundY, z);
+  group.rotation.y = rotation;
+  scene.add(group);
+  return group;
+}
+
+/**
  * Create all trees
  */
 function createAllTrees(scene) {
@@ -2030,6 +2113,18 @@ function createAllTrees(scene) {
     trees.push(createTree(scene, -35 + i * 10, -28, 0));
   }
 
+  // South road - left sidewalk trees (x=-62, forest side)
+  const southLeftTreeZ = [-50, -75, -100, -125, -150, -175, -200, -225];
+  southLeftTreeZ.forEach(z => {
+    trees.push(createTree(scene, -62, z, 0));
+  });
+
+  // South road - right sidewalk trees (x=-48, building side)
+  const southRightTreeZ = [-60, -85, -110, -135, -160, -185, -210, -235];
+  southRightTreeZ.forEach(z => {
+    trees.push(createTree(scene, -48, z, 0));
+  });
+
   return trees;
 }
 
@@ -2039,23 +2134,24 @@ function createAllTrees(scene) {
 function createAllStreetLamps(scene) {
   const lamps = [];
 
-  // Main road upper sidewalk lamps (y=0) - facing toward road (-Z direction)
+  // Main road - T-shaped lamps on upper sidewalk (z=-14)
+  // T-bar perpendicular to road: one head toward road (-Z), one toward sidewalk (+Z)
   for (let i = 0; i < 10; i++) {
-    lamps.push(createStreetLamp(scene, -45 + i * 10, -14, 0, -Math.PI / 2));
+    lamps.push(createTStreetLamp(scene, -45 + i * 10, -14, 0, Math.PI / 2));
   }
 
-  // Main road lower sidewalk lamps (y=0) - facing toward road (+Z direction)
+  // Main road - T-shaped lamps on lower sidewalk (z=-28)
+  // T-bar perpendicular to road: one head toward road (+Z), one toward sidewalk (-Z)
   for (let i = 0; i < 10; i++) {
-    lamps.push(createStreetLamp(scene, -40 + i * 10, -28, 0, Math.PI / 2));
+    lamps.push(createTStreetLamp(scene, -40 + i * 10, -28, 0, Math.PI / 2));
   }
 
-  // Residential road lamps (y=10) - shopping district side, facing toward houses (+Z direction)
+  // Residential road lamps (y=10) - regular lamps facing toward houses
   for (let i = 0; i < 10; i++) {
     lamps.push(createStreetLamp(scene, -45 + i * 10, 20, 10, -Math.PI / 2));
   }
 
   // Sloped road lamps - y increases with x
-  // Slope: x=47.5~92.5, y=10~16
   const slopeStartX = 47.5;
   const slopeEndX = 92.5;
   const slopeStartY = 10;
@@ -2075,23 +2171,33 @@ function createAllStreetLamps(scene) {
     lamps.push(createStreetLamp(scene, x, 20, slopeEndY, -Math.PI / 2));
   });
 
-  // High-rise district lamps - left side - moved down for wider road
-  for (let i = 0; i < 5; i++) {
-    lamps.push(createStreetLamp(scene, -35, -35 - i * 10, 0));
-    lamps.push(createStreetLamp(scene, -55, -40 - i * 10, 0));
-  }
+  // South road - T-shaped lamps on sidewalks (not on road)
+  // Road at x=-55, left sidewalk x=-62, right sidewalk x=-48
+  // T-bar perpendicular to road (rotation=0): heads point toward road and away
 
-  // High-rise district lamps - right side - moved down for wider road
-  for (let i = 0; i < 5; i++) {
-    lamps.push(createStreetLamp(scene, 35, -35 - i * 10, 0));
-    lamps.push(createStreetLamp(scene, 55, -40 - i * 10, 0));
-  }
+  // Left sidewalk (x=-62) - forest side (8 lamps)
+  const southLeftLampZ = [-45, -70, -95, -120, -145, -170, -195, -220];
+  southLeftLampZ.forEach(z => {
+    lamps.push(createTStreetLamp(scene, -62, z, 0, 0));
+  });
 
-  // Center district lamps - moved down for wider road
-  for (let i = 0; i < 6; i++) {
-    lamps.push(createStreetLamp(scene, -12 + i * 5, -55, 0));
-    lamps.push(createStreetLamp(scene, -15 + i * 6, -75, 0));
-  }
+  // Right sidewalk (x=-48) - building side (8 lamps)
+  const southRightLampZ = [-55, -80, -105, -130, -155, -180, -205, -230];
+  southRightLampZ.forEach(z => {
+    lamps.push(createTStreetLamp(scene, -48, z, 0, 0));
+  });
+
+  // Curved road area - T-shaped lamps on outer edge of curve
+  // Curve center at x=-40, z=-35, road radius=15, outer edge radius=20
+  const curveCenter = { x: -40, z: -35 };
+  const outerRadius = 22; // Outside the road curve
+  const curveAngles = [Math.PI * 0.55, Math.PI * 0.75, Math.PI * 0.92];
+  curveAngles.forEach(angle => {
+    const lampX = curveCenter.x + outerRadius * Math.cos(angle);
+    const lampZ = curveCenter.z + outerRadius * Math.sin(angle);
+    // T-bar tangent to curve, heads point toward road (inward) and outward
+    lamps.push(createTStreetLamp(scene, lampX, lampZ, 0, angle));
+  });
 
   return lamps;
 }
@@ -2644,25 +2750,44 @@ function createParks(scene) {
   const parks = [];
   const groundY = 2;
 
-  // Left park - Children's Playground (expanded: x=-46 ~ -24, z=-2 ~ 14)
+  // Left park - Children's Playground (x=-51 ~ -29, z=-2 ~ 14)
   // Playground ground (grass)
   const playgroundGeom = new THREE.PlaneGeometry(24, 18);
   const parkMat = new THREE.MeshBasicMaterial({ color: 0x2a3a2a });
   const playground = new THREE.Mesh(playgroundGeom, parkMat);
   playground.rotation.x = -Math.PI / 2;
-  playground.position.set(-35, groundY + 0.01, 6);
+  playground.position.set(-40, groundY + 0.01, 6);
   scene.add(playground);
+
+  // Gray sidewalk ground extension (west of playground, under hills)
+  // South road is at x=-55 center, width 10, so x=-60 to x=-50
+  // Curved road corner around x=-35, z=-35
+  const sidewalkMat = new THREE.MeshBasicMaterial({ color: 0x3a3a4a });
+
+  // Under hills area (far west, x=-65 to x=-100)
+  const hillGroundGeom = new THREE.PlaneGeometry(40, 55);
+  const hillGround = new THREE.Mesh(hillGroundGeom, sidewalkMat);
+  hillGround.rotation.x = -Math.PI / 2;
+  hillGround.position.set(-85, groundY + 0.003, 5);
+  scene.add(hillGround);
+
+  // West of south road (x < -60)
+  const westRoadGroundGeom = new THREE.PlaneGeometry(30, 100);
+  const westRoadGround = new THREE.Mesh(westRoadGroundGeom, sidewalkMat);
+  westRoadGround.rotation.x = -Math.PI / 2;
+  westRoadGround.position.set(-77, groundY + 0.003, -55);
+  scene.add(westRoadGround);
 
   // Rubber safety surface under equipment
   const rubberMat = new THREE.MeshBasicMaterial({ color: 0x664422 });
   const rubberGeom = new THREE.PlaneGeometry(6, 6);
   const rubber1 = new THREE.Mesh(rubberGeom, rubberMat);
   rubber1.rotation.x = -Math.PI / 2;
-  rubber1.position.set(-40, groundY + 0.02, 3);
+  rubber1.position.set(-45, groundY + 0.02, 3);
   scene.add(rubber1);
   const rubber2 = new THREE.Mesh(rubberGeom, rubberMat);
   rubber2.rotation.x = -Math.PI / 2;
-  rubber2.position.set(-30, groundY + 0.02, 9);
+  rubber2.position.set(-35, groundY + 0.02, 9);
   scene.add(rubber2);
 
   // Paths
@@ -2670,57 +2795,57 @@ function createParks(scene) {
   const pathGeom = new THREE.PlaneGeometry(22, 1.5);
   const mainPath = new THREE.Mesh(pathGeom, pathMat);
   mainPath.rotation.x = -Math.PI / 2;
-  mainPath.position.set(-35, groundY + 0.02, 6);
+  mainPath.position.set(-40, groundY + 0.02, 6);
   scene.add(mainPath);
 
   const sidePath = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 16), pathMat);
   sidePath.rotation.x = -Math.PI / 2;
-  sidePath.position.set(-35, groundY + 0.02, 6);
+  sidePath.position.set(-40, groundY + 0.02, 6);
   scene.add(sidePath);
 
   // === Playground Equipment ===
 
   // Swing set
-  parks.push(createSwingSet(scene, -40, 3, groundY));
+  parks.push(createSwingSet(scene, -45, 3, groundY));
 
   // Seesaw
-  parks.push(createSeesaw(scene, -32, 3, groundY));
+  parks.push(createSeesaw(scene, -37, 3, groundY));
 
   // Sandbox
-  parks.push(createSandbox(scene, -40, 10, groundY));
+  parks.push(createSandbox(scene, -45, 10, groundY));
 
   // Slide
-  parks.push(createSlide(scene, -30, 10, groundY));
+  parks.push(createSlide(scene, -35, 10, groundY));
 
   // Spring riders (bouncy animals)
-  parks.push(createSpringRider(scene, -36, 1, groundY, 0xff6600)); // Orange
-  parks.push(createSpringRider(scene, -34, 1, groundY, 0x44aa44)); // Green
-  parks.push(createSpringRider(scene, -38, 12, groundY, 0x4488ff)); // Blue
+  parks.push(createSpringRider(scene, -41, 1, groundY, 0xff6600)); // Orange
+  parks.push(createSpringRider(scene, -39, 1, groundY, 0x44aa44)); // Green
+  parks.push(createSpringRider(scene, -43, 12, groundY, 0x4488ff)); // Blue
 
   // Fences around playground
-  parks.push(createPlaygroundFence(scene, -35, -2, groundY, 20, 0));
-  parks.push(createPlaygroundFence(scene, -35, 14, groundY, 20, 0));
-  parks.push(createPlaygroundFence(scene, -46, 6, groundY, 16, Math.PI / 2));
+  parks.push(createPlaygroundFence(scene, -40, -2, groundY, 20, 0));
+  parks.push(createPlaygroundFence(scene, -40, 14, groundY, 20, 0));
+  parks.push(createPlaygroundFence(scene, -51, 6, groundY, 16, Math.PI / 2));
 
   // Benches for parents
-  parks.push(createParkBench(scene, -26, 3, groundY, -Math.PI / 2));
-  parks.push(createParkBench(scene, -26, 9, groundY, -Math.PI / 2));
-  parks.push(createParkBench(scene, -44, 6, groundY, Math.PI / 2));
+  parks.push(createParkBench(scene, -31, 3, groundY, -Math.PI / 2));
+  parks.push(createParkBench(scene, -31, 9, groundY, -Math.PI / 2));
+  parks.push(createParkBench(scene, -49, 6, groundY, Math.PI / 2));
 
   // Trees around the playground
-  parks.push(createParkTree(scene, -46, 0, groundY));
-  parks.push(createParkTree(scene, -46, 12, groundY));
-  parks.push(createParkTree(scene, -25, 0, groundY));
-  parks.push(createParkTree(scene, -25, 12, groundY));
-  parks.push(createParkTree(scene, -35, 14, groundY));
+  parks.push(createParkTree(scene, -51, 0, groundY));
+  parks.push(createParkTree(scene, -51, 12, groundY));
+  parks.push(createParkTree(scene, -30, 0, groundY));
+  parks.push(createParkTree(scene, -30, 12, groundY));
+  parks.push(createParkTree(scene, -40, 14, groundY));
 
-  // Street lamps at corners, facing toward center (-35, 6)
-  parks.push(createStreetLamp(scene, -44, 0, groundY, Math.atan2(-6, 9)));      // Bottom-left corner
-  parks.push(createStreetLamp(scene, -44, 12, groundY, Math.atan2(6, 9)));      // Top-left corner
-  parks.push(createStreetLamp(scene, -26, 0, groundY, Math.atan2(-6, -9)));     // Bottom-right corner
-  parks.push(createStreetLamp(scene, -26, 12, groundY, Math.atan2(6, -9)));     // Top-right corner
+  // Street lamps at corners, facing toward center (-40, 6)
+  parks.push(createStreetLamp(scene, -49, 0, groundY, Math.atan2(-6, 9)));      // Bottom-left corner
+  parks.push(createStreetLamp(scene, -49, 12, groundY, Math.atan2(6, 9)));      // Top-left corner
+  parks.push(createStreetLamp(scene, -31, 0, groundY, Math.atan2(-6, -9)));     // Bottom-right corner
+  parks.push(createStreetLamp(scene, -31, 12, groundY, Math.atan2(-6, -9)));     // Top-right corner
 
-  // Right park (expanded: x=24 ~ 46, z=-2 ~ 14)
+  // Right park - Fountain Park (x=24 ~ 46, z=-2 ~ 14)
   // Large park ground
   const rightParkGeom = new THREE.PlaneGeometry(24, 18);
   const rightPark = new THREE.Mesh(rightParkGeom, parkMat);
@@ -2750,25 +2875,10 @@ function createParks(scene) {
   parks.push(createFountain(scene, 35, 6, groundY));
 
   // === Trees around the park (varied sizes) ===
-  // Corner trees (larger)
   parks.push(createParkTree(scene, 25, 0, groundY));
   parks.push(createParkTree(scene, 45, 0, groundY));
   parks.push(createParkTree(scene, 25, 12, groundY));
   parks.push(createParkTree(scene, 45, 12, groundY));
-
-  // Edge trees
-  parks.push(createParkTree(scene, 28, -1, groundY));
-  parks.push(createParkTree(scene, 32, 13, groundY));
-  parks.push(createParkTree(scene, 38, -1, groundY));
-  parks.push(createParkTree(scene, 42, 13, groundY));
-
-  // Side trees
-  parks.push(createParkTree(scene, 24, 4, groundY));
-  parks.push(createParkTree(scene, 24, 8, groundY));
-  parks.push(createParkTree(scene, 46, 4, groundY));
-  parks.push(createParkTree(scene, 46, 8, groundY));
-
-  // Inner trees (near fountain)
   parks.push(createParkTree(scene, 29, 2, groundY));
   parks.push(createParkTree(scene, 41, 2, groundY));
   parks.push(createParkTree(scene, 29, 10, groundY));
@@ -2780,27 +2890,17 @@ function createParks(scene) {
   parks.push(createParkBench(scene, 35, 1, groundY, 0));
   parks.push(createParkBench(scene, 35, 11, groundY, Math.PI));
 
-  // Extra benches along paths
-  parks.push(createParkBench(scene, 27, 3, groundY, Math.PI / 4));
-  parks.push(createParkBench(scene, 43, 3, groundY, -Math.PI / 4));
-  parks.push(createParkBench(scene, 27, 9, groundY, -Math.PI / 4));
-  parks.push(createParkBench(scene, 43, 9, groundY, Math.PI / 4));
-
   // === Flower beds ===
   parks.push(createFlowerBed(scene, 26, 0, groundY));
   parks.push(createFlowerBed(scene, 44, 0, groundY));
   parks.push(createFlowerBed(scene, 26, 12, groundY));
   parks.push(createFlowerBed(scene, 44, 12, groundY));
-  parks.push(createFlowerBed(scene, 30, 3, groundY));
-  parks.push(createFlowerBed(scene, 40, 3, groundY));
-  parks.push(createFlowerBed(scene, 30, 9, groundY));
-  parks.push(createFlowerBed(scene, 40, 9, groundY));
 
-  // === Street lamps at corners, facing toward center (35, 6) ===
-  parks.push(createStreetLamp(scene, 26, 0, groundY, Math.atan2(-6, 9)));      // Bottom-left corner
-  parks.push(createStreetLamp(scene, 26, 12, groundY, Math.atan2(6, 9)));      // Top-left corner
-  parks.push(createStreetLamp(scene, 44, 0, groundY, Math.atan2(-6, -9)));     // Bottom-right corner
-  parks.push(createStreetLamp(scene, 44, 12, groundY, Math.atan2(6, -9)));     // Top-right corner
+  // === Street lamps at corners ===
+  parks.push(createStreetLamp(scene, 26, 0, groundY, Math.atan2(-6, 9)));
+  parks.push(createStreetLamp(scene, 26, 12, groundY, Math.atan2(6, 9)));
+  parks.push(createStreetLamp(scene, 44, 0, groundY, Math.atan2(-6, -9)));
+  parks.push(createStreetLamp(scene, 44, 12, groundY, Math.atan2(6, -9)));
 
   // === Pink Hotel (Grand Budapest / Da Nang Cathedral style) ===
   createPinkHotel(scene, groundY);
@@ -3505,16 +3605,16 @@ function createLeftNorthHills(scene) {
     return group;
   }
 
-  // === Edge hills (along x=-47.5 boundary to hide ground drop-off) ===
-  // Outer hills (x=-55 ~ -60) - tall enough to cover forest ground at y=10
-  createHill(-57, 20, 14, 14, 16);   // Tall outer hill
-  createHill(-58, 35, 13, 15, 15);   // Tall outer hill
-  createHill(-56, 48, 15, 14, 17);   // Tall outer hill near forest
-  createHill(-59, 8, 12, 13, 14);    // Tall hill near road end
-  createHill(-57, 55, 14, 15, 16);   // Tall hill toward forest
-  createHill(-58, 28, 13, 14, 15);   // Additional coverage
-  createHill(-56, 42, 12, 14, 14);   // Additional coverage
-  createHill(-60, 15, 13, 15, 15);   // Extra back coverage
+  // === Edge hills (moved further outside, x=-65 ~ -75) ===
+  // Outer hills - moved away from playground
+  createHill(-70, 20, 14, 14, 16);   // Tall outer hill
+  createHill(-72, 35, 13, 15, 15);   // Tall outer hill
+  createHill(-68, 48, 15, 14, 17);   // Tall outer hill near forest
+  createHill(-73, 8, 12, 13, 14);    // Tall hill near road end
+  createHill(-70, 55, 14, 15, 16);   // Tall hill toward forest
+  createHill(-72, 28, 13, 14, 15);   // Additional coverage
+  createHill(-68, 42, 12, 14, 14);   // Additional coverage
+  createHill(-75, 15, 13, 15, 15);   // Extra back coverage
 
   // Forest edge hills (x=-55 ~ -65, z=60~90) - cover forest boundary
   createHill(-56, 65, 16, 16, 18);   // Large hill at forest edge
@@ -3533,34 +3633,24 @@ function createLeftNorthHills(scene) {
   createHill(-63, 70, 13, 15, 15);   // Outer coverage
   createHill(-52, 82, 14, 15, 16);   // Inner far coverage
 
-  // Forest corner coverage
-  createHill(-50, 53, 14, 18, 16);   // Front-left corner of forest (moved toward forest)
-  createHill(-48, 57, 13, 17, 15);   // Front corner inner (moved toward forest)
-  createHill(-53, 50, 12, 17, 14);   // Front corner outer (moved toward forest)
-  createHill(-50, 92, 16, 17, 18);   // Back-left corner of forest
-  createHill(-48, 88, 15, 16, 17);   // Back corner inner
-  createHill(-54, 95, 17, 18, 19);   // Back corner far
-  createHill(-46, 60, 12, 16, 14);   // Front corner close (moved toward forest)
-  createHill(-52, 98, 15, 17, 17);   // Very back corner
-  createHill(-48, 50, 13, 17, 15);   // Additional front corner coverage
+  // Forest corner coverage (moved further outside)
+  createHill(-65, 53, 14, 18, 16);   // Front-left corner of forest
+  createHill(-63, 57, 13, 17, 15);   // Front corner inner
+  createHill(-68, 50, 12, 17, 14);   // Front corner outer
+  createHill(-65, 92, 16, 17, 18);   // Back-left corner of forest
+  createHill(-63, 88, 15, 16, 17);   // Back corner inner
+  createHill(-69, 95, 17, 18, 19);   // Back corner far
+  createHill(-61, 60, 12, 16, 14);   // Front corner close
+  createHill(-67, 98, 15, 17, 17);   // Very back corner
+  createHill(-63, 50, 13, 17, 15);   // Additional front corner coverage
 
-  // Inner edge hills (x=-50 ~ -54) - medium height, closer to boundary
-  createHill(-51, 22, 10, 11, 12);   // Inner hill
-  createHill(-52, 38, 9, 11, 11);    // Inner hill
-  createHill(-50, 50, 11, 11, 13);   // Inner hill
-  createHill(-53, 12, 9, 11, 11);    // Inner hill
-  createHill(-51, 60, 12, 12, 14);   // Inner hill near forest
-  createHill(-52, 68, 11, 12, 13);   // Inner hill at forest edge
-
-  // === Main hill cluster (near playground, x=-55 to -90) ===
-  createHill(-58, 15, 9, 10, 11);
-  createHill(-65, 8, 9, 10, 11);
-  createHill(-72, 25, 8, 10, 10);
-  createHill(-62, 35, 9, 10, 11);
-  createHill(-80, 12, 8, 10, 10);
-  createHill(-75, 32, 9, 10, 11);
-  createHill(-85, 22, 8, 10, 10);
-  createHill(-68, 45, 8, 10, 10);
+  // Inner edge hills (moved to x=-60 ~ -65)
+  createHill(-62, 22, 10, 11, 12);   // Inner hill
+  createHill(-64, 38, 9, 11, 11);    // Inner hill
+  createHill(-61, 50, 11, 11, 13);   // Inner hill
+  createHill(-65, 12, 9, 11, 11);    // Inner hill
+  createHill(-62, 60, 12, 12, 14);   // Inner hill near forest
+  createHill(-64, 68, 11, 12, 13);   // Inner hill at forest edge
 
   // === Middle hill cluster (x=-90 to -130) ===
   createHill(-95, 10, 11, 16, 13);
@@ -3599,6 +3689,191 @@ function createLeftNorthHills(scene) {
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(-115, groundY + 0.02, 35);
   scene.add(ground);
+}
+
+// ============================================
+// Curved Road West Forest and Mountains
+// ============================================
+
+/**
+ * Create forest and mountains west of the curved road to fill empty space
+ */
+function createCurveWestForestAndMountains(scene) {
+  const groundY = 0;
+  const treeColors = [0x1a3a2a, 0x2a4a3a, 0x1a4a2a, 0x2a3a2a, 0x1a5a3a];
+  const hillColor = 0x2a3a2a;
+  const hillColorLight = 0x3a4a3a;
+
+  // === Ground for the area (extended south) ===
+  const forestGroundGeom = new THREE.PlaneGeometry(150, 110);
+  const forestGroundMat = new THREE.MeshBasicMaterial({ color: 0x1a2a20 });
+  const forestGround = new THREE.Mesh(forestGroundGeom, forestGroundMat);
+  forestGround.rotation.x = -Math.PI / 2;
+  forestGround.position.set(-125, groundY + 0.01, -40);
+  scene.add(forestGround);
+
+  // === Dense Forest Trees (between curve and mountains) ===
+  // Area: x = -65 to -180, z = -95 to 5 (extended south to building boundary)
+  for (let x = -65; x > -180; x -= 4 + Math.random() * 3) {
+    for (let z = -95; z < 5; z += 4 + Math.random() * 3) {
+      // Skip area too close to south road (x = -60 to -50)
+      if (x > -65 && x < -45 && z > -45 && z < -30) continue;
+      // Skip area around building at x=-68, z=-80 (width 11, depth 9)
+      if (x > -78 && x < -58 && z > -90 && z < -70) continue;
+      // Skip area around building at x=-35, z=-48
+      if (x > -45 && x < -25 && z > -58 && z < -38) continue;
+      // Skip area around building at x=-35, z=-70
+      if (x > -45 && x < -25 && z > -80 && z < -60) continue;
+
+      if (Math.random() > 0.12) {
+        const offsetX = (Math.random() - 0.5) * 3;
+        const offsetZ = (Math.random() - 0.5) * 3;
+
+        // Tree trunk
+        const trunkHeight = 3 + Math.random() * 2;
+        const trunkGeom = new THREE.CylinderGeometry(0.3, 0.5, trunkHeight, 6);
+        const trunkMat = new THREE.MeshBasicMaterial({ color: 0x3d2817 });
+        const trunk = new THREE.Mesh(trunkGeom, trunkMat);
+        trunk.position.set(x + offsetX, groundY + trunkHeight / 2, z + offsetZ);
+        scene.add(trunk);
+
+        // Tree foliage
+        const foliageColor = treeColors[Math.floor(Math.random() * treeColors.length)];
+        const foliageMat = new THREE.MeshBasicMaterial({ color: foliageColor });
+
+        // Bottom foliage layer
+        const foliage1Geom = new THREE.ConeGeometry(2.5 + Math.random(), 4 + Math.random() * 2, 6);
+        const foliage1 = new THREE.Mesh(foliage1Geom, foliageMat);
+        foliage1.position.set(x + offsetX, groundY + trunkHeight + 2, z + offsetZ);
+        scene.add(foliage1);
+
+        // Top foliage layer
+        const foliage2Geom = new THREE.ConeGeometry(1.5 + Math.random(), 3 + Math.random(), 6);
+        const foliage2 = new THREE.Mesh(foliage2Geom, foliageMat);
+        foliage2.position.set(x + offsetX, groundY + trunkHeight + 4.5 + Math.random(), z + offsetZ);
+        scene.add(foliage2);
+      }
+    }
+  }
+
+  // === Helper function for creating hills ===
+  function createHill(x, z, width, height, depth) {
+    const group = new THREE.Group();
+
+    const hillGeom = new THREE.ConeGeometry(width, height, 8);
+    const hillMat = new THREE.MeshBasicMaterial({ color: hillColor });
+    const hill = new THREE.Mesh(hillGeom, hillMat);
+    hill.position.set(0, height / 2, 0);
+    hill.scale.set(1, 1, depth / width);
+    group.add(hill);
+
+    // Secondary mound
+    const mound2Geom = new THREE.ConeGeometry(width * 0.5, height * 0.6, 6);
+    const mound2Mat = new THREE.MeshBasicMaterial({ color: hillColorLight });
+    const mound2 = new THREE.Mesh(mound2Geom, mound2Mat);
+    mound2.position.set(width * 0.35, height * 0.3, depth * 0.2);
+    group.add(mound2);
+
+    group.position.set(x, groundY, z);
+    scene.add(group);
+    return group;
+  }
+
+  // === Outer mountains (far west, x = -180 to -230) ===
+  // Far south section (z = -70 to -95)
+  createHill(-185, -75, 20, 30, 22);
+  createHill(-200, -85, 22, 34, 24);
+  createHill(-215, -70, 18, 28, 20);
+  createHill(-190, -90, 19, 29, 21);
+  createHill(-210, -80, 21, 32, 23);
+  createHill(-225, -75, 20, 30, 22);
+  createHill(-195, -65, 17, 26, 19);
+  createHill(-220, -90, 23, 36, 25);
+
+  // South section (z = -35 to -65)
+  createHill(-185, -35, 18, 28, 20);
+  createHill(-200, -25, 20, 32, 22);
+  createHill(-215, -40, 22, 35, 24);
+  createHill(-190, -50, 16, 25, 18);
+  createHill(-210, -55, 18, 28, 20);
+  createHill(-225, -30, 20, 30, 22);
+  createHill(-195, -60, 17, 26, 19);
+  createHill(-205, -45, 19, 29, 21);
+  createHill(-220, -65, 21, 32, 23);
+
+  // Middle section
+  createHill(-185, -10, 17, 26, 19);
+  createHill(-200, 0, 19, 30, 21);
+  createHill(-215, -15, 21, 33, 23);
+  createHill(-195, -20, 15, 24, 17);
+  createHill(-220, 5, 18, 28, 20);
+  createHill(-230, -20, 22, 36, 24);
+
+  // North section
+  createHill(-185, 15, 16, 25, 18);
+  createHill(-200, 25, 18, 28, 20);
+  createHill(-210, 10, 20, 32, 22);
+  createHill(-220, 30, 17, 26, 19);
+  createHill(-195, 35, 15, 23, 17);
+  createHill(-230, 15, 19, 30, 21);
+
+  // === Medium hills (transition zone, x = -160 to -185) ===
+  // Extended south
+  createHill(-165, -70, 15, 22, 17);
+  createHill(-175, -80, 16, 24, 18);
+  createHill(-160, -60, 14, 20, 16);
+  createHill(-180, -75, 17, 25, 19);
+  createHill(-170, -85, 15, 22, 17);
+  createHill(-165, -55, 13, 19, 15);
+  createHill(-175, -65, 14, 21, 16);
+  createHill(-180, -90, 16, 24, 18);
+
+  // Original middle zone
+  createHill(-165, -30, 14, 20, 16);
+  createHill(-175, -45, 15, 22, 17);
+  createHill(-160, -20, 13, 18, 15);
+  createHill(-180, -35, 16, 24, 18);
+  createHill(-170, -10, 14, 20, 16);
+  createHill(-165, 0, 12, 17, 14);
+  createHill(-175, 10, 15, 22, 17);
+  createHill(-180, -5, 13, 19, 15);
+
+  // === Fill gaps near curve (x = -65 to -120) ===
+  // Extended south coverage - avoiding building at x=-68, z=-80
+  createHill(-70, -50, 11, 16, 13);
+  createHill(-82, -60, 12, 18, 14);
+  createHill(-90, -55, 13, 19, 15);
+  // Moved away from building at -68, -80
+  createHill(-85, -70, 11, 16, 13);
+  createHill(-88, -78, 12, 17, 14);
+  createHill(-95, -65, 14, 20, 16);
+  // Removed hill at -70, -80 (overlaps building)
+  createHill(-82, -88, 11, 16, 13);
+  createHill(-92, -82, 12, 17, 14);
+
+  // More south coverage (x = -100 to -150)
+  createHill(-105, -70, 13, 19, 15);
+  createHill(-115, -80, 14, 20, 16);
+  createHill(-125, -75, 15, 22, 17);
+  createHill(-135, -85, 14, 20, 16);
+  createHill(-145, -70, 13, 19, 15);
+  createHill(-110, -90, 12, 18, 14);
+  createHill(-120, -65, 13, 19, 15);
+  createHill(-130, -90, 14, 21, 16);
+  createHill(-140, -80, 15, 22, 17);
+  createHill(-150, -85, 14, 20, 16);
+
+  // Original near curve
+  createHill(-70, -25, 10, 14, 12);
+  createHill(-80, -30, 11, 16, 13);
+  createHill(-85, -20, 9, 13, 11);
+  createHill(-75, -15, 10, 15, 12);
+  createHill(-90, -25, 12, 17, 14);
+  createHill(-68, -35, 8, 12, 10);
+  createHill(-95, -40, 11, 16, 13);
+  createHill(-100, -35, 12, 17, 14);
+  createHill(-110, -45, 13, 18, 15);
+  createHill(-120, -40, 12, 17, 14);
 }
 
 // ============================================
@@ -4033,6 +4308,9 @@ export function createAllBuildings(scene) {
 
   // Hills in left north area (replacing removed buildings above main road)
   createLeftNorthHills(scene);
+
+  // Forest and mountains west of curved road
+  createCurveWestForestAndMountains(scene);
 
   // Stairs
   createZigzagStairs(scene);

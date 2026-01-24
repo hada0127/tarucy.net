@@ -173,12 +173,12 @@ export function createGround(scene) {
   distantGround.position.set(0, -0.1, 0);
   scene.add(distantGround);
 
-  // Level 1: Main road level base (y=0) - dark blue-gray sidewalk (expanded left area 2x)
-  const level1Geometry = new THREE.PlaneGeometry(500, 320);
+  // Level 1: Main road level base (y=0) - dark blue-gray sidewalk (extended further left)
+  const level1Geometry = new THREE.PlaneGeometry(600, 320);
   const level1Material = new THREE.MeshBasicMaterial({ color: 0x3a3a4a });
   const level1 = new THREE.Mesh(level1Geometry, level1Material);
   level1.rotation.x = -Math.PI / 2;
-  level1.position.set(-50, -0.02, 0);
+  level1.position.set(-100, -0.02, 0);
   scene.add(level1);
 
   // Level 2: Shopping district ground (y=2)
@@ -251,56 +251,86 @@ function createRoad(scene, x, z, y, width, length, rotation = 0) {
 
 /**
  * Create roads - Main road + Residential road + Shopping alley
+ * Main road goes from east (tunnel) through hotel/shopping to playground, then turns south
  */
 export function createRoads(scene) {
-  // Main road (y=0): 2-lane road, extended to tunnel entrance, centered at x=0
-  createRoad(scene, 0, -20, 0, 600, 10);
-
-  // === Main road markings ===
   const roadY = 0.03;
   const roadZ = -20;
-  const roadLength = 600;
   const roadWidth = 10;
-  const roadCenterX = 0;
-
-  // Dashed yellow center line
   const dashLength = 3;
   const dashGap = 2;
-  const numDashes = Math.floor(roadLength / (dashLength + dashGap));
   const centerLineMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+  const noStopLineMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+  const crosswalkMat = new THREE.MeshBasicMaterial({ color: 0xeeeeee });
+  const roadMat = new THREE.MeshBasicMaterial({ color: 0x252530, side: THREE.DoubleSide });
+  const edgeMat = new THREE.MeshBasicMaterial({ color: 0xddaaaa });
 
+  // === Curve parameters (defines where main road ends) ===
+  const turnCenterX = -40;      // Center of the curve (X) - east of south road
+  const turnCenterZ = -35;      // Center of the curve (Z) - south of main road
+  const turnRadius = 15;        // Radius of the curve
+  const turnRoadWidth = 10;     // Same as main road width
+
+  // Main road ends where the curve begins (at north side of curve)
+  const mainRoadEndX = turnCenterX; // x = -40 (curve connects at this x)
+  const mainRoadStartX = 300;   // East end (toward tunnel)
+  const mainRoadLength = mainRoadStartX - mainRoadEndX; // 340
+  const mainRoadCenterX = (mainRoadStartX + mainRoadEndX) / 2; // 130
+
+  // === Main road (from tunnel to curve start) ===
+  // Road surface
+  const mainRoadGeom = new THREE.PlaneGeometry(mainRoadLength, roadWidth);
+  const mainRoad = new THREE.Mesh(mainRoadGeom, roadMat);
+  mainRoad.rotation.x = -Math.PI / 2;
+  mainRoad.position.set(mainRoadCenterX, roadY - 0.01, roadZ);
+  scene.add(mainRoad);
+
+  // Edge lines - stop before curve junction (leave gap of ~5 units)
+  const mainEdgeLength = mainRoadLength - 10; // Shorter to not reach junction
+  const mainEdgeCenterX = mainRoadCenterX + 5; // Shift right to keep gap at curve
+  const mainEdgeGeom = new THREE.PlaneGeometry(mainEdgeLength, 0.15);
+
+  const mainLeftEdge = new THREE.Mesh(mainEdgeGeom, edgeMat);
+  mainLeftEdge.rotation.x = -Math.PI / 2;
+  mainLeftEdge.position.set(mainEdgeCenterX, roadY + 0.02, roadZ - roadWidth/2 + 0.2);
+  scene.add(mainLeftEdge);
+
+  const mainRightEdge = new THREE.Mesh(mainEdgeGeom, edgeMat);
+  mainRightEdge.rotation.x = -Math.PI / 2;
+  mainRightEdge.position.set(mainEdgeCenterX, roadY + 0.02, roadZ + roadWidth/2 - 0.2);
+  scene.add(mainRightEdge);
+
+  // Dashed yellow center line
+  const numDashes = Math.floor(mainRoadLength / (dashLength + dashGap));
   for (let i = 0; i < numDashes; i++) {
     const dashGeom = new THREE.PlaneGeometry(dashLength, 0.2);
     const dash = new THREE.Mesh(dashGeom, centerLineMat);
     dash.rotation.x = -Math.PI / 2;
-    dash.position.set(roadCenterX - roadLength/2 + dashLength/2 + i * (dashLength + dashGap), roadY, roadZ);
+    dash.position.set(mainRoadEndX + dashLength/2 + i * (dashLength + dashGap), roadY, roadZ);
     scene.add(dash);
   }
 
   // Yellow no-parking lines on both sides
-  const noStopLineMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
-  const sideLineGeom = new THREE.PlaneGeometry(roadLength, 0.15);
+  const sideLineGeom = new THREE.PlaneGeometry(mainRoadLength, 0.15);
 
   const leftSideLine = new THREE.Mesh(sideLineGeom, noStopLineMat);
   leftSideLine.rotation.x = -Math.PI / 2;
-  leftSideLine.position.set(roadCenterX, roadY, roadZ - roadWidth/2 + 0.8);
+  leftSideLine.position.set(mainRoadCenterX, roadY, roadZ - roadWidth/2 + 0.8);
   scene.add(leftSideLine);
 
   const rightSideLine = new THREE.Mesh(sideLineGeom, noStopLineMat);
   rightSideLine.rotation.x = -Math.PI / 2;
-  rightSideLine.position.set(roadCenterX, roadY, roadZ + roadWidth/2 - 0.8);
+  rightSideLine.position.set(mainRoadCenterX, roadY, roadZ + roadWidth/2 - 0.8);
   scene.add(rightSideLine);
 
-  // Crosswalks (zebra crossings) - 2 crosswalks
-  const crosswalkMat = new THREE.MeshBasicMaterial({ color: 0xeeeeee });
-  const crosswalkPositions = [-25, 25]; // X positions for crosswalks
+  // Crosswalks (zebra crossings) - main road
+  const crosswalkPositions = [25, -35]; // Right side and near curve junction
 
   crosswalkPositions.forEach(xPos => {
-    // Each crosswalk has multiple stripes running along X axis
-    const stripeLength = 4; // Length along X
-    const stripeWidth = 0.5; // Width along Z
+    const stripeLength = 4;
+    const stripeWidth = 0.5;
     const stripeGap = 0.4;
-    const numStripes = 10; // Fit within road width
+    const numStripes = 10;
 
     for (let i = 0; i < numStripes; i++) {
       const stripeGeom = new THREE.PlaneGeometry(stripeLength, stripeWidth);
@@ -312,6 +342,203 @@ export function createRoads(scene) {
         roadZ - roadWidth/2 + 1 + i * (stripeWidth + stripeGap)
       );
       scene.add(stripe);
+    }
+  });
+
+  // === Curved 90-degree turn (from main road going south) ===
+  const turnSegments = 16;
+
+  // Create curved road surface using BufferGeometry
+  // Curve goes from angle π/2 (north, connecting to main road) to π (west, connecting to south road)
+  const curveVertices = [];
+  for (let i = 0; i <= turnSegments; i++) {
+    const angle = Math.PI / 2 + (Math.PI / 2) * (i / turnSegments); // 90 to 180 degrees
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+
+    // Inner edge of road (closer to turn center)
+    const innerX = turnCenterX + (turnRadius - turnRoadWidth / 2) * cos;
+    const innerZ = turnCenterZ + (turnRadius - turnRoadWidth / 2) * sin;
+
+    // Outer edge of road (farther from turn center)
+    const outerX = turnCenterX + (turnRadius + turnRoadWidth / 2) * cos;
+    const outerZ = turnCenterZ + (turnRadius + turnRoadWidth / 2) * sin;
+
+    if (i > 0) {
+      const prevAngle = Math.PI / 2 + (Math.PI / 2) * ((i - 1) / turnSegments);
+      const prevCos = Math.cos(prevAngle);
+      const prevSin = Math.sin(prevAngle);
+
+      const prevInnerX = turnCenterX + (turnRadius - turnRoadWidth / 2) * prevCos;
+      const prevInnerZ = turnCenterZ + (turnRadius - turnRoadWidth / 2) * prevSin;
+      const prevOuterX = turnCenterX + (turnRadius + turnRoadWidth / 2) * prevCos;
+      const prevOuterZ = turnCenterZ + (turnRadius + turnRoadWidth / 2) * prevSin;
+
+      // Triangle 1
+      curveVertices.push(prevInnerX, roadY - 0.01, prevInnerZ);
+      curveVertices.push(prevOuterX, roadY - 0.01, prevOuterZ);
+      curveVertices.push(innerX, roadY - 0.01, innerZ);
+
+      // Triangle 2
+      curveVertices.push(prevOuterX, roadY - 0.01, prevOuterZ);
+      curveVertices.push(outerX, roadY - 0.01, outerZ);
+      curveVertices.push(innerX, roadY - 0.01, innerZ);
+    }
+  }
+
+  const curveGeom = new THREE.BufferGeometry();
+  curveGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(curveVertices), 3));
+  curveGeom.computeVertexNormals();
+  const curveRoad = new THREE.Mesh(curveGeom, roadMat);
+  scene.add(curveRoad);
+
+  // Curved road edges (inner and outer) - skip first and last segments at junctions
+  for (let edge = 0; edge < 2; edge++) {
+    const edgeRadius = edge === 0
+      ? turnRadius - turnRoadWidth / 2 + 0.2
+      : turnRadius + turnRoadWidth / 2 - 0.2;
+
+    for (let i = 1; i < turnSegments - 1; i++) {
+      const angle1 = Math.PI / 2 + (Math.PI / 2) * (i / turnSegments);
+      const angle2 = Math.PI / 2 + (Math.PI / 2) * ((i + 1) / turnSegments);
+
+      const x1 = turnCenterX + edgeRadius * Math.cos(angle1);
+      const z1 = turnCenterZ + edgeRadius * Math.sin(angle1);
+      const x2 = turnCenterX + edgeRadius * Math.cos(angle2);
+      const z2 = turnCenterZ + edgeRadius * Math.sin(angle2);
+
+      const segLength = Math.sqrt((x2 - x1) ** 2 + (z2 - z1) ** 2);
+      const segAngle = Math.atan2(z2 - z1, x2 - x1);
+
+      const edgeGeom = new THREE.PlaneGeometry(segLength, 0.15);
+      const edgeLine = new THREE.Mesh(edgeGeom, edgeMat);
+      edgeLine.rotation.x = -Math.PI / 2;
+      edgeLine.rotation.z = -segAngle;
+      edgeLine.position.set((x1 + x2) / 2, roadY + 0.02, (z1 + z2) / 2);
+      scene.add(edgeLine);
+    }
+  }
+
+  // Dashed center line for curved section
+  for (let i = 0; i < turnSegments; i += 2) {
+    const angle1 = Math.PI / 2 + (Math.PI / 2) * (i / turnSegments);
+    const angle2 = Math.PI / 2 + (Math.PI / 2) * ((i + 1) / turnSegments);
+
+    const x1 = turnCenterX + turnRadius * Math.cos(angle1);
+    const z1 = turnCenterZ + turnRadius * Math.sin(angle1);
+    const x2 = turnCenterX + turnRadius * Math.cos(angle2);
+    const z2 = turnCenterZ + turnRadius * Math.sin(angle2);
+
+    const segLength = Math.sqrt((x2 - x1) ** 2 + (z2 - z1) ** 2);
+    const segAngle = Math.atan2(z2 - z1, x2 - x1);
+
+    const dashGeom = new THREE.PlaneGeometry(segLength, 0.2);
+    const dash = new THREE.Mesh(dashGeom, centerLineMat);
+    dash.rotation.x = -Math.PI / 2;
+    dash.rotation.z = -segAngle;
+    dash.position.set((x1 + x2) / 2, roadY + 0.03, (z1 + z2) / 2);
+    scene.add(dash);
+  }
+
+  // Yellow no-parking lines for curved section (inner and outer)
+  for (let side = 0; side < 2; side++) {
+    const sideRadius = side === 0
+      ? turnRadius - turnRoadWidth / 2 + 0.8  // Inner side
+      : turnRadius + turnRoadWidth / 2 - 0.8; // Outer side
+
+    for (let i = 0; i < turnSegments; i++) {
+      const angle1 = Math.PI / 2 + (Math.PI / 2) * (i / turnSegments);
+      const angle2 = Math.PI / 2 + (Math.PI / 2) * ((i + 1) / turnSegments);
+
+      const x1 = turnCenterX + sideRadius * Math.cos(angle1);
+      const z1 = turnCenterZ + sideRadius * Math.sin(angle1);
+      const x2 = turnCenterX + sideRadius * Math.cos(angle2);
+      const z2 = turnCenterZ + sideRadius * Math.sin(angle2);
+
+      const segLength = Math.sqrt((x2 - x1) ** 2 + (z2 - z1) ** 2);
+      const segAngle = Math.atan2(z2 - z1, x2 - x1);
+
+      const sideLineGeom = new THREE.PlaneGeometry(segLength, 0.15);
+      const sideLine = new THREE.Mesh(sideLineGeom, noStopLineMat);
+      sideLine.rotation.x = -Math.PI / 2;
+      sideLine.rotation.z = -segAngle;
+      sideLine.position.set((x1 + x2) / 2, roadY, (z1 + z2) / 2);
+      scene.add(sideLine);
+    }
+  }
+
+  // === Straight road going south after the curve ===
+  // Curve ends at angle π: x = turnCenterX - turnRadius, z = turnCenterZ
+  const southRoadX = turnCenterX - turnRadius; // = -55
+  const southRoadStartZ = turnCenterZ; // = -35
+  const southRoadEndZ = -250; // How far south the road goes
+  const southRoadLength = Math.abs(southRoadEndZ - southRoadStartZ);
+
+  // South road surface
+  const southRoadGeom = new THREE.PlaneGeometry(turnRoadWidth, southRoadLength);
+  const southRoad = new THREE.Mesh(southRoadGeom, roadMat);
+  southRoad.rotation.x = -Math.PI / 2;
+  southRoad.position.set(southRoadX, roadY - 0.01, (southRoadStartZ + southRoadEndZ) / 2);
+  scene.add(southRoad);
+
+  // South road edges - start after curve junction (leave gap of ~5 units)
+  const southEdgeStartZ = southRoadStartZ - 5; // Start 5 units after junction
+  const southEdgeLength = Math.abs(southRoadEndZ - southEdgeStartZ);
+  const southEdgeCenterZ = (southEdgeStartZ + southRoadEndZ) / 2;
+
+  const southEdgeGeom = new THREE.PlaneGeometry(0.15, southEdgeLength);
+  const southLeftEdge = new THREE.Mesh(southEdgeGeom, edgeMat);
+  southLeftEdge.rotation.x = -Math.PI / 2;
+  southLeftEdge.position.set(southRoadX - turnRoadWidth / 2 + 0.2, roadY + 0.02, southEdgeCenterZ);
+  scene.add(southLeftEdge);
+
+  const southRightEdge = new THREE.Mesh(southEdgeGeom, edgeMat);
+  southRightEdge.rotation.x = -Math.PI / 2;
+  southRightEdge.position.set(southRoadX + turnRoadWidth / 2 - 0.2, roadY + 0.02, southEdgeCenterZ);
+  scene.add(southRightEdge);
+
+  // Dashed center line for south road
+  const southDashCount = Math.floor(southRoadLength / (dashLength + dashGap));
+  for (let i = 0; i < southDashCount; i++) {
+    const dashGeom = new THREE.PlaneGeometry(0.2, dashLength);
+    const dash = new THREE.Mesh(dashGeom, centerLineMat);
+    dash.rotation.x = -Math.PI / 2;
+    dash.position.set(southRoadX, roadY + 0.03, southRoadStartZ - dashLength / 2 - i * (dashLength + dashGap));
+    scene.add(dash);
+  }
+
+  // Yellow no-parking lines for south road (both sides)
+  const southSideLineGeom = new THREE.PlaneGeometry(0.15, southRoadLength);
+
+  const southLeftSideLine = new THREE.Mesh(southSideLineGeom, noStopLineMat);
+  southLeftSideLine.rotation.x = -Math.PI / 2;
+  southLeftSideLine.position.set(southRoadX - turnRoadWidth / 2 + 0.8, roadY, (southRoadStartZ + southRoadEndZ) / 2);
+  scene.add(southLeftSideLine);
+
+  const southRightSideLine = new THREE.Mesh(southSideLineGeom, noStopLineMat);
+  southRightSideLine.rotation.x = -Math.PI / 2;
+  southRightSideLine.position.set(southRoadX + turnRoadWidth / 2 - 0.8, roadY, (southRoadStartZ + southRoadEndZ) / 2);
+  scene.add(southRightSideLine);
+
+  // South road crosswalks (3 evenly distributed)
+  // Same style as main road crosswalks
+  const southCrosswalkZPositions = [-90, -145, -200];
+  const southStripeLength = 4;   // Same as main road
+  const southStripeWidth = 0.5;  // Same as main road
+  const southStripeGap = 0.4;    // Same as main road
+  const southNumStripes = 10;    // Same as main road
+
+  southCrosswalkZPositions.forEach(zPos => {
+    for (let i = 0; i < southNumStripes; i++) {
+      const sStripeGeom = new THREE.PlaneGeometry(southStripeWidth, southStripeLength);
+      const sStripe = new THREE.Mesh(sStripeGeom, crosswalkMat);
+      sStripe.rotation.x = -Math.PI / 2;
+      sStripe.position.set(
+        southRoadX - turnRoadWidth / 2 + 1 + i * (southStripeWidth + southStripeGap),
+        roadY + 0.04,
+        zPos
+      );
+      scene.add(sStripe);
     }
   });
 
@@ -587,22 +814,36 @@ export function createRoads(scene) {
   scene.add(slopeBand2);
 
   // Guardrail on outer side of lamps/poles (toward shopping district, z=18.5)
-  // Main rail bar
+  // Split into two sections with small gap for stairs top landing (x=-4 to x=4)
   const railMat = new THREE.MeshBasicMaterial({ color: 0x656575 });
-  const railBarGeom = new THREE.BoxGeometry(95, 0.12, 0.08);
-  const railBar1 = new THREE.Mesh(railBarGeom, railMat);
-  railBar1.position.set(0, 10.7, 18.5);
-  scene.add(railBar1);
-  const railBar2 = new THREE.Mesh(railBarGeom, railMat);
-  railBar2.position.set(0, 10.4, 18.5);
-  scene.add(railBar2);
 
-  // Guardrail posts
+  // Left section rail bars (x=-47.5 to x=-4)
+  const leftRailBarGeom = new THREE.BoxGeometry(43.5, 0.12, 0.08);
+  const leftRailBar1 = new THREE.Mesh(leftRailBarGeom, railMat);
+  leftRailBar1.position.set(-25.75, 10.7, 18.5);
+  scene.add(leftRailBar1);
+  const leftRailBar2 = new THREE.Mesh(leftRailBarGeom, railMat);
+  leftRailBar2.position.set(-25.75, 10.4, 18.5);
+  scene.add(leftRailBar2);
+
+  // Right section rail bars (x=4 to x=47.5)
+  const rightRailBarGeom = new THREE.BoxGeometry(43.5, 0.12, 0.08);
+  const rightRailBar1 = new THREE.Mesh(rightRailBarGeom, railMat);
+  rightRailBar1.position.set(25.75, 10.7, 18.5);
+  scene.add(rightRailBar1);
+  const rightRailBar2 = new THREE.Mesh(rightRailBarGeom, railMat);
+  rightRailBar2.position.set(25.75, 10.4, 18.5);
+  scene.add(rightRailBar2);
+
+  // Guardrail posts (skip stairs top landing area x=-4 to x=4)
   const postMat = new THREE.MeshBasicMaterial({ color: 0x555565 });
   for (let i = 0; i < 32; i++) {
+    const postX = -46.5 + i * 3;
+    // Skip posts in stairs top landing area
+    if (postX > -5 && postX < 5) continue;
     const postGeom = new THREE.BoxGeometry(0.1, 0.8, 0.1);
     const post = new THREE.Mesh(postGeom, postMat);
-    post.position.set(-46.5 + i * 3, 10.4, 18.5);
+    post.position.set(postX, 10.4, 18.5);
     scene.add(post);
   }
 
