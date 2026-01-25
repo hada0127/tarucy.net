@@ -10,8 +10,114 @@
  */
 
 import * as THREE from 'three';
-import { createScene, createRenderer, createCamera, createGround, createRoads, createCrosswalks, createLighting, handleResize } from './city-scene.js';
-import { createAllBuildings, createAllTrees, createAllStreetLamps } from './city-buildings.js';
+
+// Scene, sky, camera, renderer
+import { createScene, createRenderer, createCamera, createLighting, handleResize } from './city-sky.js';
+
+// Ground and roads
+import { createGround } from './city-ground.js';
+import { createRoads, createCrosswalks } from './city-road.js';
+
+// Environment (hills, mountains, forests)
+import {
+  createSlopedAreaForest,
+  createSlopedAreaEdgeHills,
+  createLeftNorthHills,
+  createCurveWestForestAndMountains,
+  createHotelBackForestAndMountains
+} from './city-environment.js';
+
+// Buildings
+import {
+  createLeftBuildings,
+  createRightBuildings,
+  createCenterBuildings,
+  createSouthBuildings,
+  removeOverlappingBuildings
+} from './city-building.js';
+
+// Houses
+import { createResidentialDistrict, createSlopedResidentialArea } from './city-house.js';
+
+// Hotel
+import { createPinkHotel } from './city-hotel.js';
+
+// Shops
+import { createShoppingDistrict, createVendorStalls } from './city-shop.js';
+
+// Parks
+import { createParks } from './city-park.js';
+
+// Trees
+import { createAllTrees, createForest } from './city-tree.js';
+
+// Street lamps
+import { createAllStreetLamps } from './city-streetlamp.js';
+
+// Infrastructure (stairs, utility poles)
+import { createZigzagStairs, createUtilitySystem } from './city-infrastructure.js';
+
+/**
+ * Create all buildings and structures
+ */
+function createAllBuildings(scene) {
+  let buildings = [];
+
+  // Residential district (25 houses)
+  buildings.push(...createResidentialDistrict(scene));
+
+  // Sloped residential area on right side
+  buildings.push(...createSlopedResidentialArea(scene));
+
+  // High-rise buildings (3 clusters - expanded)
+  buildings.push(...createLeftBuildings(scene));
+  buildings.push(...createRightBuildings(scene));
+  buildings.push(...createCenterBuildings(scene));
+
+  // South side buildings (fill empty area)
+  buildings.push(...createSouthBuildings(scene));
+
+  // Remove overlapping buildings (keep larger ones)
+  buildings = removeOverlappingBuildings(scene, buildings);
+
+  // Shopping district (16 shops) - added AFTER overlap removal to preserve all shops
+  buildings.push(...createShoppingDistrict(scene));
+
+  // Forest behind residential district
+  createForest(scene);
+
+  // Large forest and mountains behind hotel
+  createHotelBackForestAndMountains(scene);
+
+  // Forest behind sloped residential area
+  createSlopedAreaForest(scene);
+
+  // Natural hills around sloped residential area edges
+  createSlopedAreaEdgeHills(scene);
+
+  // Hills in left north area (replacing removed buildings above main road)
+  createLeftNorthHills(scene);
+
+  // Forest and mountains west of curved road
+  createCurveWestForestAndMountains(scene);
+
+  // Stairs
+  createZigzagStairs(scene);
+
+  // Utility poles & power lines
+  createUtilitySystem(scene);
+
+  // Vendor stalls
+  createVendorStalls(scene);
+
+  // Parks beside shopping district
+  createParks(scene);
+
+  // Pink hotel
+  createPinkHotel(scene, 0);
+
+  return buildings;
+}
 
 /**
  * Initialize 3D City

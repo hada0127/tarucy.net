@@ -1,0 +1,353 @@
+/**
+ * city-shop.js
+ * Hong Kong Citypop Night City - Shopping District & Vendor System
+ *
+ * Contains:
+ * - Shop buildings with neon borders
+ * - Vertical neon signs
+ * - Shopping district layout (16 shops)
+ * - Vendor stalls
+ * - Standing signs
+ */
+
+import * as THREE from 'three';
+import { colors, randomColor } from './city-colors.js';
+
+// ============================================
+// Shop Buildings
+// ============================================
+
+/**
+ * Create a shop building with neon border
+ */
+export function createShopBuilding(scene, x, z, groundY, config = {}) {
+  const group = new THREE.Group();
+
+  const width = config.width || 5;
+  const depth = config.depth || 4;
+  const height = config.height || (4 + Math.random() * 3);
+  const neonColor = config.neonColor || colors.neon.pink;
+
+  // Building body
+  const buildingGeom = new THREE.BoxGeometry(width, height, depth);
+  const buildingMat = new THREE.MeshBasicMaterial({ color: randomColor(colors.building) });
+  const building = new THREE.Mesh(buildingGeom, buildingMat);
+  building.position.y = height/2;
+  group.add(building);
+
+
+  // Shop entrance door (ground level)
+  const doorWidth = 1.5;
+  const doorHeight = 2.2;
+  const doorMat = new THREE.MeshBasicMaterial({ color: 0x1a1a25 });
+  const doorGeom = new THREE.PlaneGeometry(doorWidth, doorHeight);
+  const door = new THREE.Mesh(doorGeom, doorMat);
+  door.position.set(0, doorHeight/2, -depth/2 - 0.01);
+  group.add(door);
+
+  // Door frame with neon color
+  const doorFrameMat = new THREE.MeshBasicMaterial({ color: neonColor });
+  const doorFrameTop = new THREE.Mesh(new THREE.BoxGeometry(doorWidth + 0.2, 0.1, 0.1), doorFrameMat);
+  doorFrameTop.position.set(0, doorHeight + 0.05, -depth/2 - 0.05);
+  group.add(doorFrameTop);
+  const doorFrameLeft = new THREE.Mesh(new THREE.BoxGeometry(0.1, doorHeight, 0.1), doorFrameMat);
+  doorFrameLeft.position.set(-doorWidth/2 - 0.05, doorHeight/2, -depth/2 - 0.05);
+  group.add(doorFrameLeft);
+  const doorFrameRight = new THREE.Mesh(new THREE.BoxGeometry(0.1, doorHeight, 0.1), doorFrameMat);
+  doorFrameRight.position.set(doorWidth/2 + 0.05, doorHeight/2, -depth/2 - 0.05);
+  group.add(doorFrameRight);
+
+  // Door handle
+  const handleGeom = new THREE.BoxGeometry(0.08, 0.3, 0.05);
+  const handleMat = new THREE.MeshBasicMaterial({ color: 0xcccccc });
+  const handle = new THREE.Mesh(handleGeom, handleMat);
+  handle.position.set(doorWidth/2 - 0.2, doorHeight/2, -depth/2 - 0.02);
+  group.add(handle);
+
+  // ===== Fixed Window Grid Pattern for Shop Building =====
+  const shopWinGeom = new THREE.PlaneGeometry(0.8, 1);
+  const shopSideWinGeom = new THREE.PlaneGeometry(0.7, 0.9);
+  const shopWinSpacingX = 1.8;
+  const shopWinSpacingY = 2;
+  const shopWinMargin = 1;
+
+  // Fixed color pattern
+  const shopWinColors = [
+    colors.window[0], colors.window[3], colors.window[6], colors.window[1],
+    colors.window[4], colors.window[7], colors.window[2], colors.window[5]
+  ];
+
+  // Calculate fixed grid dimensions
+  const shopNumCols = Math.max(1, Math.floor((width - shopWinMargin * 2) / shopWinSpacingX) + 1);
+  const shopNumRows = Math.max(1, Math.floor((height - 2.5) / shopWinSpacingY));
+  const shopNumSideCols = Math.max(1, Math.floor((depth - shopWinMargin * 2) / shopWinSpacingX) + 1);
+
+  // Front Windows - fixed grid (above door)
+  for (let row = 0; row < shopNumRows; row++) {
+    for (let col = 0; col < shopNumCols; col++) {
+      const colorIdx = (row + col) % shopWinColors.length;
+      const win = new THREE.Mesh(shopWinGeom, new THREE.MeshBasicMaterial({ color: shopWinColors[colorIdx], side: THREE.DoubleSide }));
+      win.position.set(
+        -width/2 + shopWinMargin + col * shopWinSpacingX,
+        3 + row * shopWinSpacingY,
+        -depth/2 - 0.01
+      );
+      group.add(win);
+    }
+  }
+
+  // Back Windows - fixed grid
+  for (let row = 0; row < shopNumRows + 1; row++) {
+    for (let col = 0; col < shopNumCols; col++) {
+      const colorIdx = (row + col + 2) % shopWinColors.length;
+      const win = new THREE.Mesh(shopWinGeom, new THREE.MeshBasicMaterial({ color: shopWinColors[colorIdx], side: THREE.DoubleSide }));
+      win.position.set(
+        -width/2 + shopWinMargin + col * shopWinSpacingX,
+        1.5 + row * shopWinSpacingY,
+        depth/2 + 0.01
+      );
+      group.add(win);
+    }
+  }
+
+  // Shop awning (colorful)
+  const awningGeom = new THREE.BoxGeometry(width + 0.5, 0.2, 1.2);
+  const awningMat = new THREE.MeshBasicMaterial({ color: neonColor });
+  const awning = new THREE.Mesh(awningGeom, awningMat);
+  awning.position.set(0, 2.8, -depth/2 - 0.5);
+  group.add(awning);
+
+  // Display window (showcase) on ground floor sides of door
+  const showcaseGeom = new THREE.PlaneGeometry(1.2, 1.8);
+  const showcaseMat = new THREE.MeshBasicMaterial({ color: 0x2080a0, transparent: true, opacity: 0.7 });
+  const showcaseLeft = new THREE.Mesh(showcaseGeom, showcaseMat);
+  showcaseLeft.position.set(-width/2 + 0.8, 1.2, -depth/2 - 0.01);
+  group.add(showcaseLeft);
+  const showcaseRight = new THREE.Mesh(showcaseGeom, showcaseMat);
+  showcaseRight.position.set(width/2 - 0.8, 1.2, -depth/2 - 0.01);
+  group.add(showcaseRight);
+
+  group.position.set(x, groundY, z);
+  group.userData.buildingSize = { width, depth, height };
+  scene.add(group);
+  return group;
+}
+
+// ============================================
+// Vertical Signs
+// ============================================
+
+/**
+ * Create vertical neon sign (standing sign)
+ */
+export function createVerticalSign(scene, x, z, groundY) {
+  const group = new THREE.Group();
+  const neonColors = Object.values(colors.neon);
+  const color = neonColors[Math.floor(Math.random() * neonColors.length)];
+
+  // Pole
+  const poleGeom = new THREE.CylinderGeometry(0.08, 0.1, 6, 6);
+  const poleMat = new THREE.MeshBasicMaterial({ color: 0x454555 });
+  const pole = new THREE.Mesh(poleGeom, poleMat);
+  pole.position.y = 3;
+  group.add(pole);
+
+  // Sign panel
+  const signGeom = new THREE.BoxGeometry(0.8, 4, 0.15);
+  const signMat = new THREE.MeshBasicMaterial({ color: color });
+  const sign = new THREE.Mesh(signGeom, signMat);
+  sign.position.set(0.5, 4, 0);
+  group.add(sign);
+
+  // Sign background
+  const bgGeom = new THREE.BoxGeometry(1, 4.2, 0.2);
+  const bgMat = new THREE.MeshBasicMaterial({ color: 0x151520 });
+  const bg = new THREE.Mesh(bgGeom, bgMat);
+  bg.position.set(0.5, 4, 0.1);
+  group.add(bg);
+
+  group.position.set(x, groundY, z);
+  scene.add(group);
+  return group;
+}
+
+// ============================================
+// Shopping District
+// ============================================
+
+/**
+ * Create all shopping district buildings
+ */
+export function createShoppingDistrict(scene) {
+  const shops = [];
+  const groundY = 2;
+  const neonPalette = [
+    colors.neon.pink, colors.neon.cyan, colors.neon.yellow,
+    colors.neon.magenta, colors.neon.blue, colors.neon.green
+  ];
+
+  // Upper row shops (8 shops at z=13, closer to stairs)
+  const upperStartX = -19;
+  for (let i = 0; i < 8; i++) {
+    const shop = createShopBuilding(scene, upperStartX + i * 5.2, 13, groundY, {
+      width: 4.8,
+      depth: 4,
+      height: 5 + Math.random() * 2,
+      neonColor: neonPalette[i % neonPalette.length]
+    });
+    shops.push(shop);
+  }
+
+  // Lower row shops (8 shops at z=0)
+  const lowerStartX = -19;
+  for (let i = 0; i < 8; i++) {
+    const shop = createShopBuilding(scene, lowerStartX + i * 5.2, 0, groundY, {
+      width: 4.8,
+      depth: 3.5,
+      height: 4 + Math.random() * 2,
+      neonColor: neonPalette[(i + 3) % neonPalette.length]
+    });
+    shops.push(shop);
+  }
+
+  // Vertical signs - split into upper and lower rows
+  // Upper row (near upper shops)
+  for (let i = 0; i < 7; i++) {
+    createVerticalSign(scene, upperStartX + 2.5 + i * 5.2, 10, groundY);
+  }
+  // Lower row (near lower shops)
+  for (let i = 0; i < 7; i++) {
+    createVerticalSign(scene, upperStartX + 2.5 + i * 5.2, 3, groundY);
+  }
+
+  return shops;
+}
+
+// ============================================
+// Vendor Stalls
+// ============================================
+
+/**
+ * Create a single vendor stall
+ */
+export function createVendorStall(scene, x, z, groundY) {
+  const group = new THREE.Group();
+  const neonColors = Object.values(colors.neon);
+  const stallColor = neonColors[Math.floor(Math.random() * neonColors.length)];
+
+  // Table
+  const tableGeom = new THREE.BoxGeometry(1.8, 0.1, 1);
+  const tableMat = new THREE.MeshBasicMaterial({ color: 0x4a4035 });
+  const table = new THREE.Mesh(tableGeom, tableMat);
+  table.position.y = 0.8;
+  group.add(table);
+
+  // Table legs
+  const legGeom = new THREE.BoxGeometry(0.1, 0.8, 0.1);
+  const legMat = new THREE.MeshBasicMaterial({ color: 0x3a3025 });
+  [[-0.8, -0.4], [-0.8, 0.4], [0.8, -0.4], [0.8, 0.4]].forEach(([lx, lz]) => {
+    const leg = new THREE.Mesh(legGeom, legMat);
+    leg.position.set(lx, 0.4, lz);
+    group.add(leg);
+  });
+
+  // Canopy poles
+  const poleGeom = new THREE.CylinderGeometry(0.04, 0.04, 2, 6);
+  const poleMat = new THREE.MeshBasicMaterial({ color: 0x757585 });
+  [[-0.85, -0.45], [-0.85, 0.45], [0.85, -0.45], [0.85, 0.45]].forEach(([px, pz]) => {
+    const pole = new THREE.Mesh(poleGeom, poleMat);
+    pole.position.set(px, 1.8, pz);
+    group.add(pole);
+  });
+
+  // Canopy
+  const canopyGeom = new THREE.BoxGeometry(2, 0.08, 1.2);
+  const canopyMat = new THREE.MeshBasicMaterial({ color: stallColor });
+  const canopy = new THREE.Mesh(canopyGeom, canopyMat);
+  canopy.position.y = 2.8;
+  group.add(canopy);
+
+  // Products on table (small boxes)
+  for (let i = 0; i < 3; i++) {
+    const prodGeom = new THREE.BoxGeometry(0.3 + Math.random() * 0.2, 0.2 + Math.random() * 0.15, 0.3);
+    const prodMat = new THREE.MeshBasicMaterial({
+      color: neonColors[Math.floor(Math.random() * neonColors.length)]
+    });
+    const prod = new THREE.Mesh(prodGeom, prodMat);
+    prod.position.set(-0.5 + i * 0.5, 0.95, 0);
+    group.add(prod);
+  }
+
+  group.position.set(x, groundY, z);
+  scene.add(group);
+  return group;
+}
+
+/**
+ * Create all vendor stalls
+ */
+export function createVendorStalls(scene) {
+  const stalls = [];
+  const groundY = 2;
+
+  // Upper row (closer to upper shops at z=13): 11 stalls
+  for (let i = 0; i < 11; i++) {
+    stalls.push(createVendorStall(scene, -18 + i * 3.6, 9, groundY));
+  }
+
+  // Lower row (closer to lower shops at z=0): 11 stalls
+  for (let i = 0; i < 11; i++) {
+    stalls.push(createVendorStall(scene, -16.2 + i * 3.6, 2, groundY));
+  }
+
+  return stalls;
+}
+
+// ============================================
+// Standing Signs
+// ============================================
+
+/**
+ * Create a standing sign with panel
+ */
+export function createStandingSign(scene, x, z, rotation = 0) {
+  const group = new THREE.Group();
+  const neonColors = Object.values(colors.neon);
+  const color = neonColors[Math.floor(Math.random() * neonColors.length)];
+
+  const poleGeom = new THREE.CylinderGeometry(0.15, 0.2, 3.5, 8);
+  const poleMat = new THREE.MeshBasicMaterial({ color: 0x2a2a38 });
+  const pole = new THREE.Mesh(poleGeom, poleMat);
+  pole.position.y = 1.75;
+  group.add(pole);
+
+  const baseGeom = new THREE.BoxGeometry(1.2, 0.2, 1.2);
+  const baseMat = new THREE.MeshBasicMaterial({ color: 0x252535 });
+  const base = new THREE.Mesh(baseGeom, baseMat);
+  base.position.y = 0.1;
+  group.add(base);
+
+  const panelBgGeom = new THREE.BoxGeometry(3.5, 2.8, 0.15);
+  const panelBgMat = new THREE.MeshBasicMaterial({ color: 0x0d0d18 });
+  const panelBg = new THREE.Mesh(panelBgGeom, panelBgMat);
+  panelBg.position.y = 4.5;
+  group.add(panelBg);
+
+  const panelGeom = new THREE.PlaneGeometry(3.2, 2.5);
+  const panelMat = new THREE.MeshBasicMaterial({
+    color: color,
+    transparent: true,
+    opacity: 0.9
+  });
+  const panel = new THREE.Mesh(panelGeom, panelMat);
+  panel.position.set(0, 4.5, 0.1);
+  group.add(panel);
+
+  group.position.set(x, 0, z);
+  group.rotation.y = rotation;
+  group.userData.contentSurface = panel;
+  group.userData.type = 'standing-sign';
+
+  scene.add(group);
+  return group;
+}
