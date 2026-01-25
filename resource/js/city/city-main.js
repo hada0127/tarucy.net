@@ -60,6 +60,9 @@ import { createZigzagStairs, createUtilitySystem } from './city-infrastructure.j
 // Street furniture (benches, bus stops, etc.)
 import { createAllFurniture } from './city-furniture.js';
 
+// Vehicles
+import { initVehicles, updateVehicles } from './city-vehicles.js';
+
 /**
  * Create all buildings and structures
  */
@@ -158,6 +161,9 @@ export function initCity() {
   createAllBuildings(scene);
   createAllTrees(scene);
   createAllStreetLamps(scene);
+
+  // Initialize vehicles
+  initVehicles(scene);
 
   // Resize handler
   handleResize(camera, renderer);
@@ -294,6 +300,9 @@ export function initCity() {
 
     // Update camera based on keyboard input
     updateCameraControls(deltaTime);
+
+    // Update vehicles
+    updateVehicles(scene, deltaTime);
 
     // Render
     renderer.render(scene, camera);

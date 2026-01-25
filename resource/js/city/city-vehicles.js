@@ -1,323 +1,468 @@
 /**
  * city-vehicles.js
- * 도로 위를 달리는 자동차들
+ * Hong Kong Citypop Night City - Vehicle System
+ *
+ * Right-hand traffic (우측 통행)
+ * - Main road: z=-20 (z=-15 to z=-25), x=-40 to x=300
+ * - South road: x=-55 (x=-60 to x=-50), z=-35 to z=-250
+ * - Curve: center (-40, -35), radius 15
  */
 
 import * as THREE from 'three';
 
-// 자동차 색상 (네온 스타일)
+// Realistic car colors
 const carColors = [
-  0xff6090, 0x60d0e0, 0xe080c0, 0x80e0e0, 0xd090e0,
-  0xff8080, 0x80c0ff, 0xffa060
+  0xffffff,  // White
+  0x1a1a1a,  // Black
+  0xc0c0c0,  // Silver
+  0x505050,  // Dark gray
+  0x303030,  // Charcoal
+  0x8b0000,  // Dark red
+  0x1e3a5f,  // Navy blue
+  0x2c4a1c,  // Dark green
+  0xf5f5dc,  // Beige
+  0x4a3728,  // Brown
+  0x6b8e23,  // Olive
+  0x87ceeb   // Light blue
 ];
 
-// 도로 차선 정보 (세로 도로만 사용)
-const lanes = {
-  vertical: [
-    { x: -3.5, zMin: -100, zMax: 100, direction: 1 },   // 위로 가는 차선
-    { x: 3.5, zMin: -100, zMax: 100, direction: -1 }    // 아래로 가는 차선
-  ]
+// Bus colors
+const busColors = [
+  0x2e8b57,  // Sea green (city bus)
+  0x1e3a5f,  // Navy (express bus)
+  0xff8c00,  // Orange (school bus style)
+  0x8b0000   // Dark red (tour bus)
+];
+
+// Truck colors
+const truckColors = [
+  0xffffff,  // White
+  0x1e3a5f,  // Navy
+  0x505050,  // Gray
+  0x8b0000   // Dark red
+];
+
+// Delivery van colors (company colors)
+const vanColors = [
+  0xffffff,  // White
+  0xffcc00,  // Yellow (postal)
+  0x4169e1,  // Royal blue
+  0x228b22   // Forest green
+];
+
+// Road configuration
+const roadConfig = {
+  mainRoad: {
+    z: -20,
+    width: 10,
+    xMin: -40,
+    xMax: 300
+  },
+  southRoad: {
+    x: -55,
+    width: 10,
+    zMin: -250,
+    zMax: -35
+  },
+  curve: {
+    centerX: -40,
+    centerZ: -35,
+    radius: 15
+  }
 };
 
-// 교차로 영역 (차량이 서행/정지해야 하는 구간)
-const intersectionZone = {
-  xMin: -8,
-  xMax: 8,
-  zMin: -8,
-  zMax: 8
+// Lane configuration (right-hand traffic / 우측통행)
+// Main road at z=-20: south side (z=-17) for eastbound, north side (z=-23) for westbound
+const lanes = {
+  // Main road lanes (curve exit to tunnel)
+  mainEast: { z: -17, xMin: -40, xMax: 280, direction: 1 },   // Going east (+x), south lane (right side)
+  mainWest: { z: -23, xMin: -40, xMax: 280, direction: -1 },  // Going west (-x), north lane (right side)
+  // South road lanes
+  southDown: { x: -52, zMin: -240, zMax: -35, direction: -1 }, // Going south (-z), east lane (right side)
+  southUp: { x: -58, zMin: -240, zMax: -35, direction: 1 }     // Going north (+z), west lane (right side)
 };
+
+// Curve configurations - positions must match lane positions exactly to avoid teleportation
+// Road curve center: (-40, -35)
+
+// mainWest → southDown: LEFT turn (counterclockwise)
+// mainWest at z=-23 enters curve at x=-40
+const curveWestToSouth = {
+  centerX: -40,
+  centerZ: -35,
+  radius: 12,                // z=-23 = centerZ + radius = -35 + 12 ✓
+  startAngle: Math.PI / 2,   // Entry: cos(π/2)=0, sin(π/2)=1 → (-40, -23)
+  endAngle: Math.PI,         // Exit: cos(π)=-1, sin(π)=0 → (-52, -35)
+  triggerX: -40              // Trigger exactly at curve entry x
+};
+
+// southUp → mainEast: RIGHT turn (clockwise)
+// southUp at x=-58 enters curve at z=-35
+const curveSouthToEast = {
+  centerX: -40,
+  centerZ: -35,
+  radius: 18,                // x=-58 = centerX - radius = -40 - 18 ✓
+  startAngle: Math.PI,       // Entry: cos(π)=-1, sin(π)=0 → (-58, -35)
+  endAngle: Math.PI / 2,     // Exit: cos(π/2)=0, sin(π/2)=1 → (-40, -17)
+  triggerZ: -35              // Trigger exactly at curve entry z
+};
+
+// Active vehicles
+let vehicles = [];
+let lastSpawnTime = 0;
+const spawnInterval = 2.5; // Spawn new car every 2.5 seconds
+const maxVehicles = 20;
+const vehicleSpeed = 18; // Fixed speed for all vehicles to prevent overlapping
 
 /**
- * 세단형 자동차 생성
+ * Create sedan car
  */
 function createSedanCar(color) {
   const group = new THREE.Group();
   const mat = new THREE.MeshBasicMaterial({ color });
 
-  // 차체 하단
+  // Body lower
   const bodyGeom = new THREE.BoxGeometry(2.2, 0.8, 4.5);
   const body = new THREE.Mesh(bodyGeom, mat);
   body.position.y = 0.5;
   group.add(body);
 
-  // 차체 상단 (캐빈)
+  // Cabin
   const cabinGeom = new THREE.BoxGeometry(1.8, 0.7, 2.2);
   const cabinMat = new THREE.MeshBasicMaterial({ color: 0x303050 });
   const cabin = new THREE.Mesh(cabinGeom, cabinMat);
   cabin.position.set(0, 1.2, -0.3);
   group.add(cabin);
 
-  // 창문 (밝은 시안)
-  const windowMat = new THREE.MeshBasicMaterial({ color: 0x60d0e0, transparent: true, opacity: 0.7 });
-
-  // 앞 창문
+  // Windows
+  const windowMat = new THREE.MeshBasicMaterial({ color: 0x60d0e0, transparent: true, opacity: 0.7, side: THREE.DoubleSide });
   const frontWindowGeom = new THREE.PlaneGeometry(1.6, 0.6);
   const frontWindow = new THREE.Mesh(frontWindowGeom, windowMat);
   frontWindow.position.set(0, 1.2, 0.8);
   frontWindow.rotation.x = -0.3;
   group.add(frontWindow);
 
-  // 헤드라이트
+  // Side windows
+  const sideWindowGeom = new THREE.PlaneGeometry(1.8, 0.5);
+  const sideWindowL = new THREE.Mesh(sideWindowGeom, windowMat);
+  sideWindowL.position.set(-0.91, 1.2, -0.3);
+  sideWindowL.rotation.y = Math.PI / 2;
+  group.add(sideWindowL);
+  const sideWindowR = new THREE.Mesh(sideWindowGeom, windowMat);
+  sideWindowR.position.set(0.91, 1.2, -0.3);
+  sideWindowR.rotation.y = -Math.PI / 2;
+  group.add(sideWindowR);
+
+  // Rear window
+  const rearWindowGeom = new THREE.PlaneGeometry(1.6, 0.5);
+  const rearWindow = new THREE.Mesh(rearWindowGeom, windowMat);
+  rearWindow.position.set(0, 1.2, -1.4);
+  rearWindow.rotation.x = 0.3;
+  rearWindow.rotation.y = Math.PI;
+  group.add(rearWindow);
+
+  // Headlights
   const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffcc });
   const headlightGeom = new THREE.BoxGeometry(0.4, 0.3, 0.1);
   const headlightL = new THREE.Mesh(headlightGeom, lightMat);
   headlightL.position.set(-0.7, 0.5, 2.26);
   group.add(headlightL);
-
   const headlightR = new THREE.Mesh(headlightGeom, lightMat);
   headlightR.position.set(0.7, 0.5, 2.26);
   group.add(headlightR);
 
-  // 테일라이트
+  // Taillights
   const tailMat = new THREE.MeshBasicMaterial({ color: 0xff3030 });
   const taillightGeom = new THREE.BoxGeometry(0.4, 0.25, 0.1);
   const taillightL = new THREE.Mesh(taillightGeom, tailMat);
   taillightL.position.set(-0.7, 0.5, -2.26);
   group.add(taillightL);
-
   const taillightR = new THREE.Mesh(taillightGeom, tailMat);
   taillightR.position.set(0.7, 0.5, -2.26);
   group.add(taillightR);
 
-  // 바퀴 (4개)
   addWheels(group, 0.35, 0.9, 1.3);
-
   return group;
 }
 
 /**
- * SUV/밴 형태 자동차 생성
+ * Create SUV car
  */
 function createSUVCar(color) {
   const group = new THREE.Group();
   const mat = new THREE.MeshBasicMaterial({ color });
 
-  // 차체 하단 (더 높고 큼)
   const bodyGeom = new THREE.BoxGeometry(2.4, 1.0, 5.0);
   const body = new THREE.Mesh(bodyGeom, mat);
   body.position.y = 0.7;
   group.add(body);
 
-  // 차체 상단 (더 높은 캐빈)
   const cabinGeom = new THREE.BoxGeometry(2.2, 1.0, 3.0);
   const cabinMat = new THREE.MeshBasicMaterial({ color: 0x252540 });
   const cabin = new THREE.Mesh(cabinGeom, cabinMat);
   cabin.position.set(0, 1.7, -0.5);
   group.add(cabin);
 
-  // 창문
-  const windowMat = new THREE.MeshBasicMaterial({ color: 0x50c8d8, transparent: true, opacity: 0.7 });
-
+  const windowMat = new THREE.MeshBasicMaterial({ color: 0x50c8d8, transparent: true, opacity: 0.7, side: THREE.DoubleSide });
   const frontWindowGeom = new THREE.PlaneGeometry(2.0, 0.8);
   const frontWindow = new THREE.Mesh(frontWindowGeom, windowMat);
   frontWindow.position.set(0, 1.7, 1.01);
   frontWindow.rotation.x = -0.2;
   group.add(frontWindow);
 
-  // 헤드라이트 (더 큼)
+  // Side windows
+  const sideWindowGeom = new THREE.PlaneGeometry(2.6, 0.8);
+  const sideWindowL = new THREE.Mesh(sideWindowGeom, windowMat);
+  sideWindowL.position.set(-1.11, 1.7, -0.5);
+  sideWindowL.rotation.y = Math.PI / 2;
+  group.add(sideWindowL);
+  const sideWindowR = new THREE.Mesh(sideWindowGeom, windowMat);
+  sideWindowR.position.set(1.11, 1.7, -0.5);
+  sideWindowR.rotation.y = -Math.PI / 2;
+  group.add(sideWindowR);
+
+  // Rear window
+  const rearWindowGeom = new THREE.PlaneGeometry(2.0, 0.7);
+  const rearWindow = new THREE.Mesh(rearWindowGeom, windowMat);
+  rearWindow.position.set(0, 1.7, -2.01);
+  rearWindow.rotation.y = Math.PI;
+  group.add(rearWindow);
+
   const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffcc });
   const headlightGeom = new THREE.BoxGeometry(0.5, 0.4, 0.1);
   const headlightL = new THREE.Mesh(headlightGeom, lightMat);
   headlightL.position.set(-0.8, 0.7, 2.51);
   group.add(headlightL);
-
   const headlightR = new THREE.Mesh(headlightGeom, lightMat);
   headlightR.position.set(0.8, 0.7, 2.51);
   group.add(headlightR);
 
-  // 테일라이트
   const tailMat = new THREE.MeshBasicMaterial({ color: 0xff3030 });
   const taillightGeom = new THREE.BoxGeometry(0.5, 0.3, 0.1);
   const taillightL = new THREE.Mesh(taillightGeom, tailMat);
   taillightL.position.set(-0.8, 0.7, -2.51);
   group.add(taillightL);
-
   const taillightR = new THREE.Mesh(taillightGeom, tailMat);
   taillightR.position.set(0.8, 0.7, -2.51);
   group.add(taillightR);
 
-  // 바퀴 (더 큰 바퀴)
   addWheels(group, 0.45, 1.0, 1.6);
-
   return group;
 }
 
 /**
- * 스포츠카 형태 자동차 생성
+ * Create bus
  */
-function createSportsCar(color) {
+function createBus(color) {
   const group = new THREE.Group();
   const mat = new THREE.MeshBasicMaterial({ color });
 
-  // 차체 (낮고 날렵함)
-  const bodyGeom = new THREE.BoxGeometry(2.0, 0.6, 4.8);
+  // Main body (longer and taller)
+  const bodyGeom = new THREE.BoxGeometry(2.8, 2.5, 10);
   const body = new THREE.Mesh(bodyGeom, mat);
-  body.position.y = 0.4;
+  body.position.y = 1.8;
   group.add(body);
 
-  // 차체 상단 (낮은 캐빈)
-  const cabinGeom = new THREE.BoxGeometry(1.6, 0.5, 1.8);
-  const cabinMat = new THREE.MeshBasicMaterial({ color: 0x202038 });
-  const cabin = new THREE.Mesh(cabinGeom, cabinMat);
-  cabin.position.set(0, 0.95, -0.4);
-  group.add(cabin);
+  // Windows (multiple on sides)
+  const windowMat = new THREE.MeshBasicMaterial({ color: 0x87ceeb, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
+  for (let i = 0; i < 5; i++) {
+    const windowGeom = new THREE.PlaneGeometry(1.4, 1.2);
+    // Left side windows
+    const windowL = new THREE.Mesh(windowGeom, windowMat);
+    windowL.position.set(-1.41, 2.2, 3.5 - i * 1.8);
+    windowL.rotation.y = Math.PI / 2;
+    group.add(windowL);
+    // Right side windows
+    const windowR = new THREE.Mesh(windowGeom, windowMat);
+    windowR.position.set(1.41, 2.2, 3.5 - i * 1.8);
+    windowR.rotation.y = -Math.PI / 2;
+    group.add(windowR);
+  }
 
-  // 앞 경사면
-  const hoodGeom = new THREE.BoxGeometry(1.8, 0.3, 1.5);
-  const hood = new THREE.Mesh(hoodGeom, mat);
-  hood.position.set(0, 0.55, 1.5);
-  hood.rotation.x = -0.15;
-  group.add(hood);
-
-  // 창문
-  const windowMat = new THREE.MeshBasicMaterial({ color: 0x70e0f0, transparent: true, opacity: 0.7 });
-
-  const frontWindowGeom = new THREE.PlaneGeometry(1.4, 0.4);
+  // Front windshield
+  const frontWindowGeom = new THREE.PlaneGeometry(2.4, 1.8);
   const frontWindow = new THREE.Mesh(frontWindowGeom, windowMat);
-  frontWindow.position.set(0, 0.95, 0.51);
-  frontWindow.rotation.x = -0.5;
+  frontWindow.position.set(0, 2.4, 5.01);
   group.add(frontWindow);
 
-  // 헤드라이트 (날카로움)
+  // Headlights
   const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffcc });
-  const headlightGeom = new THREE.BoxGeometry(0.6, 0.15, 0.1);
-  const headlightL = new THREE.Mesh(headlightGeom, lightMat);
-  headlightL.position.set(-0.6, 0.35, 2.41);
-  group.add(headlightL);
-
-  const headlightR = new THREE.Mesh(headlightGeom, lightMat);
-  headlightR.position.set(0.6, 0.35, 2.41);
-  group.add(headlightR);
-
-  // 테일라이트 (가로로 긴 형태)
-  const tailMat = new THREE.MeshBasicMaterial({ color: 0xff3030 });
-  const taillightGeom = new THREE.BoxGeometry(1.6, 0.15, 0.1);
-  const taillight = new THREE.Mesh(taillightGeom, tailMat);
-  taillight.position.set(0, 0.4, -2.41);
-  group.add(taillight);
-
-  // 바퀴 (낮은 바퀴)
-  addWheels(group, 0.3, 0.85, 1.5);
-
-  return group;
-}
-
-/**
- * 정지된 트럭 생성 (골목용)
- */
-export function createParkedTruck(scene, x, z, rotation = 0) {
-  const group = new THREE.Group();
-  const truckColor = 0x3a3a50; // 어두운 회색-남색
-
-  // 운전석
-  const cabGeom = new THREE.BoxGeometry(2.8, 2.5, 3);
-  const cabMat = new THREE.MeshBasicMaterial({ color: truckColor });
-  const cab = new THREE.Mesh(cabGeom, cabMat);
-  cab.position.set(0, 1.5, 2.5);
-  group.add(cab);
-
-  // 운전석 창문
-  const windowMat = new THREE.MeshBasicMaterial({ color: 0x50c8d8, transparent: true, opacity: 0.7 });
-  const frontWindowGeom = new THREE.PlaneGeometry(2.2, 1.2);
-  const frontWindow = new THREE.Mesh(frontWindowGeom, windowMat);
-  frontWindow.position.set(0, 2.0, 4.01);
-  group.add(frontWindow);
-
-  // 짐칸 (BoxGeometry)
-  const cargoGeom = new THREE.BoxGeometry(3, 3.5, 6);
-  const cargoMat = new THREE.MeshBasicMaterial({ color: 0x2a2a3d });
-  const cargo = new THREE.Mesh(cargoGeom, cargoMat);
-  cargo.position.set(0, 2, -2);
-  group.add(cargo);
-
-  // 짐칸 측면 패널 (콘텐츠 부착 영역) - 오른쪽
-  const panelGeomR = new THREE.PlaneGeometry(5.5, 3);
-  const panelMatR = new THREE.MeshBasicMaterial({
-    color: 0x4a4a60,
-    transparent: true,
-    opacity: 0.95
-  });
-  const panelR = new THREE.Mesh(panelGeomR, panelMatR);
-  panelR.position.set(1.51, 2, -2);
-  panelR.rotation.y = Math.PI / 2;
-  group.add(panelR);
-
-  // 짐칸 측면 패널 - 왼쪽
-  const panelGeomL = new THREE.PlaneGeometry(5.5, 3);
-  const panelMatL = new THREE.MeshBasicMaterial({
-    color: 0x4a4a60,
-    transparent: true,
-    opacity: 0.95
-  });
-  const panelL = new THREE.Mesh(panelGeomL, panelMatL);
-  panelL.position.set(-1.51, 2, -2);
-  panelL.rotation.y = -Math.PI / 2;
-  group.add(panelL);
-
-  // 헤드라이트
-  const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
   const headlightGeom = new THREE.BoxGeometry(0.5, 0.4, 0.1);
   const headlightL = new THREE.Mesh(headlightGeom, lightMat);
-  headlightL.position.set(-1, 1, 4.01);
+  headlightL.position.set(-1.0, 1.0, 5.01);
   group.add(headlightL);
-
   const headlightR = new THREE.Mesh(headlightGeom, lightMat);
-  headlightR.position.set(1, 1, 4.01);
+  headlightR.position.set(1.0, 1.0, 5.01);
   group.add(headlightR);
 
-  // 테일라이트
+  // Taillights
   const tailMat = new THREE.MeshBasicMaterial({ color: 0xff3030 });
-  const taillightGeom = new THREE.BoxGeometry(0.6, 0.3, 0.1);
+  const taillightGeom = new THREE.BoxGeometry(0.6, 0.4, 0.1);
   const taillightL = new THREE.Mesh(taillightGeom, tailMat);
-  taillightL.position.set(-1, 1, -5.01);
+  taillightL.position.set(-1.0, 1.0, -5.01);
   group.add(taillightL);
-
   const taillightR = new THREE.Mesh(taillightGeom, tailMat);
-  taillightR.position.set(1, 1, -5.01);
+  taillightR.position.set(1.0, 1.0, -5.01);
   group.add(taillightR);
 
-  // 바퀴 (큰 바퀴)
-  const wheelGeom = new THREE.CylinderGeometry(0.6, 0.6, 0.5, 12);
-  const wheelMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
-
-  const wheelPositions = [
-    { x: -1.4, z: 2 },   // 앞 왼쪽
-    { x: 1.4, z: 2 },    // 앞 오른쪽
-    { x: -1.4, z: -3.5 }, // 뒤 왼쪽
-    { x: 1.4, z: -3.5 }   // 뒤 오른쪽
-  ];
-
-  wheelPositions.forEach(pos => {
-    const wheel = new THREE.Mesh(wheelGeom, wheelMat);
-    wheel.rotation.z = Math.PI / 2;
-    wheel.position.set(pos.x, 0.6, pos.z);
-    group.add(wheel);
-  });
-
-  group.position.set(x, 0, z);
-  group.rotation.y = rotation;
-
-  // contentSurface로 참조 (오른쪽 패널)
-  group.userData.contentSurfaceRight = panelR;
-  group.userData.contentSurfaceLeft = panelL;
-  group.userData.type = 'parked-truck';
-
-  scene.add(group);
+  addWheels(group, 0.55, 1.2, 3.5);
   return group;
 }
 
 /**
- * 바퀴 추가 헬퍼
+ * Create truck (cargo truck)
+ */
+function createTruck(color) {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshBasicMaterial({ color });
+
+  // Cab (driver section)
+  const cabGeom = new THREE.BoxGeometry(2.4, 1.8, 2.5);
+  const cab = new THREE.Mesh(cabGeom, mat);
+  cab.position.set(0, 1.4, 3.0);
+  group.add(cab);
+
+  // Cab roof
+  const cabRoofGeom = new THREE.BoxGeometry(2.4, 0.3, 2.5);
+  const cabRoof = new THREE.Mesh(cabRoofGeom, mat);
+  cabRoof.position.set(0, 2.45, 3.0);
+  group.add(cabRoof);
+
+  // Cargo container
+  const cargoMat = new THREE.MeshBasicMaterial({ color: 0x404040 });
+  const cargoGeom = new THREE.BoxGeometry(2.6, 2.8, 6.0);
+  const cargo = new THREE.Mesh(cargoGeom, cargoMat);
+  cargo.position.set(0, 1.9, -1.0);
+  group.add(cargo);
+
+  // Cab windows
+  const windowMat = new THREE.MeshBasicMaterial({ color: 0x87ceeb, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
+  const frontWindowGeom = new THREE.PlaneGeometry(2.0, 1.2);
+  const frontWindow = new THREE.Mesh(frontWindowGeom, windowMat);
+  frontWindow.position.set(0, 1.8, 4.26);
+  group.add(frontWindow);
+
+  // Cab side windows
+  const sideWindowGeom = new THREE.PlaneGeometry(2.0, 1.0);
+  const sideWindowL = new THREE.Mesh(sideWindowGeom, windowMat);
+  sideWindowL.position.set(-1.21, 1.8, 3.0);
+  sideWindowL.rotation.y = Math.PI / 2;
+  group.add(sideWindowL);
+  const sideWindowR = new THREE.Mesh(sideWindowGeom, windowMat);
+  sideWindowR.position.set(1.21, 1.8, 3.0);
+  sideWindowR.rotation.y = -Math.PI / 2;
+  group.add(sideWindowR);
+
+  // Headlights
+  const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffcc });
+  const headlightGeom = new THREE.BoxGeometry(0.5, 0.4, 0.1);
+  const headlightL = new THREE.Mesh(headlightGeom, lightMat);
+  headlightL.position.set(-0.8, 0.8, 4.26);
+  group.add(headlightL);
+  const headlightR = new THREE.Mesh(headlightGeom, lightMat);
+  headlightR.position.set(0.8, 0.8, 4.26);
+  group.add(headlightR);
+
+  // Taillights
+  const tailMat = new THREE.MeshBasicMaterial({ color: 0xff3030 });
+  const taillightGeom = new THREE.BoxGeometry(0.5, 0.4, 0.1);
+  const taillightL = new THREE.Mesh(taillightGeom, tailMat);
+  taillightL.position.set(-1.0, 1.0, -4.01);
+  group.add(taillightL);
+  const taillightR = new THREE.Mesh(taillightGeom, tailMat);
+  taillightR.position.set(1.0, 1.0, -4.01);
+  group.add(taillightR);
+
+  addWheels(group, 0.5, 1.1, 3.0);
+  // Add extra rear wheels for truck
+  const wheelGeom = new THREE.CylinderGeometry(0.5, 0.5, 0.3, 12);
+  const wheelMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
+  const rearWheelL = new THREE.Mesh(wheelGeom, wheelMat);
+  rearWheelL.rotation.z = Math.PI / 2;
+  rearWheelL.position.set(-1.1, 0.5, -1.5);
+  group.add(rearWheelL);
+  const rearWheelR = new THREE.Mesh(wheelGeom, wheelMat);
+  rearWheelR.rotation.z = Math.PI / 2;
+  rearWheelR.position.set(1.1, 0.5, -1.5);
+  group.add(rearWheelR);
+
+  return group;
+}
+
+/**
+ * Create delivery van
+ */
+function createDeliveryVan(color) {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshBasicMaterial({ color });
+
+  // Main body (box shape)
+  const bodyGeom = new THREE.BoxGeometry(2.2, 2.0, 5.5);
+  const body = new THREE.Mesh(bodyGeom, mat);
+  body.position.y = 1.4;
+  group.add(body);
+
+  // Cab section (slightly lower roof)
+  const cabGeom = new THREE.BoxGeometry(2.2, 0.3, 1.5);
+  const cab = new THREE.Mesh(cabGeom, mat);
+  cab.position.set(0, 2.55, 2.0);
+  group.add(cab);
+
+  // Front windshield
+  const windowMat = new THREE.MeshBasicMaterial({ color: 0x87ceeb, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
+  const frontWindowGeom = new THREE.PlaneGeometry(1.8, 1.2);
+  const frontWindow = new THREE.Mesh(frontWindowGeom, windowMat);
+  frontWindow.position.set(0, 1.8, 2.76);
+  frontWindow.rotation.x = -0.1;
+  group.add(frontWindow);
+
+  // Side windows (front section only)
+  const sideWindowGeom = new THREE.PlaneGeometry(0.8, 0.8);
+  const sideWindowL = new THREE.Mesh(sideWindowGeom, windowMat);
+  sideWindowL.position.set(-1.11, 1.8, 1.8);
+  sideWindowL.rotation.y = Math.PI / 2;
+  group.add(sideWindowL);
+  const sideWindowR = new THREE.Mesh(sideWindowGeom, windowMat);
+  sideWindowR.position.set(1.11, 1.8, 1.8);
+  sideWindowR.rotation.y = -Math.PI / 2;
+  group.add(sideWindowR);
+
+  // Headlights
+  const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffcc });
+  const headlightGeom = new THREE.BoxGeometry(0.4, 0.4, 0.1);
+  const headlightL = new THREE.Mesh(headlightGeom, lightMat);
+  headlightL.position.set(-0.7, 0.8, 2.76);
+  group.add(headlightL);
+  const headlightR = new THREE.Mesh(headlightGeom, lightMat);
+  headlightR.position.set(0.7, 0.8, 2.76);
+  group.add(headlightR);
+
+  // Taillights
+  const tailMat = new THREE.MeshBasicMaterial({ color: 0xff3030 });
+  const taillightGeom = new THREE.BoxGeometry(0.4, 0.3, 0.1);
+  const taillightL = new THREE.Mesh(taillightGeom, tailMat);
+  taillightL.position.set(-0.7, 0.8, -2.76);
+  group.add(taillightL);
+  const taillightR = new THREE.Mesh(taillightGeom, tailMat);
+  taillightR.position.set(0.7, 0.8, -2.76);
+  group.add(taillightR);
+
+  addWheels(group, 0.4, 0.95, 1.8);
+  return group;
+}
+
+/**
+ * Add wheels helper
  */
 function addWheels(group, radius, xOffset, zOffset) {
   const wheelGeom = new THREE.CylinderGeometry(radius, radius, 0.3, 12);
   const wheelMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
 
   const positions = [
-    { x: -xOffset, z: zOffset },   // 앞 왼쪽
-    { x: xOffset, z: zOffset },    // 앞 오른쪽
-    { x: -xOffset, z: -zOffset },  // 뒤 왼쪽
-    { x: xOffset, z: -zOffset }    // 뒤 오른쪽
+    { x: -xOffset, z: zOffset },
+    { x: xOffset, z: zOffset },
+    { x: -xOffset, z: -zOffset },
+    { x: xOffset, z: -zOffset }
   ];
 
   positions.forEach(pos => {
@@ -329,212 +474,404 @@ function addWheels(group, radius, xOffset, zOffset) {
 }
 
 /**
- * 자동차 생성 (타입 랜덤, 세로 도로 전용)
+ * Create a random vehicle
+ * Distribution: Sedan 30%, SUV 30%, Bus 10%, Truck 15%, Delivery Van 15%
  */
-export function createCar(scene, x, z, laneType, laneIndex) {
-  const color = carColors[Math.floor(Math.random() * carColors.length)];
-  const carType = Math.floor(Math.random() * 3);
+function createRandomCar() {
+  const rand = Math.random() * 100;
 
-  let car;
-  switch (carType) {
-    case 0:
-      car = createSedanCar(color);
-      break;
-    case 1:
-      car = createSUVCar(color);
-      break;
-    case 2:
-      car = createSportsCar(color);
-      break;
+  if (rand < 30) {
+    // Sedan (30%)
+    const color = carColors[Math.floor(Math.random() * carColors.length)];
+    return createSedanCar(color);
+  } else if (rand < 60) {
+    // SUV (30%)
+    const color = carColors[Math.floor(Math.random() * carColors.length)];
+    return createSUVCar(color);
+  } else if (rand < 70) {
+    // Bus (10%)
+    const color = busColors[Math.floor(Math.random() * busColors.length)];
+    return createBus(color);
+  } else if (rand < 85) {
+    // Truck (15%)
+    const color = truckColors[Math.floor(Math.random() * truckColors.length)];
+    return createTruck(color);
+  } else {
+    // Delivery Van (15%)
+    const color = vanColors[Math.floor(Math.random() * vanColors.length)];
+    return createDeliveryVan(color);
+  }
+}
+
+/**
+ * Check if spawn position is clear
+ */
+function isSpawnClear(x, z, laneName) {
+  const minSpawnDistance = 25; // Minimum distance between spawned vehicles
+  for (const car of vehicles) {
+    // Check all cars, not just same lane
+    const dx = car.position.x - x;
+    const dz = car.position.z - z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+
+    if (dist < minSpawnDistance) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Spawn a vehicle on main road (only mainWest spawns directly)
+ */
+function spawnMainRoadVehicle(scene, goingEast) {
+  // Only spawn mainWest cars - mainEast cars come from curve
+  if (goingEast) return null;
+
+  const lane = lanes.mainWest;
+
+  // Start position at tunnel end (far east)
+  const startX = lane.xMax + 10; // x = 290
+
+  // Check if spawn position is clear
+  if (!isSpawnClear(startX, lane.z, 'mainWest')) {
+    return null;
   }
 
-  car.position.set(x, 0, z);
-
-  const lane = lanes.vertical[laneIndex];
-
-  // 차량 방향 설정 (세로 도로)
-  car.rotation.y = lane.direction > 0 ? 0 : Math.PI;
+  const car = createRandomCar();
+  car.position.set(startX, 0, lane.z);
+  car.rotation.y = -Math.PI / 2; // Facing -x (west)
 
   car.userData = {
-    laneIndex,
-    speed: 6 + Math.random() * 4,  // 6-10 속도 (약간 느리게)
+    type: 'mainRoad',
+    lane: 'mainWest',
+    speed: vehicleSpeed,
     direction: lane.direction,
-    carType,
-    boundingBox: new THREE.Box3(),
-    waiting: false,
-    waitTime: 0
+    state: 'straight'
   };
 
   scene.add(car);
+  vehicles.push(car);
   return car;
 }
 
 /**
- * 모든 자동차 생성 (세로 도로만)
+ * Spawn a vehicle on south road (only southUp spawns directly)
  */
-export function createAllCars(scene) {
-  const cars = [];
+function spawnSouthRoadVehicle(scene, goingSouth) {
+  // Only spawn southUp cars - southDown cars come from curve
+  if (goingSouth) return null;
 
-  // 세로 도로 차량 (각 차선에 4대씩)
-  for (let laneIdx = 0; laneIdx < 2; laneIdx++) {
-    const lane = lanes.vertical[laneIdx];
-    for (let i = 0; i < 4; i++) {
-      // 교차로 피해서 배치 (-100~-15, 15~100)
-      let z;
-      if (i < 2) {
-        z = -90 + i * 35 + Math.random() * 10;  // 남쪽 구간
-      } else {
-        z = 20 + (i - 2) * 35 + Math.random() * 10;  // 북쪽 구간
-      }
-      const car = createCar(scene, lane.x, z, 'vertical', laneIdx);
-      cars.push(car);
-    }
+  const lane = lanes.southUp;
+
+  // Start position at far south end
+  const startZ = lane.zMin - 10; // z = -250
+
+  // Check if spawn position is clear
+  if (!isSpawnClear(lane.x, startZ, 'southUp')) {
+    return null;
   }
 
-  return cars;
+  const car = createRandomCar();
+  car.position.set(lane.x, 0, startZ);
+  car.rotation.y = 0; // Facing +z (north)
+
+  car.userData = {
+    type: 'southRoad',
+    lane: 'southUp',
+    speed: vehicleSpeed,
+    direction: lane.direction,
+    state: 'straight'
+  };
+
+  scene.add(car);
+  vehicles.push(car);
+  return car;
 }
 
 /**
- * 바운딩 박스 업데이트
+ * Check distance to car ahead (only for straight roads, not during curves)
+ * Returns: distance to car ahead, or Infinity if no car ahead
  */
-function updateBoundingBox(car) {
-  car.userData.boundingBox.setFromObject(car);
-}
-
-/**
- * 교차로 내부인지 체크
- */
-function isInIntersection(x, z) {
-  return x >= intersectionZone.xMin && x <= intersectionZone.xMax &&
-         z >= intersectionZone.zMin && z <= intersectionZone.zMax;
-}
-
-/**
- * 자동차 충돌 체크
- */
-function checkCarCollision(car, allCars) {
-  updateBoundingBox(car);
+function getDistanceToCarAhead(car, allVehicles) {
   const data = car.userData;
 
-  // 앞쪽 감지 영역 계산
-  const lookAhead = 10; // 전방 감지 거리
-  let frontZ = car.position.z + lookAhead * data.direction;
-
-  // 같은 차선에서 앞차와의 충돌 체크
-  for (const otherCar of allCars) {
-    if (otherCar === car) continue;
-    if (otherCar.userData.laneIndex !== data.laneIndex) continue;
-
-    // 같은 차선에서 앞차와의 거리
-    const distZ = (otherCar.position.z - car.position.z) * data.direction;
-    if (distZ > 0 && distZ < lookAhead) {
-      return true;
-    }
+  // No collision detection during curves - let cars flow through
+  if (data.state === 'curving') {
+    return Infinity;
   }
 
-  // 교차로 진입 전 체크: 다른 차선의 차가 교차로에 있으면 대기
-  const approachingIntersection =
-    (data.direction > 0 && car.position.z < intersectionZone.zMin && frontZ >= intersectionZone.zMin) ||
-    (data.direction < 0 && car.position.z > intersectionZone.zMax && frontZ <= intersectionZone.zMax);
+  let minAheadDistance = Infinity;
 
-  if (approachingIntersection) {
-    // 반대 차선 차량이 교차로에 있는지 체크
-    for (const otherCar of allCars) {
-      if (otherCar === car) continue;
-      if (otherCar.userData.laneIndex === data.laneIndex) continue;  // 같은 차선은 스킵
+  for (const other of allVehicles) {
+    if (other === car) continue;
 
-      if (isInIntersection(otherCar.position.x, otherCar.position.z)) {
-        return true;  // 반대 차선 차량이 교차로에 있으면 대기
+    // Skip cars that are curving
+    if (other.userData.state === 'curving') continue;
+
+    // Only check cars in the same lane
+    if (other.userData.lane !== data.lane) continue;
+
+    const dx = other.position.x - car.position.x;
+    const dz = other.position.z - car.position.z;
+
+    if (data.type === 'mainRoad') {
+      // Check if other car is ahead in x direction
+      const ahead = dx * data.direction;
+      if (ahead > 0 && ahead < minAheadDistance) {
+        minAheadDistance = ahead;
+      }
+    } else if (data.type === 'southRoad') {
+      // Check if other car is ahead in z direction
+      const ahead = dz * data.direction;
+      if (ahead > 0 && ahead < minAheadDistance) {
+        minAheadDistance = ahead;
       }
     }
   }
-
-  return false;
+  return minAheadDistance;
 }
 
 /**
- * 자동차 위치 업데이트
+ * Update vehicle position with curve handling
  */
-export function updateCar(car, deltaTime, allCars, people, crosswalkBounds) {
-  const data = car.userData;
-  let shouldStop = false;
-
-  // 횡단보도 근처에서 보행자 체크
-  if (crosswalkBounds) {
-    const inCrosswalkZone = checkCrosswalkZone(car, crosswalkBounds);
-    if (inCrosswalkZone) {
-      for (const person of people) {
-        if (isPersonOnCrosswalk(person, crosswalkBounds)) {
-          shouldStop = true;
-          break;
-        }
-      }
-    }
-  }
-
-  // 다른 차량과의 충돌 체크
-  if (!shouldStop) {
-    shouldStop = checkCarCollision(car, allCars);
-  }
-
-  if (shouldStop) {
-    data.waiting = true;
-    return;
-  }
-
-  data.waiting = false;
-  const speed = data.speed * deltaTime;
-
-  const lane = lanes.vertical[data.laneIndex];
-  car.position.z += speed * data.direction;
-
-  // 경계 도달 시 반대편으로 텔레포트
-  if (car.position.z > lane.zMax) {
-    car.position.z = lane.zMin;
-  } else if (car.position.z < lane.zMin) {
-    car.position.z = lane.zMax;
-  }
-}
-
-/**
- * 횡단보도 영역 체크 (세로 도로 차량용)
- */
-function checkCrosswalkZone(car, crosswalkBounds) {
-  const margin = 8; // 횡단보도 전 정지 거리
+function updateVehicle(car, deltaTime, allVehicles) {
   const data = car.userData;
 
-  for (const bounds of crosswalkBounds) {
-    const approachZ = car.position.z + margin * data.direction;
-    if (Math.abs(car.position.x) < 8) {
-      if ((data.direction > 0 && car.position.z < bounds.zMax && approachZ >= bounds.zMin) ||
-          (data.direction < 0 && car.position.z > bounds.zMin && approachZ <= bounds.zMax)) {
-        return true;
+  // Initialize state if not set
+  if (!data.state) {
+    data.state = 'straight';
+  }
+
+  // Handle curving state (no collision detection during curves)
+  if (data.state === 'curving') {
+    // Full speed during curves
+    const currentSpeed = data.speed;
+    const angularSpeed = (currentSpeed / data.curveRadius) * deltaTime;
+
+    if (data.curveTarget === 'southDown') {
+      // Counterclockwise turn: angle increases from π/2 to π
+      data.curveAngle += angularSpeed;
+
+      // Clamp angle to end
+      if (data.curveAngle >= curveWestToSouth.endAngle) {
+        data.curveAngle = curveWestToSouth.endAngle;
+      }
+
+      // Update position along curve
+      car.position.x = curveWestToSouth.centerX + Math.cos(data.curveAngle) * data.curveRadius;
+      car.position.z = curveWestToSouth.centerZ + Math.sin(data.curveAngle) * data.curveRadius;
+
+      // Update rotation (tangent to curve)
+      car.rotation.y = -data.curveAngle;
+
+      // Check if curve is complete
+      if (data.curveAngle >= curveWestToSouth.endAngle) {
+        // Transition to south road - position is already at exit point
+        data.state = 'straight';
+        data.type = 'southRoad';
+        data.lane = 'southDown';
+        data.direction = -1;
+        car.rotation.y = Math.PI; // Facing -z (south)
+      }
+    } else if (data.curveTarget === 'mainEast') {
+      // Clockwise turn: angle decreases from π to π/2
+      data.curveAngle -= angularSpeed;
+
+      // Clamp angle to end
+      if (data.curveAngle <= curveSouthToEast.endAngle) {
+        data.curveAngle = curveSouthToEast.endAngle;
+      }
+
+      // Update position along curve
+      car.position.x = curveSouthToEast.centerX + Math.cos(data.curveAngle) * data.curveRadius;
+      car.position.z = curveSouthToEast.centerZ + Math.sin(data.curveAngle) * data.curveRadius;
+
+      // Update rotation (tangent to curve)
+      car.rotation.y = -data.curveAngle + Math.PI;
+
+      // Check if curve is complete
+      if (data.curveAngle <= curveSouthToEast.endAngle) {
+        // Transition to main road - position is already at exit point
+        data.state = 'straight';
+        data.type = 'mainRoad';
+        data.lane = 'mainEast';
+        data.direction = 1;
+        car.rotation.y = Math.PI / 2; // Facing +x (east)
       }
     }
-  }
-  return false;
-}
 
-/**
- * 보행자가 횡단보도 위에 있는지 체크
- */
-function isPersonOnCrosswalk(person, crosswalkBounds) {
-  for (const bounds of crosswalkBounds) {
-    if (person.position.x >= bounds.xMin && person.position.x <= bounds.xMax &&
-        person.position.z >= bounds.zMin && person.position.z <= bounds.zMax) {
-      return true;
+    return false; // Keep
+  }
+
+  // Straight movement - check distance to car ahead
+  const distanceAhead = getDistanceToCarAhead(car, allVehicles);
+  const stopDistance = 8;      // Complete stop distance
+  const slowDistance = 15;     // Start slowing down distance
+
+  let currentSpeed = data.speed;
+  if (distanceAhead < stopDistance) {
+    // Too close - complete stop
+    currentSpeed = 0;
+  } else if (distanceAhead < slowDistance) {
+    // Gradually slow down based on distance
+    const ratio = (distanceAhead - stopDistance) / (slowDistance - stopDistance);
+    currentSpeed = data.speed * ratio;
+  }
+  const speed = currentSpeed * deltaTime;
+
+  if (data.type === 'mainRoad') {
+    // Move first
+    car.position.x += speed * data.direction;
+
+    // Check if mainWest car should start curving (after moving)
+    if (data.lane === 'mainWest' && car.position.x <= curveWestToSouth.triggerX) {
+      // Start curve at current position (no teleport)
+      data.state = 'curving';
+      data.curveRadius = curveWestToSouth.radius;
+      data.curveAngle = curveWestToSouth.startAngle;
+      data.curveTarget = 'southDown';
+      // Position is already close to entry, just ensure it's on the curve
+      car.position.x = curveWestToSouth.centerX + Math.cos(data.curveAngle) * data.curveRadius;
+      return false;
+    }
+
+    const lane = lanes[data.lane];
+    // Check if out of bounds
+    if (data.direction > 0 && car.position.x > lane.xMax + 20) {
+      return true; // Remove
+    }
+    if (data.direction < 0 && car.position.x < lane.xMin - 30) {
+      return true; // Remove
+    }
+  } else if (data.type === 'southRoad') {
+    // Move first
+    car.position.z += speed * data.direction;
+
+    // Check if southUp car should start curving (after moving)
+    if (data.lane === 'southUp' && car.position.z >= curveSouthToEast.triggerZ) {
+      // Start curve at current position (no teleport)
+      data.state = 'curving';
+      data.curveRadius = curveSouthToEast.radius;
+      data.curveAngle = curveSouthToEast.startAngle;
+      data.curveTarget = 'mainEast';
+      // Position is already close to entry, just ensure it's on the curve
+      car.position.z = curveSouthToEast.centerZ + Math.sin(data.curveAngle) * data.curveRadius;
+      return false;
+    }
+
+    const lane = lanes[data.lane];
+    // Check if out of bounds
+    if (data.direction > 0 && car.position.z > lane.zMax + 30) {
+      return true; // Remove
+    }
+    if (data.direction < 0 && car.position.z < lane.zMin - 20) {
+      return true; // Remove
     }
   }
-  return false;
+
+  return false; // Keep
 }
 
 /**
- * 모든 자동차 업데이트
+ * Initialize vehicle system
  */
-export function updateAllCars(cars, deltaTime, people, crosswalkBounds) {
-  cars.forEach(car => {
-    updateCar(car, deltaTime, cars, people, crosswalkBounds);
+export function initVehicles(scene) {
+  vehicles = [];
+  lastSpawnTime = 0;
+
+  // Spawn initial vehicles on main road (only mainWest - mainEast cars come from curve)
+  for (let i = 0; i < 4; i++) {
+    const car = createRandomCar();
+    const lane = lanes.mainWest;
+
+    // Spread along the road (well away from curve at x=-40)
+    // x from 20 to 220 (at least 60 units from curve trigger)
+    const x = 20 + Math.random() * 200;
+    car.position.set(x, 0, lane.z);
+    car.rotation.y = -Math.PI / 2; // Facing -x (west)
+
+    car.userData = {
+      type: 'mainRoad',
+      lane: 'mainWest',
+      speed: vehicleSpeed,
+      direction: lane.direction,
+      state: 'straight'
+    };
+
+    scene.add(car);
+    vehicles.push(car);
+  }
+
+  // Initial south road vehicles (only southUp - southDown cars come from curve)
+  for (let i = 0; i < 2; i++) {
+    const car = createRandomCar();
+    const lane = lanes.southUp;
+
+    // Spread along the south road (well away from curve at z=-35)
+    // z from -240 to -80 (at least 45 units from curve trigger)
+    const z = -240 + Math.random() * 160;
+    car.position.set(lane.x, 0, z);
+    car.rotation.y = 0; // Facing +z (north)
+
+    car.userData = {
+      type: 'southRoad',
+      lane: 'southUp',
+      speed: vehicleSpeed,
+      direction: lane.direction,
+      state: 'straight'
+    };
+
+    scene.add(car);
+    vehicles.push(car);
+  }
+
+  return vehicles;
+}
+
+/**
+ * Update all vehicles
+ */
+export function updateVehicles(scene, deltaTime) {
+  // Update existing vehicles
+  const toRemove = [];
+  vehicles.forEach((car, index) => {
+    if (updateVehicle(car, deltaTime, vehicles)) {
+      toRemove.push(index);
+    }
   });
+
+  // Remove vehicles that are out of bounds
+  for (let i = toRemove.length - 1; i >= 0; i--) {
+    const car = vehicles[toRemove[i]];
+    scene.remove(car);
+    vehicles.splice(toRemove[i], 1);
+  }
+
+  // Spawn new vehicles
+  lastSpawnTime += deltaTime;
+  if (lastSpawnTime >= spawnInterval && vehicles.length < maxVehicles) {
+    lastSpawnTime = 0;
+
+    // Randomly choose road and direction
+    // Traffic flow: mainWest → southDown (via curve), southUp → mainEast (via curve)
+    // Only spawn at entry points: mainWest (tunnel) and southUp (south end)
+    const roadChoice = Math.random();
+    if (roadChoice < 0.6) {
+      // Main road west - spawn at tunnel, turn onto southDown via curve
+      spawnMainRoadVehicle(scene, false);
+    } else {
+      // South road up - spawn at south, turn onto mainEast via curve
+      spawnSouthRoadVehicle(scene, false);
+    }
+  }
 }
 
-export { lanes, intersectionZone };
+/**
+ * Get all vehicles
+ */
+export function getVehicles() {
+  return vehicles;
+}
+
+export { lanes, roadConfig };
