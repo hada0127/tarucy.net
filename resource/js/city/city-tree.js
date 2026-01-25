@@ -137,32 +137,40 @@ function createTree(scene, x, z, groundY) {
 }
 
 /**
- * Create all trees
+ * Create all trees (reduced to 2/3)
  */
 function createAllTrees(scene) {
   const trees = [];
 
-  // Upper sidewalk trees (near main road, y=0) - moved down for wider road
-  for (let i = 0; i < 9; i++) {
-    trees.push(createTree(scene, -40 + i * 10, -14, 0));
-  }
+  // Upper sidewalk trees (near main road, y=0) - 6 trees (was 9)
+  trees.push(createTree(scene, -40, -14, 0));
+  trees.push(createTree(scene, -20, -14, 0));
+  trees.push(createTree(scene, 0, -14, 0));
+  trees.push(createTree(scene, 20, -14, 0));
+  trees.push(createTree(scene, 40, -14, 0));
+  trees.push(createTree(scene, 55, -14, 0));
 
-  // Lower sidewalk trees - moved down for wider road
-  for (let i = 0; i < 9; i++) {
-    trees.push(createTree(scene, -35 + i * 10, -28, 0));
-  }
+  // Lower sidewalk trees - 6 trees (was 9)
+  trees.push(createTree(scene, -35, -28, 0));
+  trees.push(createTree(scene, -15, -28, 0));
+  trees.push(createTree(scene, 5, -28, 0));
+  trees.push(createTree(scene, 25, -28, 0));
+  trees.push(createTree(scene, 45, -28, 0));
+  trees.push(createTree(scene, 60, -28, 0));
 
-  // South road - left sidewalk trees (x=-62, forest side)
-  const southLeftTreeZ = [-50, -75, -100, -125, -150, -175, -200, -225];
-  southLeftTreeZ.forEach(z => {
-    trees.push(createTree(scene, -62, z, 0));
-  });
+  // South road - left sidewalk trees (x=-62) - 5 trees (was 8)
+  trees.push(createTree(scene, -62, -60, 0));
+  trees.push(createTree(scene, -62, -100, 0));
+  trees.push(createTree(scene, -62, -140, 0));
+  trees.push(createTree(scene, -62, -180, 0));
+  trees.push(createTree(scene, -62, -220, 0));
 
-  // South road - right sidewalk trees (x=-48, building side)
-  const southRightTreeZ = [-60, -85, -110, -135, -160, -185, -210, -235];
-  southRightTreeZ.forEach(z => {
-    trees.push(createTree(scene, -48, z, 0));
-  });
+  // South road - right sidewalk trees (x=-48) - 5 trees (was 8)
+  trees.push(createTree(scene, -48, -70, 0));
+  trees.push(createTree(scene, -48, -110, 0));
+  trees.push(createTree(scene, -48, -150, 0));
+  trees.push(createTree(scene, -48, -190, 0));
+  trees.push(createTree(scene, -48, -230, 0));
 
   return trees;
 }

@@ -57,6 +57,9 @@ import { createAllStreetLamps } from './city-streetlamp.js';
 // Infrastructure (stairs, utility poles)
 import { createZigzagStairs, createUtilitySystem } from './city-infrastructure.js';
 
+// Street furniture (benches, bus stops, etc.)
+import { createAllFurniture } from './city-furniture.js';
+
 /**
  * Create all buildings and structures
  */
@@ -115,6 +118,9 @@ function createAllBuildings(scene) {
 
   // Pink hotel
   createPinkHotel(scene, 0);
+
+  // Street furniture (benches, bus stops, trash cans, etc.)
+  createAllFurniture(scene);
 
   return buildings;
 }

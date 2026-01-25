@@ -524,7 +524,7 @@ function createSpringRider(scene, x, z, groundY, color = 0xff6600) {
  */
 function createPlaygroundFence(scene, x, z, groundY, length, rotation = 0) {
   const group = new THREE.Group();
-  const fenceMat = new THREE.MeshBasicMaterial({ color: 0x44aa44 });
+  const fenceMat = new THREE.MeshBasicMaterial({ color: 0x3a5a3a });
 
   const numPosts = Math.floor(length / 0.8);
   for (let i = 0; i <= numPosts; i++) {
@@ -575,7 +575,7 @@ export function createParks(scene) {
 
   // Spring riders (bouncy animals)
   parks.push(createSpringRider(scene, -41, 1, groundY, 0xff6600)); // Orange
-  parks.push(createSpringRider(scene, -39, 1, groundY, 0x44aa44)); // Green
+  parks.push(createSpringRider(scene, -39, 1, groundY, 0x3a5a3a)); // Green
   parks.push(createSpringRider(scene, -43, 12, groundY, 0x4488ff)); // Blue
 
   // Fences around playground

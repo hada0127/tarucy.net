@@ -436,15 +436,17 @@ export function createRightBuildings(scene) {
   const groundY = 0;
 
   // Main towers (multiple) - moved down for wider road
-  buildings.push(createMainTower(scene, 38, -35, groundY, {
-    width: 14, depth: 12, height: 43, neonColor: colors.neon.cyan
-  }));
+  // Removed: main tower next to street lamp (x=35)
+  // buildings.push(createMainTower(scene, 38, -35, groundY, {
+  //   width: 14, depth: 12, height: 43, neonColor: colors.neon.cyan
+  // }));
   buildings.push(createMainTower(scene, 55, -45, groundY, {
     width: 16, depth: 14, height: 52, neonColor: colors.neon.yellow
   }));
-  buildings.push(createMainTower(scene, 70, -30, groundY, {
-    width: 12, depth: 10, height: 40, neonColor: colors.neon.green
-  }));
+  // Removed: building between hotel and crosswalk
+  // buildings.push(createMainTower(scene, 70, -30, groundY, {
+  //   width: 12, depth: 10, height: 40, neonColor: colors.neon.green
+  // }));
   buildings.push(createMainTower(scene, 45, -65, groundY, {
     width: 14, depth: 12, height: 48, neonColor: colors.neon.cyan
   }));
@@ -455,8 +457,8 @@ export function createRightBuildings(scene) {
   // Secondary buildings (many more) - moved down for wider road
   // Removed buildings overlapping with main road (z=-25 to z=-15)
   const secondaryPositions = [
-    { x: 32, z: -38, w: 10, d: 8, h: 22 },
-    { x: 42, z: -32, w: 8, d: 6, h: 18 },
+    { x: 32, z: -38, w: 14, d: 12, h: 40 },  // Enlarged building
+    // Removed: { x: 42, z: -32, w: 8, d: 6, h: 18 }, - between hotel and crosswalk
     { x: 35, z: -48, w: 12, d: 10, h: 28 },
     { x: 50, z: -35, w: 9, d: 7, h: 24 },
     { x: 75, z: -40, w: 10, d: 8, h: 22 },
@@ -467,8 +469,8 @@ export function createRightBuildings(scene) {
     { x: 68, z: -80, w: 11, d: 9, h: 30 },
     { x: 50, z: -75, w: 9, d: 8, h: 26 },
     { x: 35, z: -70, w: 10, d: 8, h: 26 },
-    { x: 78, z: -65, w: 8, d: 7, h: 16 },
-    { x: 62, z: -28, w: 7, d: 6, h: 14 }
+    { x: 78, z: -65, w: 8, d: 7, h: 16 }
+    // Removed: { x: 62, z: -28, w: 7, d: 6, h: 14 } - between hotel and crosswalk
   ];
 
   secondaryPositions.forEach(pos => {

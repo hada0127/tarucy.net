@@ -140,73 +140,65 @@ function createTStreetLamp(scene, x, z, groundY, rotation = 0) {
 }
 
 /**
- * Create all street lamps
+ * Create all street lamps (reduced to 2/3)
  */
 function createAllStreetLamps(scene) {
   const lamps = [];
 
-  // Main road - T-shaped lamps on upper sidewalk (z=-14)
-  // T-bar perpendicular to road: one head toward road (-Z), one toward sidewalk (+Z)
-  for (let i = 0; i < 10; i++) {
-    lamps.push(createTStreetLamp(scene, -45 + i * 10, -14, 0, Math.PI / 2));
-  }
+  // Main road - T-shaped lamps on upper sidewalk (z=-14) - 7 lamps (was 10)
+  lamps.push(createTStreetLamp(scene, -45, -14, 0, Math.PI / 2));
+  lamps.push(createTStreetLamp(scene, -25, -14, 0, Math.PI / 2));
+  lamps.push(createTStreetLamp(scene, -5, -14, 0, Math.PI / 2));
+  lamps.push(createTStreetLamp(scene, 15, -14, 0, Math.PI / 2));
+  lamps.push(createTStreetLamp(scene, 35, -14, 0, Math.PI / 2));
+  lamps.push(createTStreetLamp(scene, 50, -14, 0, Math.PI / 2));
+  lamps.push(createTStreetLamp(scene, 65, -14, 0, Math.PI / 2));
 
-  // Main road - T-shaped lamps on lower sidewalk (z=-28)
-  // T-bar perpendicular to road: one head toward road (+Z), one toward sidewalk (-Z)
-  for (let i = 0; i < 10; i++) {
-    lamps.push(createTStreetLamp(scene, -40 + i * 10, -28, 0, Math.PI / 2));
-  }
+  // Main road - T-shaped lamps on lower sidewalk (z=-28) - 7 lamps (was 10)
+  lamps.push(createTStreetLamp(scene, -40, -28, 0, Math.PI / 2));
+  lamps.push(createTStreetLamp(scene, -20, -28, 0, Math.PI / 2));
+  lamps.push(createTStreetLamp(scene, 0, -28, 0, Math.PI / 2));
+  lamps.push(createTStreetLamp(scene, 20, -28, 0, Math.PI / 2));
+  lamps.push(createTStreetLamp(scene, 40, -28, 0, Math.PI / 2));
+  lamps.push(createTStreetLamp(scene, 55, -28, 0, Math.PI / 2));
+  lamps.push(createTStreetLamp(scene, 70, -28, 0, Math.PI / 2));
 
-  // Residential road lamps (y=10) - regular lamps facing toward houses
-  for (let i = 0; i < 10; i++) {
-    lamps.push(createStreetLamp(scene, -45 + i * 10, 20, 10, -Math.PI / 2));
-  }
+  // Residential road lamps (y=10) - 7 lamps (was 10)
+  lamps.push(createStreetLamp(scene, -35, 20, 10, -Math.PI / 2));
+  lamps.push(createStreetLamp(scene, -15, 20, 10, -Math.PI / 2));
+  lamps.push(createStreetLamp(scene, 5, 20, 10, -Math.PI / 2));
+  lamps.push(createStreetLamp(scene, 25, 20, 10, -Math.PI / 2));
+  lamps.push(createStreetLamp(scene, 45, 20, 10, -Math.PI / 2));
+  lamps.push(createStreetLamp(scene, 60, 20, 10, -Math.PI / 2));
+  lamps.push(createStreetLamp(scene, 75, 20, 10, -Math.PI / 2));
 
-  // Sloped road lamps - y increases with x
-  const slopeStartX = 47.5;
-  const slopeEndX = 92.5;
-  const slopeStartY = 10;
-  const slopeEndY = 16;
-  const slopeLength = slopeEndX - slopeStartX;
+  // Sloped road lamps - 2 lamps (was 3)
+  lamps.push(createStreetLamp(scene, 55, 20, 11, -Math.PI / 2));
+  lamps.push(createStreetLamp(scene, 85, 20, 15, -Math.PI / 2));
 
-  const slopeLampPositions = [55, 70, 85];
-  slopeLampPositions.forEach(x => {
-    const t = (x - slopeStartX) / slopeLength;
-    const y = slopeStartY + t * (slopeEndY - slopeStartY);
-    lamps.push(createStreetLamp(scene, x, 20, y, -Math.PI / 2));
-  });
+  // Flat top road lamps (y=16) - 1 lamp (was 2)
+  lamps.push(createStreetLamp(scene, 107, 20, 16, -Math.PI / 2));
 
-  // Flat top road lamps (y=16)
-  const flatLampPositions = [100, 115];
-  flatLampPositions.forEach(x => {
-    lamps.push(createStreetLamp(scene, x, 20, slopeEndY, -Math.PI / 2));
-  });
+  // South road - left sidewalk (x=-62) - 5 lamps (was 8)
+  lamps.push(createTStreetLamp(scene, -62, -55, 0, 0));
+  lamps.push(createTStreetLamp(scene, -62, -95, 0, 0));
+  lamps.push(createTStreetLamp(scene, -62, -135, 0, 0));
+  lamps.push(createTStreetLamp(scene, -62, -175, 0, 0));
+  lamps.push(createTStreetLamp(scene, -62, -215, 0, 0));
 
-  // South road - T-shaped lamps on sidewalks (not on road)
-  // Road at x=-55, left sidewalk x=-62, right sidewalk x=-48
-  // T-bar perpendicular to road (rotation=0): heads point toward road and away
+  // South road - right sidewalk (x=-48) - 5 lamps (was 8)
+  lamps.push(createTStreetLamp(scene, -48, -65, 0, 0));
+  lamps.push(createTStreetLamp(scene, -48, -105, 0, 0));
+  lamps.push(createTStreetLamp(scene, -48, -145, 0, 0));
+  lamps.push(createTStreetLamp(scene, -48, -185, 0, 0));
+  lamps.push(createTStreetLamp(scene, -48, -225, 0, 0));
 
-  // Left sidewalk (x=-62) - forest side (8 lamps)
-  const southLeftLampZ = [-45, -70, -95, -120, -145, -170, -195, -220];
-  southLeftLampZ.forEach(z => {
-    lamps.push(createTStreetLamp(scene, -62, z, 0, 0));
-  });
-
-  // Right sidewalk (x=-48) - building side (8 lamps)
-  const southRightLampZ = [-55, -80, -105, -130, -155, -180, -205, -230];
-  southRightLampZ.forEach(z => {
-    lamps.push(createTStreetLamp(scene, -48, z, 0, 0));
-  });
-
-  // Curved road area - T-shaped lamps on outer edge of curve
-  // Curve center at x=-40, z=-35, road radius=15, outer edge radius=20
+  // Curved road area - 2 lamps (was 3)
   const curveCenter = { x: -40, z: -35 };
-  const outerRadius = 22; // Outside the road curve
-  const curveAngles = [Math.PI * 0.55, Math.PI * 0.75, Math.PI * 0.92];
-  curveAngles.forEach(angle => {
+  const outerRadius = 22;
+  [Math.PI * 0.6, Math.PI * 0.85].forEach(angle => {
     const lampX = curveCenter.x + outerRadius * Math.cos(angle);
     const lampZ = curveCenter.z + outerRadius * Math.sin(angle);
-    // T-bar tangent to curve, heads point toward road (inward) and outward
     lamps.push(createTStreetLamp(scene, lampX, lampZ, 0, angle));
   });
 

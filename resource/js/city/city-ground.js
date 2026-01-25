@@ -63,54 +63,44 @@ export function createDistantGround(scene) {
 
 /**
  * Create main road level base (y = -0.02)
- * Dark blue-gray sidewalk base
+ * One large bright floor covering entire city area
  */
 export function createMainRoadBase(scene) {
-  const level1Geometry = new THREE.PlaneGeometry(600, 320);
   const level1Material = new THREE.MeshBasicMaterial({ color: 0x3a3a4a });
+
+  // Single large floor covering everything
+  // x: -300 to 300 (600 wide), z: -300 to 100 (400 deep)
+  const level1Geometry = new THREE.PlaneGeometry(600, 400);
   const level1 = new THREE.Mesh(level1Geometry, level1Material);
   level1.rotation.x = -Math.PI / 2;
-  level1.position.set(-100, -0.02, 0);
+  level1.position.set(0, -0.02, -100);
   scene.add(level1);
 }
 
 /**
  * Create south area ground (y = 0.005)
- * Expanded ground plane for south buildings area
+ * Now covered by extended createMainRoadBase, so this is disabled
  */
 export function createSouthAreaGround(scene) {
-  const southGroundGeom = new THREE.PlaneGeometry(500, 130);
-  const southGroundMat = new THREE.MeshBasicMaterial({ color: 0x1a1a25 });
-  const southGround = new THREE.Mesh(southGroundGeom, southGroundMat);
-  southGround.rotation.x = -Math.PI / 2;
-  southGround.position.set(-10, 0.005, -145);
-  scene.add(southGround);
+  // Disabled - now covered by extended main road base
 }
 
 /**
  * Create curve west forest ground (y = 0.01)
  * Ground for forest west of curved road
+ * Disabled - now covered by main floor
  */
 export function createCurveWestForestGround(scene) {
-  const forestGroundGeom = new THREE.PlaneGeometry(150, 110);
-  const forestGroundMat = new THREE.MeshBasicMaterial({ color: 0x1a2a20 });
-  const forestGround = new THREE.Mesh(forestGroundGeom, forestGroundMat);
-  forestGround.rotation.x = -Math.PI / 2;
-  forestGround.position.set(-125, 0.01, -40);
-  scene.add(forestGround);
+  // Disabled - covered by main floor
 }
 
 /**
  * Create hotel back forest ground (y = 0.01)
  * Ground for forest behind the hotel
+ * Disabled - now covered by main floor
  */
 export function createHotelBackForestGround(scene) {
-  const forestGroundGeom = new THREE.PlaneGeometry(120, 80);
-  const forestGroundMat = new THREE.MeshBasicMaterial({ color: 0x1a2a20 });
-  const forestGround = new THREE.Mesh(forestGroundGeom, forestGroundMat);
-  forestGround.rotation.x = -Math.PI / 2;
-  forestGround.position.set(160, 0.01, 0);
-  scene.add(forestGround);
+  // Disabled - covered by main floor
 }
 
 /**

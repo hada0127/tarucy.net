@@ -31,6 +31,7 @@
 |--------|------|
 | city-streetlamp.js | 가로등 |
 | city-infrastructure.js | 계단, 전봇대, 전선 |
+| city-furniture.js | 거리 가구 (벤치, 버스 정류장, 우체통 등) |
 
 ### 기타 파일
 | 파일명 | 역할 |
@@ -231,6 +232,25 @@
 | `createUtilityPole(scene, x, z, groundY, rotation)` | 전봇대 생성 |
 | `createPowerLine(scene, startX, endX, z, y, sag)` | 전선 생성 |
 | `createUtilitySystem(scene)` | 전력 시스템 전체 생성 |
+
+---
+
+## city-furniture.js
+거리 가구 및 시설물.
+
+| 함수 | 역할 |
+|------|------|
+| `createStreetBench(scene, x, z, groundY, rotation)` | 거리 벤치 |
+| `createPostBox(scene, x, z, groundY)` | 우체통 (홍콩 스타일) |
+| `createBusStop(scene, x, z, groundY, rotation)` | 버스 정류장 (쉘터 포함) |
+| `createTrashCan(scene, x, z, groundY)` | 쓰레기통 |
+| `createVendingMachine(scene, x, z, groundY, rotation, type)` | 자판기 (음료/스낵) |
+| `createPhoneBooth(scene, x, z, groundY, rotation)` | 전화 부스 |
+| `createPlanter(scene, x, z, groundY)` | 화분/플랜터 |
+| `createBollard(scene, x, z, groundY)` | 볼라드 |
+| `createNewspaperStand(scene, x, z, groundY, rotation)` | 신문 가판대 |
+| `createBicycleRack(scene, x, z, groundY, rotation)` | 자전거 거치대 |
+| `createAllFurniture(scene)` | 모든 거리 가구 배치 |
 
 ---
 
