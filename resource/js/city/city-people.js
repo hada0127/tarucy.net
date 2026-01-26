@@ -48,40 +48,41 @@ const walkableZones = [
   { id: 'southRoadJunction', xMin: -65, xMax: -30, zMin: -35, zMax: -26, y: 0 },
 
   // Stairs landing area at bottom (Y=0, connects to shops/main road)
-  // zMax=15 to stay before the back wall
-  { id: 'stairsBottomArea', xMin: -32, xMax: 32, zMin: -10, zMax: 15, y: 0 },
+  // Extended x range to overlap with leftPark (-28) and connect to rightPark/hotel
+  // zMax=17 to extend right under the wall (wall at z=18.5)
+  { id: 'stairsBottomArea', xMin: -30, xMax: 48, zMin: -10, zMax: 18, y: 0 },
 
-  // Hotel entrance area (Y=0, connects right park to hotel)
-  { id: 'hotelEntranceArea', xMin: 30, xMax: 70, zMin: -10, zMax: 15, y: 0 },
+  // Hotel entrance area (Y=0, connects right park to hotel) - extended to wall
+  { id: 'hotelEntranceArea', xMin: 30, xMax: 78, zMin: -10, zMax: 18, y: 0 },
 
-  // Below right park area (Y=0, fills gap under the elevated park)
-  { id: 'belowRightPark', xMin: 25, xMax: 47, zMin: -10, zMax: 15, y: 0 },
+  // Below right park area (Y=0, fills gap under the elevated park) - extended to wall
+  { id: 'belowRightPark', xMin: 25, xMax: 47, zMin: -10, zMax: 18, y: 0 },
 
   // === Y=0 Level (Shopping District - same level as streets) ===
 
-  // Left park area (children's playground)
-  { id: 'leftPark', xMin: -52, xMax: -28, zMin: -10, zMax: 15, y: 0 },
+  // Left park area (children's playground) - extended to wall
+  { id: 'leftPark', xMin: -52, xMax: -26, zMin: -10, zMax: 18, y: 0 },
 
   // Main shopping alley (between vendor stalls)
   { id: 'shopAlley', xMin: -20, xMax: 20, zMin: 2, zMax: 12, y: 0 },
 
-  // Right park area (fountain park)
-  { id: 'rightPark', xMin: 22, xMax: 47, zMin: -10, zMax: 15, y: 0 },
+  // Right park area (fountain park) - extended to wall
+  { id: 'rightPark', xMin: 20, xMax: 50, zMin: -10, zMax: 18, y: 0 },
 
-  // Connecting path between left park and shop alley
-  { id: 'leftParkToShop', xMin: -28, xMax: -18, zMin: -10, zMax: 12, y: 0 },
+  // Connecting path between left park and shop alley (overlap with leftPark at x=-28 to -26)
+  { id: 'leftParkToShop', xMin: -30, xMax: -16, zMin: -10, zMax: 12, y: 0 },
 
-  // Connecting path between right park and shop alley
-  { id: 'rightParkToShop', xMin: 18, xMax: 24, zMin: -10, zMax: 12, y: 0 },
+  // Connecting path between right park and shop alley (overlap with rightPark at x=18-24)
+  { id: 'rightParkToShop', xMin: 16, xMax: 26, zMin: -10, zMax: 12, y: 0 },
 
   // Shop front area (connects to stairs)
   { id: 'shopFrontArea', xMin: -28, xMax: 28, zMin: -10, zMax: 3, y: 0 },
 
-  // Back area behind shops (between shops and wall)
-  { id: 'shopBackArea', xMin: -20, xMax: 20, zMin: 10, zMax: 15, y: 0 },
+  // Back area behind shops (between shops and wall) - extended to wall
+  { id: 'shopBackArea', xMin: -20, xMax: 20, zMin: 10, zMax: 18, y: 0 },
 
-  // Right park to hotel connection
-  { id: 'rightParkToHotel', xMin: 46, xMax: 70, zMin: -10, zMax: 15, y: 0 },
+  // Right park to hotel connection - extended to wall
+  { id: 'rightParkToHotel', xMin: 40, xMax: 78, zMin: -10, zMax: 18, y: 0 },
 
   // === Y=10 Level (Upper Residential) ===
 
@@ -225,22 +226,22 @@ const zoneConnections = [
     type: 'direct', xMin: 46, xMax: 55, z: -10
   },
 
-  // === Stairs bottom to below right park ===
+  // === Stairs bottom to below right park (overlap at x=25 to 47) ===
   {
     from: 'stairsBottomArea', to: 'belowRightPark',
-    type: 'direct', xMin: 28, xMax: 32, z: 5
+    type: 'direct', xMin: 25, xMax: 47, z: 5
   },
 
-  // === Stairs bottom to hotel entrance (direct connection) ===
+  // === Stairs bottom to hotel entrance (overlap at x=30 to 48) ===
   {
     from: 'stairsBottomArea', to: 'hotelEntranceArea',
-    type: 'direct', xMin: 30, xMax: 32, z: 0
+    type: 'direct', xMin: 30, xMax: 48, z: 5
   },
 
-  // === Stairs bottom to right park ===
+  // === Stairs bottom to right park (overlap at x=20 to 48) ===
   {
     from: 'stairsBottomArea', to: 'rightPark',
-    type: 'direct', xMin: 22, xMax: 32, z: 5
+    type: 'direct', xMin: 20, xMax: 48, z: 5
   },
 
   // === Below right park to hotel entrance ===
@@ -252,7 +253,7 @@ const zoneConnections = [
   // === Right park to hotel entrance ===
   {
     from: 'rightPark', to: 'hotelEntranceArea',
-    type: 'direct', xMin: 30, xMax: 47, z: 0
+    type: 'direct', xMin: 30, xMax: 50, z: 0
   },
 
   // === Stairs bottom area to shop front area ===
@@ -284,49 +285,49 @@ const zoneConnections = [
   // === Left park connections ===
   {
     from: 'leftPark', to: 'leftParkToShop',
-    type: 'direct', xMin: -28, xMax: -28, z: 5
+    type: 'direct', xMin: -30, xMax: -26, z: 5
   },
   {
     from: 'leftParkToShop', to: 'shopAlley',
-    type: 'direct', xMin: -20, xMax: -18, z: 5
+    type: 'direct', xMin: -20, xMax: -16, z: 5
   },
   {
     from: 'leftParkToShop', to: 'shopFrontArea',
-    type: 'direct', xMin: -28, xMax: -20, z: 0
+    type: 'direct', xMin: -28, xMax: -16, z: 0
   },
-  // Left park to stairs bottom
+  // Left park to stairs bottom (overlap at x=-30 to -26)
   {
     from: 'leftPark', to: 'stairsBottomArea',
-    type: 'direct', xMin: -32, xMax: -28, z: 8
+    type: 'direct', xMin: -30, xMax: -26, z: 8
   },
 
   // === Right park connections ===
   {
     from: 'rightPark', to: 'rightParkToShop',
-    type: 'direct', xMin: 22, xMax: 24, z: 5
+    type: 'direct', xMin: 20, xMax: 26, z: 5
   },
   {
     from: 'rightParkToShop', to: 'shopAlley',
-    type: 'direct', xMin: 18, xMax: 20, z: 5
+    type: 'direct', xMin: 16, xMax: 20, z: 5
   },
   {
     from: 'rightParkToShop', to: 'shopFrontArea',
-    type: 'direct', xMin: 20, xMax: 28, z: 0
+    type: 'direct', xMin: 16, xMax: 28, z: 0
   },
-  // Right park to stairs bottom
+  // Right park to stairs bottom (rightPark overlaps with stairsBottomArea at x=20-48)
   {
     from: 'rightPark', to: 'stairsBottomArea',
-    type: 'direct', xMin: 28, xMax: 32, z: 8
+    type: 'direct', xMin: 20, xMax: 48, z: 8
   },
 
   // === Right park to hotel connections ===
   {
     from: 'rightPark', to: 'rightParkToHotel',
-    type: 'direct', xMin: 45, xMax: 47, z: 5
+    type: 'direct', xMin: 40, xMax: 50, z: 10
   },
   {
     from: 'rightParkToHotel', to: 'hotelEntranceArea',
-    type: 'direct', xMin: 50, xMax: 55, z: 5
+    type: 'direct', xMin: 50, xMax: 78, z: 5
   },
   {
     from: 'rightParkToHotel', to: 'belowRightPark',
