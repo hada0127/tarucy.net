@@ -63,6 +63,9 @@ import { createAllFurniture } from './city-furniture.js';
 // Vehicles
 import { initVehicles, updateVehicles } from './city-vehicles.js';
 
+// Pedestrians
+import { initPedestrians, updatePedestrians, visualizeWalkableZones } from './city-people.js';
+
 /**
  * Create all buildings and structures
  */
@@ -164,6 +167,12 @@ export function initCity() {
 
   // Initialize vehicles
   initVehicles(scene);
+
+  // Initialize pedestrians
+  initPedestrians(scene);
+
+  // Visualize walkable zones (debug)
+  visualizeWalkableZones(scene);
 
   // Resize handler
   handleResize(camera, renderer);
@@ -303,6 +312,9 @@ export function initCity() {
 
     // Update vehicles
     updateVehicles(scene, deltaTime);
+
+    // Update pedestrians
+    updatePedestrians(deltaTime, currentTime / 1000);
 
     // Render
     renderer.render(scene, camera);

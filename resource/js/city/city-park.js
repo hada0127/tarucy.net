@@ -556,7 +556,7 @@ function createPlaygroundFence(scene, x, z, groundY, length, rotation = 0) {
  */
 export function createParks(scene) {
   const parks = [];
-  const groundY = 2;
+  const groundY = 0;
 
   // Left park - Children's Playground (x=-51 ~ -29, z=-2 ~ 14)
   // === Playground Equipment ===

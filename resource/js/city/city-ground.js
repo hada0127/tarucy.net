@@ -15,11 +15,10 @@
  *   y = 0.03   : Tunnel inside road
  *
  * ═══════════════════════════════════════════════════════════════════════
- * LEVEL 2: Shopping District (y = 2)
+ * LEVEL 0: Shopping District (y = 0, same as streets)
  * ═══════════════════════════════════════════════════════════════════════
- *   y = 2.0    : Level 2 shopping district base
- *   y = 2.01   : Shopping alley, Left park (playground), Right park (fountain)
- *   y = 2.02   : Park rubber surfaces, Park paths
+ *   y = 0.01   : Shopping district base, parks
+ *   y = 0.02   : Park rubber surfaces, Park paths
  *
  * ═══════════════════════════════════════════════════════════════════════
  * LEVEL 10: Residential District (y = 10)
@@ -133,79 +132,52 @@ export function createTunnelRoads(scene) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// LEVEL 2: Shopping District Grounds (y = 2)
+// LEVEL 0: Shopping District Grounds (y = 0, same as streets)
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Create shopping district base (y = 2)
+ * Create shopping district base (y = 0)
  * Extended to include parks on both sides
  * x: -52 ~ 47 (parks + shopping), z: -3 ~ 15
  */
 export function createShoppingDistrictBase(scene) {
-  // Main platform covering shopping district + both parks
+  // Main platform covering shopping district + both parks (lowered to y=0)
   // Left park: x=-52 to -28, Right park: x=23 to 47, Shopping: x=-22 to 22
   const level2Geometry = new THREE.PlaneGeometry(99, 18);
   const level2Material = new THREE.MeshBasicMaterial({ color: 0x40404f });
   const level2 = new THREE.Mesh(level2Geometry, level2Material);
   level2.rotation.x = -Math.PI / 2;
-  level2.position.set(-2.5, 2, 6); // Center at x=-2.5 to cover -52 to 47
+  level2.position.set(-2.5, 0.01, 6); // Lowered to y=0
   scene.add(level2);
-
-  // Retaining wall front (y=0 to y=2, z=-3)
-  const wallMat = new THREE.MeshBasicMaterial({ color: 0x2a2a32 });
-  const frontWallGeom = new THREE.BoxGeometry(99, 2, 0.5);
-  const frontWall = new THREE.Mesh(frontWallGeom, wallMat);
-  frontWall.position.set(-2.5, 1, -3);
-  scene.add(frontWall);
-
-  // Retaining wall back (y=0 to y=2, z=15)
-  const backWall = new THREE.Mesh(frontWallGeom, wallMat);
-  backWall.position.set(-2.5, 1, 15);
-  scene.add(backWall);
-
-  // Left side wall
-  const sideWallGeom = new THREE.BoxGeometry(0.5, 2, 18);
-  const leftWall = new THREE.Mesh(sideWallGeom, wallMat);
-  leftWall.position.set(-52, 1, 6);
-  scene.add(leftWall);
-
-  // Right side wall (up to hotel area)
-  const rightWall = new THREE.Mesh(sideWallGeom, wallMat);
-  rightWall.position.set(47, 1, 6);
-  scene.add(rightWall);
 }
 
 /**
- * Create shopping alley (y = 2.01)
+ * Create shopping alley (y = 0.01)
  * x: -22~22, z: 4~6
+ * DISABLED - integrated into shopping district base floor
  */
 export function createShoppingAlley(scene) {
-  const alleyGeometry = new THREE.PlaneGeometry(44, 2);
-  const alleyMaterial = new THREE.MeshBasicMaterial({ color: 0x2a2a35 });
-  const alley = new THREE.Mesh(alleyGeometry, alleyMaterial);
-  alley.rotation.x = -Math.PI / 2;
-  alley.position.set(0, 2.01, 5);
-  scene.add(alley);
+  // Disabled - now part of shopping district base
 }
 
 /**
- * Create left park ground - Children's Playground (y = 2.01, 2.02)
+ * Create left park ground - Children's Playground (y = 0)
  * x: -51 ~ -29, z: -2 ~ 14
  */
 export function createLeftParkGround(scene) {
-  const groundY = 2;
+  const groundY = 0;
   const parkMat = new THREE.MeshBasicMaterial({ color: 0x2a3a2a });
   const pathMat = new THREE.MeshBasicMaterial({ color: 0x4a4a5a });
   const rubberMat = new THREE.MeshBasicMaterial({ color: 0x664422 });
 
-  // Main playground ground (y = 2.01)
+  // Main playground ground (y = 0.01)
   const playgroundGeom = new THREE.PlaneGeometry(24, 18);
   const playground = new THREE.Mesh(playgroundGeom, parkMat);
   playground.rotation.x = -Math.PI / 2;
   playground.position.set(-40, groundY + 0.01, 6);
   scene.add(playground);
 
-  // Rubber safety surfaces (y = 2.02)
+  // Rubber safety surfaces (y = 0.02)
   const rubberGeom = new THREE.PlaneGeometry(6, 6);
   const rubber1 = new THREE.Mesh(rubberGeom, rubberMat);
   rubber1.rotation.x = -Math.PI / 2;
@@ -217,7 +189,7 @@ export function createLeftParkGround(scene) {
   rubber2.position.set(-35, groundY + 0.02, 9);
   scene.add(rubber2);
 
-  // Paths (y = 2.02)
+  // Paths (y = 0.02)
   const pathGeom = new THREE.PlaneGeometry(22, 1.5);
   const mainPath = new THREE.Mesh(pathGeom, pathMat);
   mainPath.rotation.x = -Math.PI / 2;
@@ -231,34 +203,34 @@ export function createLeftParkGround(scene) {
 }
 
 /**
- * Create right park ground - Fountain Park (y = 2.01, 2.02)
+ * Create right park ground - Fountain Park (y = 0.01, 0.02)
  * x: 24 ~ 46, z: -2 ~ 14
  */
 export function createRightParkGround(scene) {
-  const groundY = 2;
+  const groundY = 0;
   const parkMat = new THREE.MeshBasicMaterial({ color: 0x2a3a2a });
   const pathMat = new THREE.MeshBasicMaterial({ color: 0x4a4a5a });
 
-  // Main park ground (y = 2.01)
+  // Main park ground (y = 0.01)
   const rightParkGeom = new THREE.PlaneGeometry(24, 18);
   const rightPark = new THREE.Mesh(rightParkGeom, parkMat);
   rightPark.rotation.x = -Math.PI / 2;
   rightPark.position.set(35, groundY + 0.01, 6);
   scene.add(rightPark);
 
-  // Main path - vertical (y = 2.02)
+  // Main path - vertical (y = 0.02)
   const rightPathV = new THREE.Mesh(new THREE.PlaneGeometry(2, 16), pathMat);
   rightPathV.rotation.x = -Math.PI / 2;
   rightPathV.position.set(35, groundY + 0.02, 6);
   scene.add(rightPathV);
 
-  // Main path - horizontal (y = 2.02)
+  // Main path - horizontal (y = 0.02)
   const rightPathH = new THREE.Mesh(new THREE.PlaneGeometry(22, 2), pathMat);
   rightPathH.rotation.x = -Math.PI / 2;
   rightPathH.position.set(35, groundY + 0.02, 6);
   scene.add(rightPathH);
 
-  // Circular path around fountain (y = 2.02)
+  // Circular path around fountain (y = 0.02)
   const circlePathGeom = new THREE.RingGeometry(4, 5, 24);
   const circlePath = new THREE.Mesh(circlePathGeom, pathMat);
   circlePath.rotation.x = -Math.PI / 2;
@@ -466,11 +438,11 @@ export function createGround(scene) {
   createHotelBackForestGround(scene);   // y = 0.01
   createTunnelRoads(scene);             // y = 0.02, 0.03
 
-  // ─── LEVEL 2: Shopping District (y = 2) ───
-  createShoppingDistrictBase(scene);    // y = 2
-  createShoppingAlley(scene);           // y = 2.01
-  createLeftParkGround(scene);          // y = 2.01, 2.02
-  createRightParkGround(scene);         // y = 2.01, 2.02
+  // ─── LEVEL 0: Shopping District (same as streets) ───
+  createShoppingDistrictBase(scene);    // y = 0.01
+  createShoppingAlley(scene);           // disabled
+  createLeftParkGround(scene);          // y = 0.01, 0.02
+  createRightParkGround(scene);         // y = 0.01, 0.02
 
   // ─── LEVEL 10: Residential District (y = 10) ───
   createResidentialForestGround(scene); // y = 9.99

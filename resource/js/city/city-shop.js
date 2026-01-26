@@ -180,7 +180,7 @@ export function createVerticalSign(scene, x, z, groundY) {
  */
 export function createShoppingDistrict(scene) {
   const shops = [];
-  const groundY = 2;
+  const groundY = 0;
   const neonPalette = [
     colors.neon.pink, colors.neon.cyan, colors.neon.yellow,
     colors.neon.magenta, colors.neon.blue, colors.neon.green
@@ -288,7 +288,7 @@ export function createVendorStall(scene, x, z, groundY) {
  */
 export function createVendorStalls(scene) {
   const stalls = [];
-  const groundY = 2;
+  const groundY = 0;
 
   // Upper row (closer to upper shops at z=13): 11 stalls
   for (let i = 0; i < 11; i++) {

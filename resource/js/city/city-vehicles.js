@@ -9,6 +9,7 @@
  */
 
 import * as THREE from 'three';
+import { shouldVehicleStop } from './city-people.js';
 
 // Realistic car colors
 const carColors = [
@@ -709,8 +710,14 @@ function updateVehicle(car, deltaTime, allVehicles) {
   const stopDistance = 8;      // Complete stop distance
   const slowDistance = 15;     // Start slowing down distance
 
+  // Check for pedestrians on crosswalks
+  const shouldStopForPedestrian = shouldVehicleStop(car.position.x, car.position.z, data.lane);
+
   let currentSpeed = data.speed;
-  if (distanceAhead < stopDistance) {
+  if (shouldStopForPedestrian) {
+    // Stop for pedestrians crossing
+    currentSpeed = 0;
+  } else if (distanceAhead < stopDistance) {
     // Too close - complete stop
     currentSpeed = 0;
   } else if (distanceAhead < slowDistance) {
