@@ -127,9 +127,21 @@ function collidesWithObstacleAt(x, z, y, margin = 1.0) {
   const groundY = y - 1.6; // Convert eye level to ground level
   for (const obs of obstacleZones) {
     if (obs.y !== undefined && Math.abs(groundY - obs.y) > 2) continue;
-    if (x >= obs.xMin - margin && x <= obs.xMax + margin &&
-        z >= obs.zMin - margin && z <= obs.zMax + margin) {
-      return true;
+
+    // Circular obstacle check
+    if (obs.type === 'circle') {
+      const dx = x - obs.cx;
+      const dz = z - obs.cz;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < obs.radius + margin) {
+        return true;
+      }
+    } else {
+      // Rectangular obstacle check
+      if (x >= obs.xMin - margin && x <= obs.xMax + margin &&
+          z >= obs.zMin - margin && z <= obs.zMax + margin) {
+        return true;
+      }
     }
   }
   return false;

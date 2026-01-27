@@ -170,35 +170,35 @@ export function createLeftParkGround(scene) {
   const pathMat = new THREE.MeshBasicMaterial({ color: 0x4a4a5a });
   const rubberMat = new THREE.MeshBasicMaterial({ color: 0x664422 });
 
-  // Main playground ground (y = 0.01)
+  // Main playground ground (y = 0.05 - raised to prevent z-fighting)
   const playgroundGeom = new THREE.PlaneGeometry(24, 18);
   const playground = new THREE.Mesh(playgroundGeom, parkMat);
   playground.rotation.x = -Math.PI / 2;
-  playground.position.set(-40, groundY + 0.01, 6);
+  playground.position.set(-40, groundY + 0.05, 6);
   scene.add(playground);
 
-  // Rubber safety surfaces (y = 0.02)
+  // Rubber safety surfaces (y = 0.06)
   const rubberGeom = new THREE.PlaneGeometry(6, 6);
   const rubber1 = new THREE.Mesh(rubberGeom, rubberMat);
   rubber1.rotation.x = -Math.PI / 2;
-  rubber1.position.set(-45, groundY + 0.02, 3);
+  rubber1.position.set(-45, groundY + 0.06, 3);
   scene.add(rubber1);
 
   const rubber2 = new THREE.Mesh(rubberGeom, rubberMat);
   rubber2.rotation.x = -Math.PI / 2;
-  rubber2.position.set(-35, groundY + 0.02, 9);
+  rubber2.position.set(-35, groundY + 0.06, 9);
   scene.add(rubber2);
 
-  // Paths (y = 0.02)
+  // Paths (y = 0.06)
   const pathGeom = new THREE.PlaneGeometry(22, 1.5);
   const mainPath = new THREE.Mesh(pathGeom, pathMat);
   mainPath.rotation.x = -Math.PI / 2;
-  mainPath.position.set(-40, groundY + 0.02, 6);
+  mainPath.position.set(-40, groundY + 0.06, 6);
   scene.add(mainPath);
 
   const sidePath = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 16), pathMat);
   sidePath.rotation.x = -Math.PI / 2;
-  sidePath.position.set(-40, groundY + 0.02, 6);
+  sidePath.position.set(-40, groundY + 0.06, 6);
   scene.add(sidePath);
 }
 
@@ -211,30 +211,30 @@ export function createRightParkGround(scene) {
   const parkMat = new THREE.MeshBasicMaterial({ color: 0x2a3a2a });
   const pathMat = new THREE.MeshBasicMaterial({ color: 0x4a4a5a });
 
-  // Main park ground (y = 0.01)
+  // Main park ground (y = 0.05 - raised to prevent z-fighting)
   const rightParkGeom = new THREE.PlaneGeometry(24, 18);
   const rightPark = new THREE.Mesh(rightParkGeom, parkMat);
   rightPark.rotation.x = -Math.PI / 2;
-  rightPark.position.set(35, groundY + 0.01, 6);
+  rightPark.position.set(35, groundY + 0.05, 6);
   scene.add(rightPark);
 
-  // Main path - vertical (y = 0.02)
+  // Main path - vertical (y = 0.06)
   const rightPathV = new THREE.Mesh(new THREE.PlaneGeometry(2, 16), pathMat);
   rightPathV.rotation.x = -Math.PI / 2;
-  rightPathV.position.set(35, groundY + 0.02, 6);
+  rightPathV.position.set(35, groundY + 0.06, 6);
   scene.add(rightPathV);
 
-  // Main path - horizontal (y = 0.02)
+  // Main path - horizontal (y = 0.06)
   const rightPathH = new THREE.Mesh(new THREE.PlaneGeometry(22, 2), pathMat);
   rightPathH.rotation.x = -Math.PI / 2;
-  rightPathH.position.set(35, groundY + 0.02, 6);
+  rightPathH.position.set(35, groundY + 0.06, 6);
   scene.add(rightPathH);
 
-  // Circular path around fountain (y = 0.02)
+  // Circular path around fountain (y = 0.06)
   const circlePathGeom = new THREE.RingGeometry(4, 5, 24);
   const circlePath = new THREE.Mesh(circlePathGeom, pathMat);
   circlePath.rotation.x = -Math.PI / 2;
-  circlePath.position.set(35, groundY + 0.02, 6);
+  circlePath.position.set(35, groundY + 0.06, 6);
   scene.add(circlePath);
 }
 

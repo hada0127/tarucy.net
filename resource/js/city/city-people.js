@@ -174,10 +174,8 @@ const obstacleZones = [
   })),
 
   // === Parks ===
-  // Fountain (right park)
-  { xMin: 32, xMax: 40, zMin: 0, zMax: 8, y: 0 },
-  // Playground equipment (left park)
-  { xMin: -46, xMax: -34, zMin: 0, zMax: 12, y: 0 },
+  // Fountain (right park) - circular collision
+  { type: 'circle', cx: 35, cz: 6, radius: 4, y: 0 },
 
   // === Playground fences (left park: x=-51~-29, z=-2~14) ===
   // Bottom fence (z=-2)
@@ -714,9 +712,21 @@ function collidesWithObstacle(x, z, y, margin = 0.5) {
   if (y > 1) return false; // Only check at ground level
   for (const obs of obstacleZones) {
     if (obs.y !== undefined && Math.abs(y - obs.y) > 2) continue;
-    if (x >= obs.xMin - margin && x <= obs.xMax + margin &&
-        z >= obs.zMin - margin && z <= obs.zMax + margin) {
-      return true;
+
+    // Circular obstacle check
+    if (obs.type === 'circle') {
+      const dx = x - obs.cx;
+      const dz = z - obs.cz;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < obs.radius + margin) {
+        return true;
+      }
+    } else {
+      // Rectangular obstacle check
+      if (x >= obs.xMin - margin && x <= obs.xMax + margin &&
+          z >= obs.zMin - margin && z <= obs.zMax + margin) {
+        return true;
+      }
     }
   }
   return false;
@@ -1187,6 +1197,7 @@ function isVehicleOnCrosswalk(crosswalkId, personX, personZ) {
   if (!cw) return false;
 
   for (const vehicle of vehicles) {
+    if (!vehicle || !vehicle.mesh) continue;
     const vx = vehicle.mesh.position.x;
     const vz = vehicle.mesh.position.z;
 
