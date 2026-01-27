@@ -1836,4 +1836,17 @@ export function visualizeWalkableZones(scene) {
   return visualizations;
 }
 
-export { crosswalks, walkableZones as walkPaths };
+export {
+  crosswalks,
+  walkableZones as walkPaths,
+  walkableZones,
+  roadZones,
+  obstacleZones,
+  stairPaths,
+  getZoneById,
+  isInsideZone,
+  isOnRoad,
+  collidesWithObstacle,
+  findZoneAtPosition,
+  getZoneY
+};

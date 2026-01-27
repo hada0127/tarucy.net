@@ -19,7 +19,7 @@ const buildingSignTexts = [
   'CRM', 'LMS', 'ERP', 'Web Agency',
   'EMS', 'CMS', 'Kiosk', 'Cloud Service',
   'AI Lab', 'Mobile App', 'Windows App', 'MacOS App',
-  '3D Web'
+  '3D Web', 'Web MIDI'
 ];
 
 const signFonts = [

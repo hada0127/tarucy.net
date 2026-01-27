@@ -3,10 +3,9 @@
  * Hong Kong Citypop Night City - Main Entry Point
  *
  * Camera Controls:
- * - W/S: Move forward/backward
- * - A/D: Move left/right
+ * - W/S: Move forward/backward (restricted to walkable zones)
+ * - A/D: Rotate left/right
  * - Arrow Up/Down: Look up/down (pitch)
- * - Arrow Left/Right: Rotate camera
  */
 
 import * as THREE from 'three';
@@ -64,7 +63,145 @@ import { createAllFurniture } from './city-furniture.js';
 import { initVehicles, updateVehicles } from './city-vehicles.js';
 
 // Pedestrians
-import { initPedestrians, updatePedestrians, visualizeWalkableZones } from './city-people.js';
+import {
+  initPedestrians,
+  updatePedestrians,
+  visualizeWalkableZones,
+  walkableZones,
+  roadZones,
+  obstacleZones,
+  stairPaths,
+  getZoneY
+} from './city-people.js';
+
+// ============================================================
+// CAMERA MOVEMENT VALIDATION (Zone-based like pedestrians)
+// ============================================================
+
+/**
+ * Check if camera position is inside a walkable zone
+ */
+function isPositionInWalkableZone(x, y, z) {
+  const yTolerance = 3.0; // Larger tolerance for camera (eye level ~1.6m above ground)
+
+  for (const zone of walkableZones) {
+    // XZ range check
+    if (x < zone.xMin || x > zone.xMax || z < zone.zMin || z > zone.zMax) {
+      continue;
+    }
+
+    // Y level check
+    if (zone.y === 'sloped') {
+      const t = Math.max(0, Math.min(1, (x - zone.xMin) / (zone.xMax - zone.xMin)));
+      const expectedY = zone.yStart + t * (zone.yEnd - zone.yStart);
+      // Camera is at eye level (~1.6m above ground), so check against ground + eye level
+      if (Math.abs(y - (expectedY + 1.6)) < yTolerance) {
+        return { zone, groundY: expectedY };
+      }
+    } else {
+      if (Math.abs(y - (zone.y + 1.6)) < yTolerance) {
+        return { zone, groundY: zone.y };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Check if camera position is on a road
+ */
+function isPositionOnRoad(x, z) {
+  for (const road of roadZones) {
+    if (x >= road.xMin && x <= road.xMax && z >= road.zMin && z <= road.zMax) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Check if camera position collides with an obstacle
+ */
+function collidesWithObstacleAt(x, z, y, margin = 0.5) {
+  const groundY = y - 1.6; // Convert eye level to ground level
+  for (const obs of obstacleZones) {
+    if (obs.y !== undefined && Math.abs(groundY - obs.y) > 2) continue;
+    if (x >= obs.xMin - margin && x <= obs.xMax + margin &&
+        z >= obs.zMin - margin && z <= obs.zMax + margin) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Check if position is on stairs and get interpolated Y
+ */
+function getStairY(x, z) {
+  for (const stair of stairPaths) {
+    // Check if within stair Z range (stair width ~3m)
+    if (Math.abs(z - stair.z) > 2) continue;
+
+    // Check if within stair X range
+    const xMin = Math.min(stair.xStart, stair.xEnd);
+    const xMax = Math.max(stair.xStart, stair.xEnd);
+    if (x < xMin || x > xMax) continue;
+
+    // Calculate progress along stair
+    const t = (x - stair.xStart) / (stair.xEnd - stair.xStart);
+    const groundY = stair.yTop + t * (stair.yBottom - stair.yTop);
+    return groundY + 1.6; // Return eye level
+  }
+  return null;
+}
+
+/**
+ * Validate and adjust camera position
+ * Returns adjusted position if valid, or null if movement should be blocked
+ */
+function validateCameraPosition(newX, newY, newZ, currentY) {
+  // Check stairs first (they connect different Y levels)
+  const stairY = getStairY(newX, newZ);
+  if (stairY !== null) {
+    return { x: newX, y: stairY, z: newZ };
+  }
+
+  // Check if in a walkable zone
+  const zoneResult = isPositionInWalkableZone(newX, newY, newZ);
+  if (zoneResult) {
+    // Valid position in a walkable zone
+    return { x: newX, y: zoneResult.groundY + 1.6, z: newZ };
+  }
+
+  // Check if on road (not allowed)
+  if (isPositionOnRoad(newX, newZ)) {
+    return null;
+  }
+
+  // Check obstacle collision
+  if (collidesWithObstacleAt(newX, newZ, newY)) {
+    return null;
+  }
+
+  // Try to find a valid zone at the current Y level
+  // This handles edge cases where camera might be slightly outside zone bounds
+  for (const zone of walkableZones) {
+    if (zone.y === 'sloped') continue;
+    if (Math.abs(currentY - (zone.y + 1.6)) > 2) continue;
+
+    // Allow small overflow if mostly inside
+    const overflowTolerance = 1.0;
+    if (newX >= zone.xMin - overflowTolerance && newX <= zone.xMax + overflowTolerance &&
+        newZ >= zone.zMin - overflowTolerance && newZ <= zone.zMax + overflowTolerance) {
+      // Clamp to zone bounds
+      const clampedX = Math.max(zone.xMin, Math.min(zone.xMax, newX));
+      const clampedZ = Math.max(zone.zMin, Math.min(zone.zMax, newZ));
+      return { x: clampedX, y: zone.y + 1.6, z: clampedZ };
+    }
+  }
+
+  return null;
+}
 
 /**
  * Create all buildings and structures
@@ -146,9 +283,10 @@ export function initCity() {
   const renderer = createRenderer(container);
   const camera = createCamera();
 
-  // Initial camera position (overview of the city)
-  camera.position.set(0, 50, 80);
-  camera.lookAt(0, 0, 0);
+  // Initial camera position (stairs top, human eye level ~1.6m above ground)
+  // stairsTopPlatform: y=10, center at x=0, z=18
+  camera.position.set(0, 11.6, 18);
+  camera.lookAt(0, 5, -20);  // Looking toward the city center
 
   // Add lighting
   createLighting(scene);
@@ -180,15 +318,14 @@ export function initCity() {
   // === Keyboard Camera Controls ===
   const keys = {
     w: false, s: false, a: false, d: false,
-    ArrowUp: false, ArrowDown: false,
-    ArrowLeft: false, ArrowRight: false
+    ArrowUp: false, ArrowDown: false
   };
 
   // Camera movement state
   const cameraState = {
     yaw: 0,      // Horizontal rotation (radians)
-    pitch: -0.5, // Vertical angle (looking slightly down)
-    speed: 1.5,  // Movement speed
+    pitch: 0.2,  // Vertical angle (looking slightly up)
+    speed: 0.375, // Movement speed (slow walking pace)
     rotSpeed: 0.03 // Rotation speed
   };
 
@@ -226,9 +363,8 @@ export function initCity() {
     <div style="position: fixed; bottom: 20px; left: 20px; color: white; font-family: monospace; font-size: 14px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; z-index: 1000;">
       <div style="margin-bottom: 8px; font-weight: bold; color: #ff66aa;">Camera Controls</div>
       <div>W/S - Forward / Backward</div>
-      <div>A/D - Left / Right</div>
+      <div>A/D - Rotate</div>
       <div>↑/↓ - Look Up / Down</div>
-      <div>←/→ - Rotate</div>
     </div>
   `;
   document.body.appendChild(instructions);
@@ -237,44 +373,68 @@ export function initCity() {
   let lastTime = 0;
 
   /**
-   * Update camera based on keyboard input
+   * Update camera based on keyboard input (zone-restricted like pedestrians)
    */
   function updateCameraControls(deltaTime) {
     const speed = cameraState.speed * deltaTime * 60;
     const rotSpeed = cameraState.rotSpeed;
 
-    // Rotation (Arrow Left/Right)
-    if (keys.ArrowLeft) {
-      cameraState.yaw += rotSpeed;
-    }
-    if (keys.ArrowRight) {
-      cameraState.yaw -= rotSpeed;
-    }
-
-    // Calculate forward and right vectors based on yaw
+    // Calculate forward vector based on yaw (horizontal movement only)
     const forward = new THREE.Vector3(
       -Math.sin(cameraState.yaw),
       0,
       -Math.cos(cameraState.yaw)
     );
-    const right = new THREE.Vector3(
-      Math.cos(cameraState.yaw),
-      0,
-      -Math.sin(cameraState.yaw)
-    );
 
-    // Movement (WASD)
+    // Calculate desired new position
+    let newX = camera.position.x;
+    let newZ = camera.position.z;
+
+    // Movement (WS)
     if (keys.w) {
-      camera.position.addScaledVector(forward, speed);
+      newX += forward.x * speed;
+      newZ += forward.z * speed;
     }
     if (keys.s) {
-      camera.position.addScaledVector(forward, -speed);
+      newX -= forward.x * speed;
+      newZ -= forward.z * speed;
     }
+
+    // Validate and apply movement
+    if (newX !== camera.position.x || newZ !== camera.position.z) {
+      const validPos = validateCameraPosition(newX, camera.position.y, newZ, camera.position.y);
+      if (validPos) {
+        camera.position.x = validPos.x;
+        camera.position.z = validPos.z;
+        // Smoothly interpolate Y for slopes/stairs
+        const yDiff = validPos.y - camera.position.y;
+        if (Math.abs(yDiff) > 0.01) {
+          camera.position.y += yDiff * 0.3; // Smooth transition
+        } else {
+          camera.position.y = validPos.y;
+        }
+      } else {
+        // Try moving only in X or Z direction
+        const validX = validateCameraPosition(newX, camera.position.y, camera.position.z, camera.position.y);
+        const validZ = validateCameraPosition(camera.position.x, camera.position.y, newZ, camera.position.y);
+
+        if (validX) {
+          camera.position.x = validX.x;
+          camera.position.y += (validX.y - camera.position.y) * 0.3;
+        }
+        if (validZ) {
+          camera.position.z = validZ.z;
+          camera.position.y += (validZ.y - camera.position.y) * 0.3;
+        }
+      }
+    }
+
+    // A/D for rotation (yaw)
     if (keys.a) {
-      camera.position.addScaledVector(right, -speed);
+      cameraState.yaw += rotSpeed;
     }
     if (keys.d) {
-      camera.position.addScaledVector(right, speed);
+      cameraState.yaw -= rotSpeed;
     }
 
     // Pitch (Arrow Up/Down) - Look up/down
