@@ -10,6 +10,328 @@ import * as THREE from 'three';
 import { colors, randomColor } from './city-colors.js';
 
 // ============================================
+// Building Signs
+// ============================================
+
+const buildingSignTexts = [
+  'Platform', 'Reservation', 'Font Cloud', 'Marketing System',
+  'Media Art', 'IOT', 'Shopping Mall', 'Community',
+  'CRM', 'LMS', 'ERP', 'Web Agency',
+  'EMS', 'CMS', 'Kiosk', 'Cloud Service',
+  'AI Lab', 'Mobile App', 'Windows App', 'MacOS App',
+  '3D Web'
+];
+
+const signFonts = [
+  'Arial, Helvetica, sans-serif',
+  'Georgia, "Times New Roman", serif',
+  'Impact, "Arial Black", sans-serif',
+  '"Courier New", Courier, monospace',
+  '"Trebuchet MS", Arial, sans-serif',
+  'Verdana, Geneva, sans-serif',
+  'Tahoma, Geneva, sans-serif',
+  '"Times New Roman", Times, serif',
+  'Monaco, "Courier New", monospace',
+  '"Marker Felt", "Comic Sans MS", cursive',
+  'Palatino, "Palatino Linotype", serif',
+  'Helvetica, Arial, sans-serif'
+];
+
+const signColors = [
+  '#ff6090', '#60d0ff', '#ffcc00', '#90ff60',
+  '#ff9060', '#c060ff', '#60ffcc', '#ff60c0',
+  '#90c0ff', '#ffff60', '#60ff90', '#ff6060'
+];
+
+let signTextIndex = 0;
+
+// Shuffled text indices for maximum variety
+let shuffledTextIndices = [];
+let currentShuffledIndex = 0;
+
+function shuffleArray(array) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+function getNextTextIndex() {
+  // Initialize or reshuffle when exhausted
+  if (shuffledTextIndices.length === 0 || currentShuffledIndex >= shuffledTextIndices.length) {
+    shuffledTextIndices = shuffleArray([...Array(buildingSignTexts.length).keys()]);
+    currentShuffledIndex = 0;
+  }
+  return shuffledTextIndices[currentShuffledIndex++];
+}
+
+/**
+ * Create a small entrance sign above the door
+ */
+function createEntranceSign(group, text, entranceWidth, entranceHeight, depth, isFront, font, textColor) {
+  // Sign dimensions - visible but smaller than main signs
+  const signWidth = Math.max(entranceWidth * 1.5, 5);
+  const signHeight = 2;
+  const aspectRatio = signWidth / signHeight;
+
+  // Create texture
+  const texture = createSignTexture(text, font, textColor, 'textWithStroke', aspectRatio);
+
+  // Create sign mesh
+  const signGeom = new THREE.PlaneGeometry(signWidth, signHeight);
+  const signMat = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    side: THREE.FrontSide
+  });
+  const sign = new THREE.Mesh(signGeom, signMat);
+
+  // Position above entrance
+  const signY = entranceHeight + 1.5;
+  const signZ = isFront ? -depth / 2 - 0.15 : depth / 2 + 0.15;
+  // Front faces -z (toward viewer), Back faces +z (toward viewer from back)
+  const rotationY = isFront ? Math.PI : 0;
+
+  sign.position.set(0, signY, signZ);
+  sign.rotation.y = rotationY;
+  group.add(sign);
+}
+
+// Sign style types
+const signStyles = [
+  'textOnly',           // Just text, no background
+  'textWithStroke',     // Text with stroke outline only
+  'boxBackground',      // Dark box background with text
+  'borderOnly',         // Border around text, transparent bg
+  'gradientText',       // Gradient-like text effect
+  'neonGlow'            // Neon glow style
+];
+
+/**
+ * Get contrasting stroke color based on text color brightness
+ */
+function getContrastColor(hexColor) {
+  // Parse hex color
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+
+  // Calculate brightness (perceived luminance)
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+  // Return dark color for light text, light color for dark text
+  return brightness > 128 ? '#000000' : '#ffffff';
+}
+
+/**
+ * Create a canvas texture for building sign
+ */
+function createSignTexture(text, fontFamily, textColor, style, aspectRatio = 4) {
+  const canvas = document.createElement('canvas');
+  // Match canvas aspect ratio to sign aspect ratio to prevent stretching
+  canvas.height = 512;
+  canvas.width = Math.round(512 * aspectRatio);
+  const ctx = canvas.getContext('2d');
+
+  // Get contrasting stroke color
+  const strokeColor = getContrastColor(textColor);
+
+  // Calculate optimal font size to fit text within canvas
+  const maxWidth = canvas.width * 0.9;  // 90% of canvas width
+  const maxHeight = canvas.height * 0.7; // 70% of canvas height
+
+  // Start with a large font size and reduce until text fits
+  let fontSize = Math.min(maxHeight, 400);
+  let font = `bold ${fontSize}px ${fontFamily}`;
+  ctx.font = font;
+
+  while (ctx.measureText(text).width > maxWidth && fontSize > 40) {
+    fontSize -= 10;
+    font = `bold ${fontSize}px ${fontFamily}`;
+    ctx.font = font;
+  }
+
+  // Proportional stroke width based on font size
+  const strokeWidth = Math.max(8, Math.round(fontSize * 0.15));
+  const glowBlur = Math.max(30, Math.round(fontSize * 0.35));
+
+  // Apply different styles
+  switch (style) {
+    case 'textOnly':
+      ctx.font = font;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+      break;
+
+    case 'textWithStroke':
+      ctx.font = font;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = strokeWidth;
+      ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+      break;
+
+    case 'boxBackground':
+      ctx.fillStyle = 'rgba(20, 20, 40, 0.9)';
+      ctx.fillRect(20, 20, canvas.width - 40, canvas.height - 40);
+      ctx.font = font;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+      break;
+
+    case 'borderOnly':
+      ctx.strokeStyle = textColor;
+      ctx.lineWidth = Math.max(4, Math.round(fontSize * 0.04));
+      ctx.strokeRect(12, 12, canvas.width - 24, canvas.height - 24);
+      ctx.font = font;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+      break;
+
+    case 'gradientText':
+      ctx.font = font;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = strokeWidth;
+      ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+      break;
+
+    case 'neonGlow':
+      ctx.font = font;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = textColor;
+      ctx.shadowBlur = glowBlur;
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+      ctx.shadowBlur = glowBlur / 2;
+      ctx.fillStyle = strokeColor;
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+      break;
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+
+/**
+ * Create building signs on all 4 sides and entrance signs
+ * @param {THREE.Group} group - Building group
+ * @param {number} width - Building width (x-axis)
+ * @param {number} height - Building height (y-axis)
+ * @param {number} depth - Building depth (z-axis)
+ * @param {boolean} isMainTower - True for main tower, false for small building
+ * @param {Object} entranceConfig - Optional entrance dimensions for entrance signs
+ */
+function createBuildingSign(group, width, height, depth, isMainTower = false, entranceConfig = null) {
+  // Use shuffled array to ensure nearby buildings have different texts
+  const textIdx = getNextTextIndex();
+  const fontIdx = (signTextIndex * 11) % signFonts.length;
+  const colorIdx = (signTextIndex * 13) % signColors.length;
+  const styleIdx = (signTextIndex * 17) % signStyles.length;
+
+  const text = buildingSignTexts[textIdx];
+  const font = signFonts[fontIdx];
+  const textColor = signColors[colorIdx];
+  const style = signStyles[styleIdx];
+  signTextIndex++;
+
+  // Create entrance signs if config provided (same text as main sign)
+  if (entranceConfig) {
+    const { frontWidth, frontHeight, backWidth, backHeight } = entranceConfig;
+    createEntranceSign(group, text, frontWidth, frontHeight, depth, true, font, textColor);
+    createEntranceSign(group, text, backWidth, backHeight, depth, false, font, textColor);
+  }
+
+  // Calculate window layout to find top window position
+  const winSpacingY = isMainTower ? 3 : 3.5;
+  const windowHeight = isMainTower ? 2 : 1.8;
+  const numRows = Math.max(1, Math.floor((height - 4) / winSpacingY));
+
+  // Top window position
+  const topWindowY = 2 + (numRows - 1) * winSpacingY;
+  const windowTop = topWindowY + windowHeight / 2;
+
+  // Sign position: above windows with small margin
+  const margin = 0.5;
+  const signStartY = windowTop + margin;
+  const availableHeight = height - signStartY - 0.2;
+
+  // Sign height - maximize within available space (min 2, max 6)
+  const signHeight = Math.min(Math.max(availableHeight, 2), 6);
+  const signCenterY = signStartY + signHeight / 2;
+
+  // Sign configurations for 4 directions with matching aspect ratios
+  const frontBackWidth = width * 0.95;
+  const leftRightWidth = depth * 0.95;
+
+  // Create textures with matching aspect ratios to prevent text distortion
+  const frontBackAspect = frontBackWidth / signHeight;
+  const leftRightAspect = leftRightWidth / signHeight;
+
+  const textureFrontBack = createSignTexture(text, font, textColor, style, frontBackAspect);
+  const textureLeftRight = createSignTexture(text, font, textColor, style, leftRightAspect);
+
+  // Sign configurations for 4 directions
+  const signConfigs = [
+    { // Front (facing +z direction)
+      signWidth: frontBackWidth,
+      texture: textureFrontBack,
+      position: [0, signCenterY, depth / 2 + 0.1],
+      rotation: [0, 0, 0]
+    },
+    { // Back (facing -z direction)
+      signWidth: frontBackWidth,
+      texture: textureFrontBack,
+      position: [0, signCenterY, -depth / 2 - 0.1],
+      rotation: [0, Math.PI, 0]
+    },
+    { // Left (facing -x direction)
+      signWidth: leftRightWidth,
+      texture: textureLeftRight,
+      position: [-width / 2 - 0.1, signCenterY, 0],
+      rotation: [0, -Math.PI / 2, 0]
+    },
+    { // Right (facing +x direction)
+      signWidth: leftRightWidth,
+      texture: textureLeftRight,
+      position: [width / 2 + 0.1, signCenterY, 0],
+      rotation: [0, Math.PI / 2, 0]
+    }
+  ];
+
+  // Create signs for all 4 directions
+  signConfigs.forEach(config => {
+    const signGeom = new THREE.PlaneGeometry(config.signWidth, signHeight);
+    const signMat = new THREE.MeshBasicMaterial({
+      map: config.texture,
+      transparent: true,
+      side: THREE.FrontSide
+    });
+    const sign = new THREE.Mesh(signGeom, signMat);
+    sign.position.set(...config.position);
+    sign.rotation.set(...config.rotation);
+    group.add(sign);
+  });
+}
+
+// ============================================
 // Helper Functions
 // ============================================
 
@@ -126,13 +448,17 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
   const backEntranceWidth = 3;
   const backEntranceHeight = 3.5;
 
-  // Front windows - fixed grid (skip windows overlapping with entrance)
+  // Entrance sign dimensions for collision check
+  const entranceSignWidth = Math.max(entranceWidth * 1.5, 5);
+  const backSignWidth = Math.max(backEntranceWidth * 1.5, 5);
+
+  // Front windows - fixed grid (skip windows overlapping with entrance and entrance sign)
   for (let row = 0; row < numRows; row++) {
     for (let col = 0; col < numCols; col++) {
       const winX = -width/2 + winMargin + col * winSpacingX;
       const winY = 2 + row * winSpacingY;
-      // Skip if overlapping with front entrance (center, y=0 to entranceHeight)
-      if (Math.abs(winX) < entranceWidth/2 + 1.5 && winY < entranceHeight + 2) {
+      // Skip if overlapping with front entrance or entrance sign area
+      if (Math.abs(winX) < entranceSignWidth/2 + 1 && winY < entranceHeight + 4) {
         continue;
       }
       const colorIdx = (row + col) % towerWinColors.length;
@@ -173,13 +499,13 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
     }
   }
 
-  // Back windows - fixed grid (skip windows overlapping with back entrance)
+  // Back windows - fixed grid (skip windows overlapping with back entrance and entrance sign)
   for (let row = 0; row < numRows; row++) {
     for (let col = 0; col < numCols; col++) {
       const winX = -width/2 + winMargin + col * winSpacingX;
       const winY = 2 + row * winSpacingY;
-      // Skip if overlapping with back entrance (center, y=0 to backEntranceHeight)
-      if (Math.abs(winX) < backEntranceWidth/2 + 1.5 && winY < backEntranceHeight + 2) {
+      // Skip if overlapping with back entrance or entrance sign area
+      if (Math.abs(winX) < backSignWidth/2 + 1 && winY < backEntranceHeight + 4) {
         continue;
       }
       const colorIdx = (row + col + 6) % towerWinColors.length;
@@ -196,13 +522,6 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
   entrance.position.set(0, entranceHeight/2, -depth/2 - 0.01);
   group.add(entrance);
 
-  // Entrance canopy - FRONT (no frame)
-  const canopyGeom = new THREE.BoxGeometry(entranceWidth + 2, 0.3, 2);
-  const canopyMat = new THREE.MeshBasicMaterial({ color: 0x252535 });
-  const canopy = new THREE.Mesh(canopyGeom, canopyMat);
-  canopy.position.set(0, entranceHeight + 0.3, -depth/2 - 1);
-  group.add(canopy);
-
   // Back entrance (white door) - no frame
   const backEntranceMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
   const backEntranceGeom = new THREE.PlaneGeometry(backEntranceWidth, backEntranceHeight);
@@ -210,8 +529,8 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
   backEntrance.position.set(0, backEntranceHeight/2, depth/2 + 0.01);
   group.add(backEntrance);
 
-  // Rooftop antenna (for tall buildings)
-  if (height > 30) {
+  // Rooftop antenna (for tall buildings, 1/3 chance)
+  if (height > 30 && Math.random() < 0.33) {
     const antennaGeom = new THREE.CylinderGeometry(0.15, 0.2, 8, 6);
     const antennaMat = new THREE.MeshBasicMaterial({ color: 0x555565 });
     const antenna = new THREE.Mesh(antennaGeom, antennaMat);
@@ -225,6 +544,14 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
     light.position.y = height + 8;
     group.add(light);
   }
+
+  // Building sign (facing main road) and entrance signs
+  createBuildingSign(group, width, height, depth, true, {
+    frontWidth: entranceWidth,
+    frontHeight: entranceHeight,
+    backWidth: backEntranceWidth,
+    backHeight: backEntranceHeight
+  });
 
   group.position.set(x, groundY, z);
   group.userData.buildingSize = { width, depth, height };
@@ -273,13 +600,17 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
   const backDoorWidth = 1.8;
   const backDoorHeight = 2.8;
 
-  // Front Windows - fixed grid (skip windows overlapping with door)
+  // Entrance sign dimensions for collision check
+  const doorSignWidth = Math.max(doorWidth * 1.5, 5);
+  const backDoorSignWidth = Math.max(backDoorWidth * 1.5, 5);
+
+  // Front Windows - fixed grid (skip windows overlapping with door and entrance sign)
   for (let row = 0; row < numRows; row++) {
     for (let col = 0; col < numCols; col++) {
       const winX = -width/2 + winMargin + col * winSpacingX;
       const winY = 2 + row * winSpacingY;
-      // Skip if overlapping with front door
-      if (Math.abs(winX) < doorWidth/2 + 1.5 && winY < doorHeight + 2) {
+      // Skip if overlapping with front door or entrance sign area
+      if (Math.abs(winX) < doorSignWidth/2 + 1 && winY < doorHeight + 4) {
         continue;
       }
       const colorIdx = (row + col) % smallWinColors.length;
@@ -319,13 +650,13 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
     }
   }
 
-  // Back Windows - fixed grid (skip windows overlapping with back door)
+  // Back Windows - fixed grid (skip windows overlapping with back door and entrance sign)
   for (let row = 0; row < numRows; row++) {
     for (let col = 0; col < numCols; col++) {
       const winX = -width/2 + winMargin + col * winSpacingX;
       const winY = 2 + row * winSpacingY;
-      // Skip if overlapping with back door
-      if (Math.abs(winX) < backDoorWidth/2 + 1.5 && winY < backDoorHeight + 2) {
+      // Skip if overlapping with back door or entrance sign area
+      if (Math.abs(winX) < backDoorSignWidth/2 + 1 && winY < backDoorHeight + 4) {
         continue;
       }
       const colorIdx = (row + col + 6) % smallWinColors.length;
@@ -348,6 +679,14 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
   const backDoor = new THREE.Mesh(backDoorGeom, backDoorMat);
   backDoor.position.set(0, backDoorHeight/2, depth/2 + 0.01);
   group.add(backDoor);
+
+  // Building sign (facing main road) and entrance signs
+  createBuildingSign(group, width, height, depth, false, {
+    frontWidth: doorWidth,
+    frontHeight: doorHeight,
+    backWidth: backDoorWidth,
+    backHeight: backDoorHeight
+  });
 
   group.position.set(x, groundY, z);
   group.userData.buildingSize = { width, depth, height };
