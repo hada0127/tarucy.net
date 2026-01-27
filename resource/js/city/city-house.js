@@ -247,22 +247,26 @@ export function createHouse(scene, x, z, groundY, config = {}) {
   backWin2.position.set(buildingWidth * 0.25, buildingHeight * 0.6, buildingZ + buildingDepth/2 + 0.01);
   group.add(backWin2);
 
-  // Left side windows - 2 windows vertically stacked
+  // Left side windows - 2 windows vertically stacked (rotated 90 degrees)
   const leftWin1 = new THREE.Mesh(windowGeom, new THREE.MeshBasicMaterial({ color: windowColors[0], side: THREE.DoubleSide }));
   leftWin1.position.set(-buildingWidth/2 - 0.01, buildingHeight * 0.45, buildingZ);
+  leftWin1.rotation.y = Math.PI / 2;
   group.add(leftWin1);
 
   const leftWin2 = new THREE.Mesh(windowGeom, new THREE.MeshBasicMaterial({ color: windowColors[1], side: THREE.DoubleSide }));
   leftWin2.position.set(-buildingWidth/2 - 0.01, buildingHeight * 0.75, buildingZ);
+  leftWin2.rotation.y = Math.PI / 2;
   group.add(leftWin2);
 
-  // Right side windows - 2 windows vertically stacked
+  // Right side windows - 2 windows vertically stacked (rotated 90 degrees)
   const rightWin1 = new THREE.Mesh(windowGeom, new THREE.MeshBasicMaterial({ color: windowColors[2], side: THREE.DoubleSide }));
   rightWin1.position.set(buildingWidth/2 + 0.01, buildingHeight * 0.45, buildingZ);
+  rightWin1.rotation.y = Math.PI / 2;
   group.add(rightWin1);
 
   const rightWin2 = new THREE.Mesh(windowGeom, new THREE.MeshBasicMaterial({ color: windowColors[3], side: THREE.DoubleSide }));
   rightWin2.position.set(buildingWidth/2 + 0.01, buildingHeight * 0.75, buildingZ);
+  rightWin2.rotation.y = Math.PI / 2;
   group.add(rightWin2);
 
   // Second floor front windows (for 2-story houses)
@@ -299,11 +303,11 @@ export function createResidentialDistrict(scene) {
   const houses = [];
   const groundY = 10;
 
-  // Row 1: 12 houses at z=45 (back row) - removed 3 leftmost houses
-  const row1StartX = -24;  // Was -42, shifted right by 18 (3 houses * 6 spacing)
+  // Row 1: 12 houses at z=41 (back row) - moved closer to utility poles
+  const row1StartX = -24;
   const row1Spacing = 6;
   for (let i = 0; i < 12; i++) {
-    const house = createHouse(scene, row1StartX + i * row1Spacing, 45, groundY, {
+    const house = createHouse(scene, row1StartX + i * row1Spacing, 41, groundY, {
       width: 5.5,
       depth: 5,
       gateLeft: i % 2 === 0
@@ -311,11 +315,11 @@ export function createResidentialDistrict(scene) {
     houses.push(house);
   }
 
-  // Row 2: 13 houses at z=36 (front row, offset) - removed 3 leftmost houses
-  const row2StartX = -27.6;  // Was -45, shifted right by 17.4 (3 houses * 5.8 spacing)
+  // Row 2: 13 houses at z=32 (front row, offset) - moved closer to utility poles
+  const row2StartX = -27.6;
   const row2Spacing = 5.8;
   for (let i = 0; i < 13; i++) {
-    const house = createHouse(scene, row2StartX + i * row2Spacing, 36, groundY, {
+    const house = createHouse(scene, row2StartX + i * row2Spacing, 32, groundY, {
       width: 5.2,
       depth: 4.5,
       gateLeft: i % 2 === 1
@@ -326,7 +330,7 @@ export function createResidentialDistrict(scene) {
   // === Village end guardrail (vertical, at road end connecting to horizontal guardrail) ===
   const railX = -47.5;    // Left edge of road (matches horizontal guardrail end)
   const railStartZ = 18.5; // Connect to horizontal guardrail at z=18.5
-  const railEndZ = 48;     // End just before forest
+  const railEndZ = 44;     // End just before houses (moved closer)
   const railY = groundY;
 
   const railMat = new THREE.MeshBasicMaterial({ color: 0x656575 });
@@ -374,12 +378,12 @@ export function createSlopedResidentialArea(scene) {
   const slopeEndY = 16;
   const slopeRatio = (slopeEndY - slopeStartY) / slopeLength;
 
-  // Houses on the slope (2 rows)
-  // Back row (z=42)
+  // Houses on the slope (2 rows) - aligned with main residential area
+  // Back row (z=41, same as main residential)
   for (let i = 0; i < 6; i++) {
     const x = slopeStartX + 4 + i * 7;
-    const y = slopeStartY + (x - slopeStartX + 4) * slopeRatio; // Same level as road
-    const house = createHouse(scene, x, 42, y, {
+    const y = slopeStartY + (x - slopeStartX + 4) * slopeRatio;
+    const house = createHouse(scene, x, 41, y, {
       width: 5,
       depth: 4.5,
       gateLeft: i % 2 === 0
@@ -387,11 +391,11 @@ export function createSlopedResidentialArea(scene) {
     houses.push(house);
   }
 
-  // Front row (z=34)
+  // Front row (z=32, same as main residential)
   for (let i = 0; i < 5; i++) {
     const x = slopeStartX + 7 + i * 7;
-    const y = slopeStartY + (x - slopeStartX + 7) * slopeRatio; // Same level as road
-    const house = createHouse(scene, x, 34, y, {
+    const y = slopeStartY + (x - slopeStartX + 7) * slopeRatio;
+    const house = createHouse(scene, x, 32, y, {
       width: 4.8,
       depth: 4,
       gateLeft: i % 2 === 1
@@ -399,12 +403,12 @@ export function createSlopedResidentialArea(scene) {
     houses.push(house);
   }
 
-  // Flat top area houses (x=95~120, y=16) - same level as road
+  // Flat top area houses (x=95~120, y=16) - aligned with main residential area
   const flatY = slopeEndY;
 
-  // Back row on flat top (z=42)
+  // Back row on flat top (z=41)
   for (let i = 0; i < 4; i++) {
-    const house = createHouse(scene, 97 + i * 7, 42, flatY, {
+    const house = createHouse(scene, 97 + i * 7, 41, flatY, {
       width: 5.2,
       depth: 4.5,
       gateLeft: i % 2 === 0
@@ -412,9 +416,9 @@ export function createSlopedResidentialArea(scene) {
     houses.push(house);
   }
 
-  // Front row on flat top (z=34)
+  // Front row on flat top (z=32)
   for (let i = 0; i < 4; i++) {
-    const house = createHouse(scene, 95 + i * 7, 34, flatY, {
+    const house = createHouse(scene, 95 + i * 7, 32, flatY, {
       width: 5,
       depth: 4,
       gateLeft: i % 2 === 1

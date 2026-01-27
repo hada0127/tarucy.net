@@ -11,6 +11,7 @@
  */
 
 import * as THREE from 'three';
+import { getVehicles } from './city-vehicles.js';
 
 // Person colors (neon citypop style)
 const personColors = [
@@ -40,12 +41,15 @@ const walkableZones = [
   // Main road east (after hotel) - south
   { id: 'mainSouthEastSidewalk', xMin: 80, xMax: 200, zMin: -30, zMax: -26, y: 0 },
 
-  // South road sidewalks (extended north to connect with main area)
-  { id: 'southEastSidewalk', xMin: -52, xMax: -48, zMin: -230, zMax: -26, y: 0 },
-  { id: 'southWestSidewalk', xMin: -65, xMax: -61, zMin: -230, zMax: -26, y: 0 },
+  // South road sidewalks (road is x=-60 to -50, so sidewalks are outside)
+  { id: 'southEastSidewalk', xMin: -50, xMax: -48, zMin: -230, zMax: -55, y: 0 },
+  { id: 'southWestSidewalk', xMin: -65, xMax: -60, zMin: -230, zMax: -55, y: 0 },
 
-  // South road junction (connects main sidewalk to south road)
-  { id: 'southRoadJunction', xMin: -65, xMax: -30, zMin: -35, zMax: -26, y: 0 },
+  // South road junction - split to avoid curved road (center x=-40, z=-35, radius ~20)
+  // West part: from west sidewalk to curve area
+  { id: 'southRoadJunctionWest', xMin: -65, xMax: -60, zMin: -55, zMax: -26, y: 0 },
+  // East part: from east sidewalk to main area (avoiding curve)
+  { id: 'southRoadJunctionEast', xMin: -50, xMax: -30, zMin: -50, zMax: -26, y: 0 },
 
   // Stairs landing area at bottom (Y=0, connects to shops/main road)
   // Extended x range to overlap with leftPark (-28) and connect to rightPark/hotel
@@ -84,14 +88,45 @@ const walkableZones = [
   // Right park to hotel connection - extended to wall
   { id: 'rightParkToHotel', xMin: 40, xMax: 78, zMin: -10, zMax: 18, y: 0 },
 
+  // === Y=0 Level (South Building Areas - between buildings) ===
+  // Road: main road z=-25 to -15, south road x=-60 to -50
+
+  // South area right side (east of center, south of main road)
+  { id: 'southAreaRight', xMin: 30, xMax: 120, zMin: -100, zMax: -30, y: 0 },
+
+  // South area center (center, south of main road, avoiding buildings)
+  { id: 'southAreaCenter', xMin: -30, xMax: 30, zMin: -100, zMax: -30, y: 0 },
+
+  // South area left (west of south road)
+  { id: 'southAreaLeft', xMin: -120, xMax: -65, zMin: -100, zMax: -30, y: 0 },
+
+  // Far south area right
+  { id: 'farSouthRight', xMin: 30, xMax: 120, zMin: -200, zMax: -100, y: 0 },
+
+  // Far south area center
+  { id: 'farSouthCenter', xMin: -30, xMax: 30, zMin: -200, zMax: -100, y: 0 },
+
+  // Far south area left
+  { id: 'farSouthLeft', xMin: -120, xMax: -65, zMin: -200, zMax: -100, y: 0 },
+
+  // Curve outer area removed - was overlapping with curved road
+  // The curved road has center (-40, -35) with radius ~20, so area from x=-60 to -20, z=-55 to -15 is road
+
+  // Hotel east sidewalk (east of hotel, SOUTH of main road only - road is z=-25 to -15)
+  { id: 'hotelEastArea', xMin: 78, xMax: 120, zMin: -30, zMax: -26, y: 0 },
+  // Hotel east sidewalk north side (NORTH of main road)
+  { id: 'hotelEastAreaNorth', xMin: 78, xMax: 120, zMin: -14, zMax: -10, y: 0 },
+
   // === Y=10 Level (Upper Residential) ===
 
   // Stairs top landing platform - matches actual rendered landing (z=15.5 to 18.5)
   // Left stairs exit at x=-3, Right stairs exit at x=3, both at z=17
-  { id: 'stairsTopPlatform', xMin: -5, xMax: 5, zMin: 16, zMax: 18, y: 10 },
+  // Extended to z=20 to overlap with residentialPath for smooth transition
+  { id: 'stairsTopPlatform', xMin: -5, xMax: 5, zMin: 16, zMax: 20, y: 10 },
 
-  // Residential walkway (after guardrail at z=18.5, pedestrian path z=20-28)
-  { id: 'residentialPath', xMin: -47, xMax: 50, zMin: 20, zMax: 28, y: 10 },
+  // Residential walkway - extended south to z=18 to overlap with stairsTopPlatform
+  // This ensures smooth transition from stairs to residential area
+  { id: 'residentialPath', xMin: -47, xMax: 50, zMin: 18, zMax: 28, y: 10 },
 
   // === Y=10~16 (Sloped) ===
   { id: 'slopedPath', xMin: 50, xMax: 90, zMin: 20, zMax: 28, y: 'sloped', yStart: 10, yEnd: 16 },
@@ -106,8 +141,104 @@ const walkableZones = [
 const roadZones = [
   // Main road (extended west to match sidewalk extension)
   { xMin: -50, xMax: 300, zMin: -25, zMax: -15 },
-  // South road (only the actual road, sidewalks are separate zones)
-  { xMin: -61, xMax: -52, zMin: -250, zMax: -35 },
+  // South road (x=-55 center, width=10, so x=-60 to -50)
+  { xMin: -60, xMax: -50, zMin: -250, zMax: -35 },
+  // Curved road area (center x=-40, z=-35, approximate rectangle to cover curve)
+  { xMin: -55, xMax: -25, zMin: -50, zMax: -25 },
+];
+
+// ============================================================
+// OBSTACLE ZONES - Buildings, objects that pedestrians cannot walk through
+// ============================================================
+const obstacleZones = [
+  // === Shopping District (Y=0) ===
+  // Upper row shops (z=13, 8 shops)
+  ...Array.from({ length: 8 }, (_, i) => ({
+    xMin: -19 + i * 5.2 - 2.4, xMax: -19 + i * 5.2 + 2.4,
+    zMin: 13 - 2, zMax: 13 + 2, y: 0
+  })),
+  // Lower row shops (z=0, 8 shops)
+  ...Array.from({ length: 8 }, (_, i) => ({
+    xMin: -19 + i * 5.2 - 2.4, xMax: -19 + i * 5.2 + 2.4,
+    zMin: 0 - 1.75, zMax: 0 + 1.75, y: 0
+  })),
+  // Vendor stalls upper row (z=9, 11 stalls)
+  ...Array.from({ length: 11 }, (_, i) => ({
+    xMin: -18 + i * 3.6 - 1, xMax: -18 + i * 3.6 + 1,
+    zMin: 9 - 0.6, zMax: 9 + 0.6, y: 0
+  })),
+  // Vendor stalls lower row (z=2, 11 stalls)
+  ...Array.from({ length: 11 }, (_, i) => ({
+    xMin: -16.2 + i * 3.6 - 1, xMax: -16.2 + i * 3.6 + 1,
+    zMin: 2 - 0.6, zMax: 2 + 0.6, y: 0
+  })),
+
+  // === Parks ===
+  // Fountain (right park)
+  { xMin: 32, xMax: 40, zMin: 0, zMax: 8, y: 0 },
+  // Playground equipment (left park)
+  { xMin: -46, xMax: -34, zMin: 0, zMax: 12, y: 0 },
+
+  // === Playground fences (left park: x=-51~-29, z=-2~14) ===
+  // Bottom fence (z=-2)
+  { xMin: -51, xMax: -29, zMin: -3, zMax: -1, y: 0 },
+  // Top fence (z=14)
+  { xMin: -51, xMax: -29, zMin: 13, zMax: 15, y: 0 },
+  // Left fence (x=-51)
+  { xMin: -52, xMax: -50, zMin: -3, zMax: 15, y: 0 },
+  // Right fence (x=-29)
+  { xMin: -30, xMax: -28, zMin: -3, zMax: 15, y: 0 },
+
+  // === Hotel ===
+  { xMin: 59, xMax: 77, zMin: -12, zMax: 14, y: 0 },
+
+  // === Buildings (South area) ===
+  // Right buildings
+  { xMin: 55 - 8, xMax: 55 + 8, zMin: -45 - 7, zMax: -45 + 7, y: 0 },
+  { xMin: 45 - 7, xMax: 45 + 7, zMin: -65 - 6, zMax: -65 + 6, y: 0 },
+  { xMin: 65 - 7.5, xMax: 65 + 7.5, zMin: -70 - 6.5, zMax: -70 + 6.5, y: 0 },
+  { xMin: 32 - 7, xMax: 32 + 7, zMin: -38 - 6, zMax: -38 + 6, y: 0 },
+  { xMin: 35 - 6, xMax: 35 + 6, zMin: -48 - 5, zMax: -48 + 5, y: 0 },
+  { xMin: 50 - 4.5, xMax: 50 + 4.5, zMin: -35 - 3.5, zMax: -35 + 3.5, y: 0 },
+  { xMin: 75 - 5, xMax: 75 + 5, zMin: -40 - 4, zMax: -40 + 4, y: 0 },
+  { xMin: 48 - 4, xMax: 48 + 4, zMin: -55 - 3.5, zMax: -55 + 3.5, y: 0 },
+  { xMin: 58 - 5, xMax: 58 + 5, zMin: -60 - 4, zMax: -60 + 4, y: 0 },
+  { xMin: 72 - 4.5, xMax: 72 + 4.5, zMin: -55 - 3.5, zMax: -55 + 3.5, y: 0 },
+  { xMin: 80 - 4, xMax: 80 + 4, zMin: -35 - 3, zMax: -35 + 3, y: 0 },
+  { xMin: 68 - 5.5, xMax: 68 + 5.5, zMin: -80 - 4.5, zMax: -80 + 4.5, y: 0 },
+  { xMin: 50 - 4.5, xMax: 50 + 4.5, zMin: -75 - 4, zMax: -75 + 4, y: 0 },
+  { xMin: 35 - 5, xMax: 35 + 5, zMin: -70 - 4, zMax: -70 + 4, y: 0 },
+  { xMin: 78 - 4, xMax: 78 + 4, zMin: -65 - 3.5, zMax: -65 + 3.5, y: 0 },
+
+  // Center buildings
+  { xMin: -10 - 6, xMax: -10 + 6, zMin: -45 - 5, zMax: -45 + 5, y: 0 },
+  { xMin: 10 - 6, xMax: 10 + 6, zMin: -45 - 5, zMax: -45 + 5, y: 0 },
+  { xMin: 0 - 7, xMax: 0 + 7, zMin: -65 - 6, zMax: -65 + 6, y: 0 },
+  { xMin: -18 - 6.5, xMax: -18 + 6.5, zMin: -75 - 5.5, zMax: -75 + 5.5, y: 0 },
+  { xMin: 18 - 6.5, xMax: 18 + 6.5, zMin: -75 - 5.5, zMax: -75 + 5.5, y: 0 },
+  { xMin: 0 - 5, xMax: 0 + 5, zMin: -50 - 4, zMax: -50 + 4, y: 0 },
+  { xMin: -25 - 4.5, xMax: -25 + 4.5, zMin: -55 - 3.5, zMax: -55 + 3.5, y: 0 },
+  { xMin: 25 - 4.5, xMax: 25 + 4.5, zMin: -55 - 3.5, zMax: -55 + 3.5, y: 0 },
+  { xMin: -8 - 5, xMax: -8 + 5, zMin: -80 - 4, zMax: -80 + 4, y: 0 },
+  { xMin: 8 - 5, xMax: 8 + 5, zMin: -80 - 4, zMax: -80 + 4, y: 0 },
+  { xMin: 0 - 5.5, xMax: 0 + 5.5, zMin: -90 - 4.5, zMax: -90 + 4.5, y: 0 },
+  { xMin: -20 - 4, xMax: -20 + 4, zMin: -90 - 3.5, zMax: -90 + 3.5, y: 0 },
+  { xMin: 20 - 4, xMax: 20 + 4, zMin: -90 - 3.5, zMax: -90 + 3.5, y: 0 },
+
+  // Left buildings
+  { xMin: -35 - 6, xMax: -35 + 6, zMin: -48 - 5, zMax: -48 + 5, y: 0 },
+  { xMin: -68 - 5.5, xMax: -68 + 5.5, zMin: -80 - 4.5, zMax: -80 + 4.5, y: 0 },
+  { xMin: -35 - 5, xMax: -35 + 5, zMin: -70 - 4, zMax: -70 + 4, y: 0 },
+
+  // === Trees in parks (approximate) ===
+  // Left park trees
+  { xMin: -48, xMax: -46, zMin: 4, zMax: 6, y: 0 },
+  { xMin: -42, xMax: -40, zMin: 8, zMax: 10, y: 0 },
+  { xMin: -36, xMax: -34, zMin: 2, zMax: 4, y: 0 },
+  // Right park trees
+  { xMin: 26, xMax: 28, zMin: 10, zMax: 12, y: 0 },
+  { xMin: 42, xMax: 44, zMin: 2, zMax: 4, y: 0 },
+  { xMin: 38, xMax: 40, zMin: 12, zMax: 14, y: 0 },
 ];
 
 // ============================================================
@@ -126,42 +257,43 @@ const zoneConnections = [
     xMin: -38, xMax: -32, zFrom: -14, zTo: -26
   },
 
-  // === Hotel front crosswalk (north <-> south) ===
-  {
-    from: 'hotelFrontSidewalkNorth', to: 'hotelFrontSidewalkSouth',
-    type: 'crosswalk', crosswalkId: 'hotel1',
-    xMin: 63, xMax: 69, zFrom: -14, zTo: -26
-  },
+  // Hotel front: NO crosswalk here (removed - no visual crosswalk exists)
+  // hotelFrontSidewalkNorth and hotelFrontSidewalkSouth are NOT connected
 
-  // === South road crosswalks (adjusted to match road zone) ===
+  // === South road crosswalks (road is x=-60 to -50) ===
   {
     from: 'southEastSidewalk', to: 'southWestSidewalk',
     type: 'crosswalk', crosswalkId: 'south1',
-    zMin: -93, zMax: -87, xFrom: -52, xTo: -61
+    zMin: -93, zMax: -87, xFrom: -50, xTo: -60
   },
   {
     from: 'southEastSidewalk', to: 'southWestSidewalk',
     type: 'crosswalk', crosswalkId: 'south2',
-    zMin: -148, zMax: -142, xFrom: -52, xTo: -61
+    zMin: -148, zMax: -142, xFrom: -50, xTo: -60
   },
   {
     from: 'southEastSidewalk', to: 'southWestSidewalk',
     type: 'crosswalk', crosswalkId: 'south3',
-    zMin: -203, zMax: -197, xFrom: -52, xTo: -61
+    zMin: -203, zMax: -197, xFrom: -50, xTo: -60
   },
 
-  // === South road junction connections ===
+  // === South road junction connections (split to avoid curved road) ===
   {
-    from: 'mainSouthSidewalk', to: 'southRoadJunction',
+    from: 'mainSouthSidewalk', to: 'southRoadJunctionEast',
     type: 'direct', xMin: -48, xMax: -30, z: -28
   },
   {
-    from: 'southRoadJunction', to: 'southEastSidewalk',
-    type: 'direct', xMin: -52, xMax: -48, z: -30
+    from: 'southRoadJunctionEast', to: 'southEastSidewalk',
+    type: 'direct', xMin: -50, xMax: -48, z: -50
   },
   {
-    from: 'southRoadJunction', to: 'southWestSidewalk',
-    type: 'direct', xMin: -65, xMax: -61, z: -30
+    from: 'southRoadJunctionWest', to: 'southWestSidewalk',
+    type: 'direct', xMin: -65, xMax: -60, z: -55
+  },
+  // West junction connects to west sidewalk at north end
+  {
+    from: 'southWestSidewalk', to: 'southRoadJunctionWest',
+    type: 'direct', xMin: -65, xMax: -60, z: -55
   },
 
   // === Main sidewalk to hotel front sidewalk ===
@@ -335,9 +467,10 @@ const zoneConnections = [
   },
 
   // === Stairs top platform connections ===
+  // Both zones now overlap at z=18-20 for smooth transition
   {
     from: 'stairsTopPlatform', to: 'residentialPath',
-    type: 'direct', xMin: -5, xMax: 5, z: 20
+    type: 'direct', xMin: -5, xMax: 5, z: 19
   },
 
   // === Upper residential connections ===
@@ -349,6 +482,107 @@ const zoneConnections = [
     from: 'slopedPath', to: 'flatTopPath',
     type: 'direct', xMin: 88, xMax: 92, z: 23
   },
+
+  // === South building area connections ===
+  // Main south sidewalk to south areas
+  {
+    from: 'mainSouthSidewalk', to: 'southAreaCenter',
+    type: 'direct', xMin: -30, xMax: 30, z: -30
+  },
+  {
+    from: 'mainSouthSidewalk', to: 'southAreaRight',
+    type: 'direct', xMin: 30, xMax: 55, z: -30
+  },
+  {
+    from: 'hotelFrontSidewalkSouth', to: 'southAreaRight',
+    type: 'direct', xMin: 55, xMax: 80, z: -30
+  },
+  {
+    from: 'mainSouthEastSidewalk', to: 'southAreaRight',
+    type: 'direct', xMin: 80, xMax: 120, z: -30
+  },
+
+  // South road junction to south areas (avoiding curved road)
+  {
+    from: 'southRoadJunctionWest', to: 'southAreaLeft',
+    type: 'direct', xMin: -65, xMax: -65, z: -55
+  },
+  {
+    from: 'southRoadJunctionEast', to: 'southAreaCenter',
+    type: 'direct', xMin: -30, xMax: -30, z: -50
+  },
+
+  // South areas interconnection
+  {
+    from: 'southAreaLeft', to: 'southAreaCenter',
+    type: 'direct', xMin: -65, xMax: -30, z: -65
+  },
+  {
+    from: 'southAreaCenter', to: 'southAreaRight',
+    type: 'direct', xMin: 30, xMax: 30, z: -65
+  },
+
+  // South to far south connections
+  {
+    from: 'southAreaLeft', to: 'farSouthLeft',
+    type: 'direct', xMin: -100, xMax: -65, z: -100
+  },
+  {
+    from: 'southAreaCenter', to: 'farSouthCenter',
+    type: 'direct', xMin: -30, xMax: 30, z: -100
+  },
+  {
+    from: 'southAreaRight', to: 'farSouthRight',
+    type: 'direct', xMin: 30, xMax: 120, z: -100
+  },
+
+  // Far south interconnection
+  {
+    from: 'farSouthLeft', to: 'farSouthCenter',
+    type: 'direct', xMin: -65, xMax: -30, z: -150
+  },
+  {
+    from: 'farSouthCenter', to: 'farSouthRight',
+    type: 'direct', xMin: 30, xMax: 30, z: -150
+  },
+
+  // South sidewalks to south areas (crossing south road)
+  {
+    from: 'southWestSidewalk', to: 'southAreaLeft',
+    type: 'direct', xMin: -65, xMax: -65, z: -65
+  },
+  {
+    from: 'southWestSidewalk', to: 'farSouthLeft',
+    type: 'direct', xMin: -65, xMax: -65, z: -150
+  },
+  {
+    from: 'southEastSidewalk', to: 'southAreaCenter',
+    type: 'direct', xMin: -48, xMax: -30, z: -65
+  },
+  {
+    from: 'southEastSidewalk', to: 'farSouthCenter',
+    type: 'direct', xMin: -48, xMax: -30, z: -150
+  },
+
+  // Hotel east area connections (split into north and south of main road)
+  // North side (z=-14 to -10)
+  {
+    from: 'hotelEntranceArea', to: 'hotelEastAreaNorth',
+    type: 'direct', xMin: 78, xMax: 78, z: -10
+  },
+  {
+    from: 'mainNorthEastSidewalk', to: 'hotelEastAreaNorth',
+    type: 'direct', xMin: 80, xMax: 120, z: -12
+  },
+  // South side (z=-30 to -26)
+  {
+    from: 'mainSouthEastSidewalk', to: 'hotelEastArea',
+    type: 'direct', xMin: 80, xMax: 120, z: -28
+  },
+  {
+    from: 'hotelEastArea', to: 'southAreaRight',
+    type: 'direct', xMin: 78, xMax: 120, z: -30
+  },
 ];
 
 // ============================================================
@@ -357,7 +591,7 @@ const zoneConnections = [
 const crosswalks = [
   { id: 'main1', x: 25, z: -20, width: 10, length: 4, direction: 'vertical', roadType: 'main' },
   { id: 'main2', x: -35, z: -20, width: 10, length: 4, direction: 'vertical', roadType: 'main' },
-  { id: 'hotel1', x: 66, z: -20, width: 10, length: 4, direction: 'vertical', roadType: 'main' },
+  // hotel1 removed - no visual crosswalk in front of hotel
   { id: 'south1', x: -55, z: -90, width: 4, length: 10, direction: 'horizontal', roadType: 'south' },
   { id: 'south2', x: -55, z: -145, width: 4, length: 10, direction: 'horizontal', roadType: 'south' },
   { id: 'south3', x: -55, z: -200, width: 4, length: 10, direction: 'horizontal', roadType: 'south' },
@@ -378,38 +612,49 @@ const stairPaths = [
 // ZONE POPULATION TARGETS
 // ============================================================
 const zonePopulationTargets = {
-  // Y=0 Ground level
-  mainNorthSidewalk: { min: 6, max: 12 },
-  mainSouthSidewalk: { min: 6, max: 12 },
-  hotelFrontSidewalkNorth: { min: 2, max: 5 },
-  hotelFrontSidewalkSouth: { min: 2, max: 5 },
-  mainNorthEastSidewalk: { min: 4, max: 8 },
-  mainSouthEastSidewalk: { min: 4, max: 8 },
-  southEastSidewalk: { min: 3, max: 6 },
-  southWestSidewalk: { min: 3, max: 6 },
-  southRoadJunction: { min: 2, max: 5 },
-  stairsBottomArea: { min: 5, max: 10 },
-  hotelEntranceArea: { min: 3, max: 6 },
-  belowRightPark: { min: 3, max: 6 },
+  // Y=0 Ground level - sidewalks (reduced)
+  mainNorthSidewalk: { min: 2, max: 4 },
+  mainSouthSidewalk: { min: 3, max: 6 },
+  hotelFrontSidewalkNorth: { min: 1, max: 2 },
+  hotelFrontSidewalkSouth: { min: 1, max: 2 },
+  mainNorthEastSidewalk: { min: 1, max: 3 },
+  mainSouthEastSidewalk: { min: 2, max: 4 },
+  southEastSidewalk: { min: 2, max: 4 },
+  southWestSidewalk: { min: 2, max: 4 },
+  southRoadJunctionWest: { min: 1, max: 2 },
+  southRoadJunctionEast: { min: 1, max: 2 },
+  stairsBottomArea: { min: 2, max: 4 },
+  hotelEntranceArea: { min: 1, max: 3 },
+  belowRightPark: { min: 1, max: 2 },
 
-  // Y=0 Shopping district (same level as sidewalks)
-  leftPark: { min: 6, max: 12 },
-  shopAlley: { min: 12, max: 20 },
-  rightPark: { min: 6, max: 12 },
-  leftParkToShop: { min: 3, max: 6 },
-  rightParkToShop: { min: 3, max: 6 },
-  shopFrontArea: { min: 5, max: 10 },
-  shopBackArea: { min: 4, max: 8 },
-  rightParkToHotel: { min: 3, max: 6 },
+  // Y=0 Shopping district (reduced significantly)
+  leftPark: { min: 2, max: 4 },
+  shopAlley: { min: 4, max: 8 },
+  rightPark: { min: 2, max: 4 },
+  leftParkToShop: { min: 1, max: 2 },
+  rightParkToShop: { min: 1, max: 2 },
+  shopFrontArea: { min: 2, max: 4 },
+  shopBackArea: { min: 1, max: 3 },
+  rightParkToHotel: { min: 1, max: 2 },
 
-  // Y=10+ Residential
-  stairsTopPlatform: { min: 2, max: 5 },
-  residentialPath: { min: 10, max: 20 },
-  slopedPath: { min: 4, max: 8 },
-  flatTopPath: { min: 3, max: 6 },
+  // Y=0 South building areas (+90 people distributed)
+  southAreaRight: { min: 40, max: 55 },
+  southAreaCenter: { min: 40, max: 55 },
+  southAreaLeft: { min: 38, max: 50 },
+  farSouthRight: { min: 28, max: 38 },
+  farSouthCenter: { min: 28, max: 38 },
+  farSouthLeft: { min: 25, max: 35 },
+  hotelEastArea: { min: 6, max: 10 },
+  hotelEastAreaNorth: { min: 4, max: 8 },
+
+  // Y=10+ Residential (increased)
+  stairsTopPlatform: { min: 1, max: 3 },
+  residentialPath: { min: 12, max: 20 },
+  slopedPath: { min: 5, max: 10 },
+  flatTopPath: { min: 4, max: 8 },
 };
 
-const MAX_POPULATION = 200;
+const MAX_POPULATION = 350;
 
 // ============================================================
 // STATE
@@ -456,6 +701,21 @@ function isOnRoad(x, z, y) {
   if (y > 1) return false;
   for (const road of roadZones) {
     if (x >= road.xMin && x <= road.xMax && z >= road.zMin && z <= road.zMax) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Check if position collides with an obstacle
+ */
+function collidesWithObstacle(x, z, y, margin = 0.5) {
+  if (y > 1) return false; // Only check at ground level
+  for (const obs of obstacleZones) {
+    if (obs.y !== undefined && Math.abs(y - obs.y) > 2) continue;
+    if (x >= obs.xMin - margin && x <= obs.xMax + margin &&
+        z >= obs.zMin - margin && z <= obs.zMax + margin) {
       return true;
     }
   }
@@ -535,17 +795,30 @@ function clampToConnectedZones(person) {
  */
 function getRandomPointInZone(zone) {
   const margin = 0.5;
-  const x = zone.xMin + margin + Math.random() * (zone.xMax - zone.xMin - margin * 2);
-  const z = zone.zMin + margin + Math.random() * (zone.zMax - zone.zMin - margin * 2);
+  const maxAttempts = 10;
 
-  let y;
-  if (zone.y === 'sloped') {
-    const t = (x - zone.xMin) / (zone.xMax - zone.xMin);
-    y = zone.yStart + t * (zone.yEnd - zone.yStart);
-  } else {
-    y = zone.y;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const x = zone.xMin + margin + Math.random() * (zone.xMax - zone.xMin - margin * 2);
+    const z = zone.zMin + margin + Math.random() * (zone.zMax - zone.zMin - margin * 2);
+
+    let y;
+    if (zone.y === 'sloped') {
+      const t = (x - zone.xMin) / (zone.xMax - zone.xMin);
+      y = zone.yStart + t * (zone.yEnd - zone.yStart);
+    } else {
+      y = zone.y;
+    }
+
+    // Check if point collides with obstacle
+    if (!collidesWithObstacle(x, z, y)) {
+      return { x, y, z };
+    }
   }
 
+  // Fallback: return center of zone if can't find clear spot
+  const x = (zone.xMin + zone.xMax) / 2;
+  const z = (zone.zMin + zone.zMax) / 2;
+  const y = zone.y === 'sloped' ? (zone.yStart + zone.yEnd) / 2 : zone.y;
   return { x, y, z };
 }
 
@@ -666,11 +939,21 @@ function createPedestrianMesh() {
   const color = personColors[Math.floor(Math.random() * personColors.length)];
   const mat = new THREE.MeshBasicMaterial({ color });
 
-  // Head
-  const headGeom = new THREE.BoxGeometry(0.4, 0.45, 0.4);
+  // Head (2/3 size)
+  const headGeom = new THREE.BoxGeometry(0.27, 0.3, 0.27);
   const head = new THREE.Mesh(headGeom, mat);
-  head.position.y = 1.55;
+  head.position.y = 1.5;
   group.add(head);
+
+  // Eyes (black circles, on front of head - positive z is forward)
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+  const eyeGeom = new THREE.SphereGeometry(0.035, 8, 8);
+  const leftEye = new THREE.Mesh(eyeGeom, eyeMat);
+  leftEye.position.set(-0.06, 1.52, 0.14);
+  group.add(leftEye);
+  const rightEye = new THREE.Mesh(eyeGeom, eyeMat);
+  rightEye.position.set(0.06, 1.52, 0.14);
+  group.add(rightEye);
 
   // Body
   const bodyGeom = new THREE.BoxGeometry(0.5, 0.7, 0.3);
@@ -871,11 +1154,45 @@ function getAvoidanceVector(person, allPedestrians) {
 // ============================================================
 
 /**
+ * Check if there are vehicles on or near the crosswalk
+ */
+function isVehicleOnCrosswalk(crosswalkId, personX, personZ) {
+  const vehicles = getVehicles();
+  const cw = crosswalks.find(c => c.id === crosswalkId);
+  if (!cw) return false;
+
+  for (const vehicle of vehicles) {
+    const vx = vehicle.mesh.position.x;
+    const vz = vehicle.mesh.position.z;
+
+    if (cw.direction === 'vertical') {
+      // Main road crosswalk - check if vehicle is within crosswalk x range and near z
+      const inXRange = Math.abs(vx - cw.x) < (cw.width / 2 + 8); // Vehicle approaching
+      const inZRange = Math.abs(vz - cw.z) < (cw.length / 2 + 3);
+      if (inXRange && inZRange) return true;
+    } else {
+      // South road crosswalk - check if vehicle is within crosswalk z range and near x
+      const inZRange = Math.abs(vz - cw.z) < (cw.length / 2 + 8); // Vehicle approaching
+      const inXRange = Math.abs(vx - cw.x) < (cw.width / 2 + 3);
+      if (inXRange && inZRange) return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Start crossing a crosswalk
  */
 function startCrossing(person, conn) {
   const data = person.userData;
   const pos = person.position;
+
+  // Check if vehicle is on crosswalk - if so, wait
+  if (isVehicleOnCrosswalk(conn.crosswalkId, pos.x, pos.z)) {
+    data.state = 'waiting';
+    data.waitingConn = conn;
+    return;
+  }
 
   data.state = 'crossing';
 
@@ -895,6 +1212,9 @@ function startCrossing(person, conn) {
     endZ = pos.z;
   }
 
+  // Calculate distance for proper speed
+  const distance = Math.sqrt((endX - startX) ** 2 + (endZ - startZ) ** 2);
+
   data.crossingData = {
     crosswalkId: conn.crosswalkId,
     startX: startX,
@@ -902,6 +1222,7 @@ function startCrossing(person, conn) {
     endX: endX,
     endZ: endZ,
     progress: 0,
+    distance: distance,
     targetZone: conn.from === data.currentZone?.id ? conn.to : conn.from
   };
 
@@ -915,7 +1236,10 @@ function updateCrossing(person, deltaTime) {
   const data = person.userData;
   const cd = data.crossingData;
 
-  cd.progress += deltaTime * data.speed * 0.4;
+  // Use distance-based progress (normal walking speed)
+  // Progress increment = (speed * deltaTime) / distance
+  const speedPerSecond = data.speed * 1.0; // Normal walking speed
+  cd.progress += (speedPerSecond * deltaTime) / cd.distance;
 
   if (cd.progress >= 1) {
     person.position.x = cd.endX;
@@ -930,11 +1254,33 @@ function updateCrossing(person, deltaTime) {
     }
 
     data.crossingData = null;
+    // Add cooldown to prevent immediate re-crossing (10-20 seconds)
+    data.crossingCooldown = 10 + Math.random() * 10;
     return;
   }
 
   person.position.x = cd.startX + (cd.endX - cd.startX) * cd.progress;
   person.position.z = cd.startZ + (cd.endZ - cd.startZ) * cd.progress;
+}
+
+/**
+ * Update waiting state (waiting for vehicles to pass)
+ */
+function updateWaiting(person, deltaTime) {
+  const data = person.userData;
+
+  if (!data.waitingConn) {
+    data.state = 'walking';
+    return;
+  }
+
+  // Check if vehicles have cleared the crosswalk
+  if (!isVehicleOnCrosswalk(data.waitingConn.crosswalkId, person.position.x, person.position.z)) {
+    // Safe to cross now
+    const conn = data.waitingConn;
+    data.waitingConn = null;
+    startCrossing(person, conn);
+  }
 }
 
 // ============================================================
@@ -958,15 +1304,17 @@ function updateStairWalking(person, deltaTime) {
 
   if (sd.progress <= 0 || sd.progress >= 1) {
     if (sd.progress <= 0) {
-      // Reached top (y=10) - assign directly to residentialPath (skip stairsTopPlatform to avoid guardrail)
+      // Reached top (y=10) - assign to stairsTopPlatform first for smooth transition
       person.position.y = stair.yTop;
       data.state = 'walking';
       data.stairData = null;
-      data.currentZone = getZoneById('residentialPath');
+      // Stay on top platform first (z=17 -> z=18, minimal movement)
+      data.currentZone = getZoneById('stairsTopPlatform');
       if (data.currentZone) {
-        // Position past guardrail (z=18.5), on residential path
-        person.position.z = 20;
-        data.waypoint = getRandomPointInZone(data.currentZone);
+        // Position just past stair exit (stair is at z=17, exit to z=18)
+        person.position.z = 18;
+        // Waypoint toward residential area for natural movement
+        data.waypoint = { x: person.position.x, z: 22 };
       }
       updateRotation(person);
     } else {
@@ -976,8 +1324,8 @@ function updateStairWalking(person, deltaTime) {
       data.stairData = null;
       data.currentZone = getZoneById('stairsBottomArea');
       if (data.currentZone) {
-        // Position at stairs front (z=15.5, so z=15 is just in front)
-        person.position.z = 15;
+        // Position just in front of stairs (stair is at z=17, exit to z=16)
+        person.position.z = 16;
         data.waypoint = getRandomPointInZone(data.currentZone);
       }
       updateRotation(person);
@@ -1074,6 +1422,9 @@ function tryZoneTransition(person) {
   const data = person.userData;
   if (!data.currentZone) return;
 
+  // Check crossing cooldown - don't cross if recently crossed
+  if (data.crossingCooldown && data.crossingCooldown > 0) return;
+
   const pos = person.position;
   const connections = getConnectionsFrom(data.currentZone.id);
 
@@ -1112,13 +1463,24 @@ function updatePedestrian(person, deltaTime, allPedestrians) {
     return;
   }
 
-  // Handle waiting
+  // Handle waiting (for crosswalk or general waiting)
   if (data.state === 'waiting') {
-    data.waitTime -= deltaTime;
-    if (data.waitTime <= 0) {
-      data.state = 'walking';
+    if (data.waitingConn) {
+      // Waiting for vehicles to clear crosswalk
+      updateWaiting(person, deltaTime);
+    } else {
+      // General waiting
+      data.waitTime -= deltaTime;
+      if (data.waitTime <= 0) {
+        data.state = 'walking';
+      }
     }
     return;
+  }
+
+  // Decrease crossing cooldown
+  if (data.crossingCooldown && data.crossingCooldown > 0) {
+    data.crossingCooldown -= deltaTime;
   }
 
   // No zone assigned
@@ -1144,8 +1506,32 @@ function updatePedestrian(person, deltaTime, allPedestrians) {
     const moveX = (dx / distXZ) * speed + avoid.x * deltaTime;
     const moveZ = (dz / distXZ) * speed + avoid.z * deltaTime;
 
-    person.position.x += moveX;
-    person.position.z += moveZ;
+    // Check collision before moving
+    const newX = person.position.x + moveX;
+    const newZ = person.position.z + moveZ;
+
+    if (!collidesWithObstacle(newX, newZ, person.position.y)) {
+      // No collision, move normally
+      person.position.x = newX;
+      person.position.z = newZ;
+      data.obstacleHitCount = 0;
+    } else {
+      // Collision detected - try alternative directions
+      data.obstacleHitCount = (data.obstacleHitCount || 0) + 1;
+
+      // Try moving only in X or Z direction
+      if (!collidesWithObstacle(newX, person.position.z, person.position.y)) {
+        person.position.x = newX;
+      } else if (!collidesWithObstacle(person.position.x, newZ, person.position.y)) {
+        person.position.z = newZ;
+      }
+
+      // After hitting obstacle multiple times, pick new waypoint
+      if (data.obstacleHitCount >= 5) {
+        data.waypoint = getRandomPointInZone(data.currentZone);
+        data.obstacleHitCount = 0;
+      }
+    }
 
     // Smoothly interpolate Y position toward waypoint Y
     if (Math.abs(dy) > 0.1) {

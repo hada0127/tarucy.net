@@ -112,7 +112,7 @@ const curveSouthToEast = {
 let vehicles = [];
 let lastSpawnTime = 0;
 const spawnInterval = 2.5; // Spawn new car every 2.5 seconds
-const maxVehicles = 20;
+const maxVehicles = 40;
 const vehicleSpeed = 18; // Fixed speed for all vehicles to prevent overlapping
 
 /**

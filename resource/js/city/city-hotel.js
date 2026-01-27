@@ -433,6 +433,46 @@ export function createPinkHotel(scene, groundY) {
   signBack.rotation.y = Math.PI / 2;
   group.add(signBack);
 
+  // === Hotel Sign Text "hada0127" ===
+  // Create canvas for text texture
+  const textCanvas = document.createElement('canvas');
+  textCanvas.width = 512;
+  textCanvas.height = 128;
+  const ctx = textCanvas.getContext('2d');
+
+  // Clear canvas (transparent)
+  ctx.clearRect(0, 0, textCanvas.width, textCanvas.height);
+
+  // Text settings - cursive font
+  ctx.font = 'italic 72px "Brush Script MT", "Segoe Script", cursive';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Draw text stroke (border) in darker pink color
+  ctx.strokeStyle = '#9b4055';
+  ctx.lineWidth = 12;
+  ctx.strokeText('Hada0127', textCanvas.width / 2, textCanvas.height / 2);
+
+  // Draw text fill in white
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('Hada0127', textCanvas.width / 2, textCanvas.height / 2);
+
+  // Create texture from canvas
+  const textTexture = new THREE.CanvasTexture(textCanvas);
+  textTexture.needsUpdate = true;
+
+  // Create text plane (slightly protruding from sign)
+  const textPlaneGeom = new THREE.PlaneGeometry(10, 2.5);
+  const textPlaneMat = new THREE.MeshBasicMaterial({
+    map: textTexture,
+    transparent: true,
+    side: THREE.DoubleSide
+  });
+  const textPlane = new THREE.Mesh(textPlaneGeom, textPlaneMat);
+  textPlane.position.set(mainX - mainWidth / 2 - 1.72, groundY + archHeight + 6.5, mainZ);
+  textPlane.rotation.y = -Math.PI / 2;
+  group.add(textPlane);
+
   scene.add(group);
   return group;
 }

@@ -171,8 +171,8 @@ export function initCity() {
   // Initialize pedestrians
   initPedestrians(scene);
 
-  // Visualize walkable zones (debug)
-  visualizeWalkableZones(scene);
+  // Visualize walkable zones (debug) - disabled
+  // visualizeWalkableZones(scene);
 
   // Resize handler
   handleResize(camera, renderer);
