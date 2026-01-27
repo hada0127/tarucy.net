@@ -4,8 +4,9 @@
  *
  * Camera Controls:
  * - W/S: Move forward/backward (restricted to walkable zones)
- * - A/D: Rotate left/right
+ * - A/D, Arrow Left/Right: Rotate left/right
  * - Arrow Up/Down: Look up/down (pitch)
+ * - Mobile: Dual analog joysticks (left=move/rotate, right=look/rotate)
  */
 
 import * as THREE from 'three';
@@ -122,7 +123,7 @@ function isPositionOnRoad(x, z) {
 /**
  * Check if camera position collides with an obstacle
  */
-function collidesWithObstacleAt(x, z, y, margin = 0.5) {
+function collidesWithObstacleAt(x, z, y, margin = 1.0) {
   const groundY = y - 1.6; // Convert eye level to ground level
   for (const obs of obstacleZones) {
     if (obs.y !== undefined && Math.abs(groundY - obs.y) > 2) continue;
@@ -160,7 +161,12 @@ function getStairY(x, z) {
  * Returns adjusted position if valid, or null if movement should be blocked
  */
 function validateCameraPosition(newX, newY, newZ, currentY) {
-  // Check stairs first (they connect different Y levels)
+  // Check obstacle collision FIRST (shops, hotel, fountain, buildings)
+  if (collidesWithObstacleAt(newX, newZ, newY)) {
+    return null;
+  }
+
+  // Check stairs (they connect different Y levels)
   const stairY = getStairY(newX, newZ);
   if (stairY !== null) {
     return { x: newX, y: stairY, z: newZ };
@@ -175,11 +181,6 @@ function validateCameraPosition(newX, newY, newZ, currentY) {
 
   // Check if on road (not allowed)
   if (isPositionOnRoad(newX, newZ)) {
-    return null;
-  }
-
-  // Check obstacle collision
-  if (collidesWithObstacleAt(newX, newZ, newY)) {
     return null;
   }
 
@@ -318,7 +319,20 @@ export function initCity() {
   // === Keyboard Camera Controls ===
   const keys = {
     w: false, s: false, a: false, d: false,
-    ArrowUp: false, ArrowDown: false
+    ArrowUp: false, ArrowDown: false,
+    ArrowLeft: false, ArrowRight: false
+  };
+
+  // Joystick analog values (0 to 1 for proportional control)
+  const joystickState = {
+    moveY: 0,  // -1 (forward) to 1 (backward)
+    moveX: 0   // -1 (left) to 1 (right)
+  };
+
+  // Right joystick for look/rotate
+  const rightJoystickState = {
+    lookY: 0,  // -1 (look up) to 1 (look down)
+    lookX: 0   // -1 (rotate left) to 1 (rotate right)
   };
 
   // Camera movement state
@@ -356,27 +370,313 @@ export function initCity() {
     scrollHint.style.display = 'none';
   }
 
-  // Add control instructions
-  const instructions = document.createElement('div');
-  instructions.id = 'camera-instructions';
-  instructions.innerHTML = `
-    <div style="position: fixed; bottom: 20px; left: 20px; color: white; font-family: monospace; font-size: 14px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; z-index: 1000;">
-      <div style="margin-bottom: 8px; font-weight: bold; color: #ff66aa;">Camera Controls</div>
-      <div>W/S - Forward / Backward</div>
-      <div>A/D - Rotate</div>
-      <div>↑/↓ - Look Up / Down</div>
-    </div>
-  `;
-  document.body.appendChild(instructions);
+  // Check if mobile device
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                   ('ontouchstart' in window) ||
+                   (window.innerWidth <= 768);
+
+  if (!isMobile) {
+    // Add control instructions for desktop
+    const instructions = document.createElement('div');
+    instructions.id = 'camera-instructions';
+    instructions.innerHTML = `
+      <div style="position: fixed; bottom: 20px; left: 20px; color: white; font-family: monospace; font-size: 14px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; z-index: 1000;">
+        <div style="margin-bottom: 8px; font-weight: bold; color: #ff66aa;">Camera Controls</div>
+        <div>W/S - Forward / Backward</div>
+        <div>A/D, ←/→ - Rotate</div>
+        <div>↑/↓ - Look Up / Down</div>
+      </div>
+    `;
+    document.body.appendChild(instructions);
+  } else {
+    // Add virtual controller for mobile
+    const virtualController = document.createElement('div');
+    virtualController.id = 'virtual-controller';
+    virtualController.innerHTML = `
+      <style>
+        .vc-joystick {
+          position: fixed;
+          bottom: 40px;
+          left: 30px;
+          width: 120px;
+          height: 120px;
+          border-radius: 50%;
+          background: rgba(255, 102, 170, 0.3);
+          border: 3px solid rgba(255, 255, 255, 0.6);
+          z-index: 1000;
+          touch-action: none;
+        }
+        .vc-joystick-knob {
+          position: absolute;
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          background: rgba(255, 102, 170, 0.8);
+          border: 3px solid rgba(255, 255, 255, 0.9);
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+          transition: background 0.1s;
+        }
+        .vc-joystick.active .vc-joystick-knob {
+          background: rgba(255, 102, 170, 1);
+        }
+        .vc-joystick-right {
+          position: fixed;
+          bottom: 40px;
+          right: 30px;
+          width: 120px;
+          height: 120px;
+          border-radius: 50%;
+          background: rgba(128, 200, 255, 0.3);
+          border: 3px solid rgba(255, 255, 255, 0.6);
+          z-index: 1000;
+          touch-action: none;
+        }
+        .vc-joystick-right .vc-joystick-knob {
+          background: rgba(128, 200, 255, 0.8);
+          border: 3px solid rgba(255, 255, 255, 0.9);
+        }
+        .vc-joystick-right.active .vc-joystick-knob {
+          background: rgba(128, 200, 255, 1);
+        }
+      </style>
+      <!-- Left side: Analog Joystick for Movement & Rotation -->
+      <div class="vc-joystick" id="vc-joystick">
+        <div class="vc-joystick-knob" id="vc-knob"></div>
+      </div>
+      <!-- Right side: Analog Joystick for Look/Rotate -->
+      <div class="vc-joystick-right" id="vc-joystick-right">
+        <div class="vc-joystick-knob" id="vc-knob-right"></div>
+      </div>
+    `;
+    document.body.appendChild(virtualController);
+
+    // Joystick state
+    const joystick = document.getElementById('vc-joystick');
+    const knob = document.getElementById('vc-knob');
+    const joystickRadius = 60; // Half of joystick size
+    const knobMaxDistance = 35; // Max distance knob can move from center
+    let joystickActive = false;
+    let joystickTouchId = null;
+
+    function updateJoystick(clientX, clientY) {
+      const rect = joystick.getBoundingClientRect();
+      const centerX = rect.left + joystickRadius;
+      const centerY = rect.top + joystickRadius;
+
+      let dx = clientX - centerX;
+      let dy = clientY - centerY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Clamp to max distance
+      if (distance > knobMaxDistance) {
+        dx = (dx / distance) * knobMaxDistance;
+        dy = (dy / distance) * knobMaxDistance;
+      }
+
+      // Update knob position
+      knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+
+      // Calculate normalized values (-1 to 1)
+      const normalizedX = dx / knobMaxDistance;
+      const normalizedY = dy / knobMaxDistance;
+
+      // Apply deadzone (0.2) and store analog values
+      const deadzone = 0.2;
+
+      // Forward/Backward (Y axis: up = forward, so negate)
+      if (Math.abs(normalizedY) > deadzone) {
+        // Remap from deadzone-1 to 0-1 range
+        const sign = normalizedY < 0 ? -1 : 1;
+        joystickState.moveY = sign * (Math.abs(normalizedY) - deadzone) / (1 - deadzone);
+      } else {
+        joystickState.moveY = 0;
+      }
+
+      // Rotate Left/Right (X axis)
+      if (Math.abs(normalizedX) > deadzone) {
+        const sign = normalizedX < 0 ? -1 : 1;
+        joystickState.moveX = sign * (Math.abs(normalizedX) - deadzone) / (1 - deadzone);
+      } else {
+        joystickState.moveX = 0;
+      }
+    }
+
+    function resetJoystick() {
+      knob.style.transform = 'translate(-50%, -50%)';
+      joystickState.moveX = 0;
+      joystickState.moveY = 0;
+      joystickActive = false;
+      joystickTouchId = null;
+      joystick.classList.remove('active');
+    }
+
+    // Touch events for left joystick
+    joystick.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (joystickTouchId === null) {
+        joystickActive = true;
+        joystickTouchId = e.changedTouches[0].identifier;
+        joystick.classList.add('active');
+        updateJoystick(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      }
+    }, { passive: false });
+
+    // === Right Joystick (Look/Rotate) ===
+    const joystickRight = document.getElementById('vc-joystick-right');
+    const knobRight = document.getElementById('vc-knob-right');
+    let rightJoystickActive = false;
+    let rightJoystickTouchId = null;
+
+    function updateRightJoystick(clientX, clientY) {
+      const rect = joystickRight.getBoundingClientRect();
+      const centerX = rect.left + joystickRadius;
+      const centerY = rect.top + joystickRadius;
+
+      let dx = clientX - centerX;
+      let dy = clientY - centerY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Clamp to max distance
+      if (distance > knobMaxDistance) {
+        dx = (dx / distance) * knobMaxDistance;
+        dy = (dy / distance) * knobMaxDistance;
+      }
+
+      // Update knob position
+      knobRight.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+
+      // Calculate normalized values (-1 to 1)
+      const normalizedX = dx / knobMaxDistance;
+      const normalizedY = dy / knobMaxDistance;
+
+      // Apply deadzone (0.2) and store analog values
+      const deadzone = 0.2;
+
+      // Look Up/Down (Y axis)
+      if (Math.abs(normalizedY) > deadzone) {
+        const sign = normalizedY < 0 ? -1 : 1;
+        rightJoystickState.lookY = sign * (Math.abs(normalizedY) - deadzone) / (1 - deadzone);
+      } else {
+        rightJoystickState.lookY = 0;
+      }
+
+      // Rotate Left/Right (X axis)
+      if (Math.abs(normalizedX) > deadzone) {
+        const sign = normalizedX < 0 ? -1 : 1;
+        rightJoystickState.lookX = sign * (Math.abs(normalizedX) - deadzone) / (1 - deadzone);
+      } else {
+        rightJoystickState.lookX = 0;
+      }
+    }
+
+    function resetRightJoystick() {
+      knobRight.style.transform = 'translate(-50%, -50%)';
+      rightJoystickState.lookX = 0;
+      rightJoystickState.lookY = 0;
+      rightJoystickActive = false;
+      rightJoystickTouchId = null;
+      joystickRight.classList.remove('active');
+    }
+
+    // Touch events for right joystick
+    joystickRight.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (rightJoystickTouchId === null) {
+        rightJoystickActive = true;
+        rightJoystickTouchId = e.changedTouches[0].identifier;
+        joystickRight.classList.add('active');
+        updateRightJoystick(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      }
+    }, { passive: false });
+
+    // Combined touch move handler for both joysticks
+    window.addEventListener('touchmove', (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (touch.identifier === joystickTouchId) {
+          e.preventDefault();
+          updateJoystick(touch.clientX, touch.clientY);
+        }
+        if (touch.identifier === rightJoystickTouchId) {
+          e.preventDefault();
+          updateRightJoystick(touch.clientX, touch.clientY);
+        }
+      }
+    }, { passive: false });
+
+    // Combined touch end handler
+    window.addEventListener('touchend', (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (touch.identifier === joystickTouchId) {
+          resetJoystick();
+        }
+        if (touch.identifier === rightJoystickTouchId) {
+          resetRightJoystick();
+        }
+      }
+    });
+
+    window.addEventListener('touchcancel', (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (touch.identifier === joystickTouchId) {
+          resetJoystick();
+        }
+        if (touch.identifier === rightJoystickTouchId) {
+          resetRightJoystick();
+        }
+      }
+    });
+
+    // Mouse events for both joysticks (for desktop testing)
+    let activeMouseJoystick = null;
+
+    joystick.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      joystickActive = true;
+      activeMouseJoystick = 'left';
+      joystick.classList.add('active');
+      updateJoystick(e.clientX, e.clientY);
+    });
+
+    joystickRight.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      rightJoystickActive = true;
+      activeMouseJoystick = 'right';
+      joystickRight.classList.add('active');
+      updateRightJoystick(e.clientX, e.clientY);
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (activeMouseJoystick === 'left') {
+        updateJoystick(e.clientX, e.clientY);
+      } else if (activeMouseJoystick === 'right') {
+        updateRightJoystick(e.clientX, e.clientY);
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (activeMouseJoystick === 'left') {
+        resetJoystick();
+      } else if (activeMouseJoystick === 'right') {
+        resetRightJoystick();
+      }
+      activeMouseJoystick = null;
+    });
+  }
 
   // Animation state
   let lastTime = 0;
 
   /**
-   * Update camera based on keyboard input (zone-restricted like pedestrians)
+   * Update camera based on keyboard/joystick input (zone-restricted like pedestrians)
    */
   function updateCameraControls(deltaTime) {
-    const speed = cameraState.speed * deltaTime * 60;
+    const baseSpeed = cameraState.speed * deltaTime * 60;
     const rotSpeed = cameraState.rotSpeed;
 
     // Calculate forward vector based on yaw (horizontal movement only)
@@ -386,18 +686,33 @@ export function initCity() {
       -Math.cos(cameraState.yaw)
     );
 
-    // Calculate desired new position
+    // Calculate movement input (keyboard = 1.0, joystick = 0-1 proportional)
+    let moveForward = 0;
+    let rotateAmount = 0;
+
+    // Keyboard input (full speed)
+    if (keys.w) moveForward = 1;
+    if (keys.s) moveForward = -1;
+    if (keys.a) rotateAmount = 1;
+    if (keys.d) rotateAmount = -1;
+
+    // Joystick input (proportional, overrides keyboard if active)
+    if (joystickState.moveY !== 0) {
+      moveForward = -joystickState.moveY; // Negative because Y up = forward
+    }
+    if (joystickState.moveX !== 0) {
+      rotateAmount = -joystickState.moveX;
+    }
+
+    // Apply movement
+    const speed = baseSpeed * Math.abs(moveForward);
     let newX = camera.position.x;
     let newZ = camera.position.z;
 
-    // Movement (WS)
-    if (keys.w) {
-      newX += forward.x * speed;
-      newZ += forward.z * speed;
-    }
-    if (keys.s) {
-      newX -= forward.x * speed;
-      newZ -= forward.z * speed;
+    if (moveForward !== 0) {
+      const dir = moveForward > 0 ? 1 : -1;
+      newX += forward.x * speed * dir;
+      newZ += forward.z * speed * dir;
     }
 
     // Validate and apply movement
@@ -429,23 +744,38 @@ export function initCity() {
       }
     }
 
-    // A/D for rotation (yaw)
-    if (keys.a) {
+    // Apply rotation from left joystick/keyboard A/D
+    if (rotateAmount !== 0) {
+      cameraState.yaw += rotSpeed * rotateAmount;
+    }
+
+    // Arrow Left/Right for rotation (keyboard)
+    if (keys.ArrowLeft) {
       cameraState.yaw += rotSpeed;
     }
-    if (keys.d) {
+    if (keys.ArrowRight) {
       cameraState.yaw -= rotSpeed;
     }
 
+    // Right joystick X axis for rotation (proportional)
+    if (rightJoystickState.lookX !== 0) {
+      cameraState.yaw -= rotSpeed * rightJoystickState.lookX;
+    }
+
     // Pitch (Arrow Up/Down) - Look up/down
-    if (keys.ArrowUp) {
-      cameraState.pitch += rotSpeed;
+    let pitchAmount = 0;
+    if (keys.ArrowUp) pitchAmount = 1;
+    if (keys.ArrowDown) pitchAmount = -1;
+
+    // Right joystick Y axis for pitch (proportional)
+    if (rightJoystickState.lookY !== 0) {
+      pitchAmount = -rightJoystickState.lookY; // Negative because Y down = look down
+    }
+
+    if (pitchAmount !== 0) {
+      cameraState.pitch += rotSpeed * pitchAmount;
       // Limit pitch to prevent flipping
       if (cameraState.pitch > Math.PI / 2 - 0.1) cameraState.pitch = Math.PI / 2 - 0.1;
-    }
-    if (keys.ArrowDown) {
-      cameraState.pitch -= rotSpeed;
-      // Limit pitch to prevent flipping
       if (cameraState.pitch < -Math.PI / 2 + 0.1) cameraState.pitch = -Math.PI / 2 + 0.1;
     }
 

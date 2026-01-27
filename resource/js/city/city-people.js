@@ -933,6 +933,8 @@ function getRandomWaypointInConnectedZones(currentZone) {
 
 /**
  * Create a pedestrian mesh
+ * Structure: [0]=head, [1]=leftEye, [2]=rightEye, [3]=body,
+ *            [4]=leftLegPivot, [5]=rightLegPivot, [6]=leftArmPivot, [7]=rightArmPivot
  */
 function createPedestrianMesh() {
   const group = new THREE.Group();
@@ -961,23 +963,43 @@ function createPedestrianMesh() {
   body.position.y = 0.95;
   group.add(body);
 
-  // Legs
+  // Legs - pivot at hip (top of leg)
   const legGeom = new THREE.BoxGeometry(0.18, 0.6, 0.18);
-  const leftLeg = new THREE.Mesh(legGeom, mat);
-  leftLeg.position.set(-0.12, 0.3, 0);
-  group.add(leftLeg);
-  const rightLeg = new THREE.Mesh(legGeom, mat);
-  rightLeg.position.set(0.12, 0.3, 0);
-  group.add(rightLeg);
 
-  // Arms
+  // Left leg pivot at hip
+  const leftLegPivot = new THREE.Group();
+  leftLegPivot.position.set(-0.12, 0.6, 0); // Hip position
+  const leftLeg = new THREE.Mesh(legGeom, mat);
+  leftLeg.position.y = -0.3; // Offset down from pivot (half of leg height)
+  leftLegPivot.add(leftLeg);
+  group.add(leftLegPivot);
+
+  // Right leg pivot at hip
+  const rightLegPivot = new THREE.Group();
+  rightLegPivot.position.set(0.12, 0.6, 0); // Hip position
+  const rightLeg = new THREE.Mesh(legGeom, mat);
+  rightLeg.position.y = -0.3; // Offset down from pivot
+  rightLegPivot.add(rightLeg);
+  group.add(rightLegPivot);
+
+  // Arms - pivot at shoulder (top of arm)
   const armGeom = new THREE.BoxGeometry(0.14, 0.5, 0.14);
+
+  // Left arm pivot at shoulder
+  const leftArmPivot = new THREE.Group();
+  leftArmPivot.position.set(-0.35, 1.2, 0); // Shoulder position
   const leftArm = new THREE.Mesh(armGeom, mat);
-  leftArm.position.set(-0.35, 0.95, 0);
-  group.add(leftArm);
+  leftArm.position.y = -0.25; // Offset down from pivot (half of arm height)
+  leftArmPivot.add(leftArm);
+  group.add(leftArmPivot);
+
+  // Right arm pivot at shoulder
+  const rightArmPivot = new THREE.Group();
+  rightArmPivot.position.set(0.35, 1.2, 0); // Shoulder position
   const rightArm = new THREE.Mesh(armGeom, mat);
-  rightArm.position.set(0.35, 0.95, 0);
-  group.add(rightArm);
+  rightArm.position.y = -0.25; // Offset down from pivot
+  rightArmPivot.add(rightArm);
+  group.add(rightArmPivot);
 
   return group;
 }
@@ -1105,16 +1127,19 @@ function animateWalk(person, time) {
     }
   }
 
-  // Legs
-  if (person.children[2] && person.children[3]) {
-    person.children[2].rotation.x = Math.sin(t) * 0.5;
-    person.children[3].rotation.x = Math.sin(t + Math.PI) * 0.5;
+  // Legs - pivot from hip, swing forward/backward
+  // [4]=leftLegPivot, [5]=rightLegPivot
+  if (person.children[4] && person.children[5]) {
+    person.children[4].rotation.x = Math.sin(t) * 0.5;
+    person.children[5].rotation.x = Math.sin(t + Math.PI) * 0.5;
   }
 
-  // Arms
-  if (person.children[4] && person.children[5]) {
-    person.children[4].rotation.x = Math.sin(t + Math.PI) * 0.4;
-    person.children[5].rotation.x = Math.sin(t) * 0.4;
+  // Arms - pivot from shoulder, swing opposite to legs (cross-body)
+  // [6]=leftArmPivot, [7]=rightArmPivot
+  // Left arm swings with right leg, right arm swings with left leg
+  if (person.children[6] && person.children[7]) {
+    person.children[6].rotation.x = Math.sin(t + Math.PI) * 0.4; // Opposite to left leg
+    person.children[7].rotation.x = Math.sin(t) * 0.4; // Opposite to right leg
   }
 }
 
