@@ -175,7 +175,7 @@ const obstacleZones = [
 
   // === Parks ===
   // Fountain (right park) - circular collision
-  { type: 'circle', cx: 35, cz: 6, radius: 4, y: 0 },
+  { type: 'circle', cx: 35, cz: 6, radius: 3, y: 0 },
 
   // === Playground fences (left park: x=-51~-29, z=-2~14) ===
   // Bottom fence (z=-2)
