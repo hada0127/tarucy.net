@@ -228,10 +228,8 @@ function createAllBuildings(scene) {
   buildings.push(...createLeftBuildings(scene));
   buildings.push(...createRightBuildings(scene));
   buildings.push(...createCenterBuildings(scene));
-  buildings.push(...createSouthBuildings(scene));
-  alert('F: south');
-  buildings = removeOverlappingBuildings(scene, buildings);
-  alert('G: overlap');
+  // buildings.push(...createSouthBuildings(scene));
+  // buildings = removeOverlappingBuildings(scene, buildings);
   // buildings.push(...createShoppingDistrict(scene));
   // createZigzagStairs(scene);
   // createUtilitySystem(scene);
