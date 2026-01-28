@@ -462,17 +462,12 @@ export function initCity() {
   let meshCountBefore = 0;
   scene.traverse(obj => { if (obj.isMesh) meshCountBefore++; });
 
-  // iOS/모바일에서만 최적화 적용 (PC는 기존 방식 유지)
-  if (isIOSorMobile) {
-    // Scene 최적화 - vertex colors + geometry merge로 draw call 대폭 감소
-    const mergedCount = optimizeScene(scene);
+  // Scene 최적화 - vertex colors + geometry merge로 draw call 대폭 감소
+  const mergedCount = optimizeScene(scene);
 
-    let meshCountAfter = 0;
-    scene.traverse(obj => { if (obj.isMesh) meshCountAfter++; });
-    console.log(`Optimization: ${meshCountBefore} meshes → ${meshCountAfter} meshes`);
-  } else {
-    console.log(`PC mode: ${meshCountBefore} meshes (no optimization)`);
-  }
+  let meshCountAfter = 0;
+  scene.traverse(obj => { if (obj.isMesh) meshCountAfter++; });
+  console.log(`Optimization: ${meshCountBefore} meshes → ${meshCountAfter} meshes`);
 
   // 동적 객체는 최적화 후에 추가 (merge 대상에서 제외됨)
   if (!isIOSorMobile) {
