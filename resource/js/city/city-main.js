@@ -458,18 +458,21 @@ export function initCity() {
     createAllStreetLamps(scene);
   }
 
-  // 최적화 전 mesh 수 확인
+  // mesh 수 확인
   let meshCountBefore = 0;
   scene.traverse(obj => { if (obj.isMesh) meshCountBefore++; });
 
-  // Scene 최적화 - vertex colors + geometry merge로 draw call 대폭 감소
-  const mergedCount = optimizeScene(scene);
+  // iOS/모바일에서만 최적화 적용 (PC는 기존 방식 유지)
+  if (isIOSorMobile) {
+    // Scene 최적화 - vertex colors + geometry merge로 draw call 대폭 감소
+    const mergedCount = optimizeScene(scene);
 
-  // 최적화 후 mesh 수 확인
-  let meshCountAfter = 0;
-  scene.traverse(obj => { if (obj.isMesh) meshCountAfter++; });
-  console.log(`Optimization: ${meshCountBefore} meshes → ${meshCountAfter} meshes`);
-  alert(`Meshes: ${meshCountBefore} → ${meshCountAfter}`);
+    let meshCountAfter = 0;
+    scene.traverse(obj => { if (obj.isMesh) meshCountAfter++; });
+    console.log(`Optimization: ${meshCountBefore} meshes → ${meshCountAfter} meshes`);
+  } else {
+    console.log(`PC mode: ${meshCountBefore} meshes (no optimization)`);
+  }
 
   // 동적 객체는 최적화 후에 추가 (merge 대상에서 제외됨)
   if (!isIOSorMobile) {
