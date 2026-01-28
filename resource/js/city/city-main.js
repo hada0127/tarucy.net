@@ -223,22 +223,21 @@ function validateCameraPosition(newX, newY, newZ, currentY) {
 function createAllBuildings(scene) {
   let buildings = [];
 
-  // Testing one by one
   buildings.push(...createResidentialDistrict(scene));
-  alert('A: residential');
   buildings.push(...createSlopedResidentialArea(scene));
-  alert('B: sloped');
   buildings.push(...createLeftBuildings(scene));
-  alert('C: left');
   buildings.push(...createRightBuildings(scene));
-  alert('D: right');
   buildings.push(...createCenterBuildings(scene));
-  alert('E: center');
-  // buildings.push(...createSouthBuildings(scene));
-  // buildings = removeOverlappingBuildings(scene, buildings);
-  // buildings.push(...createShoppingDistrict(scene));
-  // createZigzagStairs(scene);
-  // createUtilitySystem(scene);
+  buildings.push(...createSouthBuildings(scene));
+  alert('F: south');
+  buildings = removeOverlappingBuildings(scene, buildings);
+  alert('G: overlap');
+  buildings.push(...createShoppingDistrict(scene));
+  alert('H: shopping');
+  createZigzagStairs(scene);
+  alert('I: stairs');
+  createUtilitySystem(scene);
+  alert('J: utility');
   // createVendorStalls(scene);
   // createParks(scene);
   // createPinkHotel(scene, 0);
