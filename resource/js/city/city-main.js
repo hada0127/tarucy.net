@@ -224,7 +224,7 @@ function validateCameraPosition(newX, newY, newZ, currentY) {
 const isIOSorMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 // GLB 파일 사용 여부 (true면 GLB 로드, false면 동적 생성)
-const USE_GLB = false;
+const USE_GLB = true;
 const GLB_PATH = './resource/models/city.glb';
 
 /**
@@ -344,7 +344,7 @@ function createAllBuildings(scene) {
 /**
  * Initialize 3D City
  */
-export function initCity() {
+export async function initCity() {
   const container = document.getElementById('city-container');
   if (!container) {
     console.error('city-container not found');
@@ -363,17 +363,34 @@ export function initCity() {
   // Add lighting
   createLighting(scene);
 
-  // Create environment
-  createGround(scene);
-  createRoads(scene);
-  createCrosswalks(scene);
-
-  // Create city elements
-  createAllBuildings(scene);
-
-  if (!isIOSorMobile) {
-    createAllTrees(scene);
-    createAllStreetLamps(scene);
+  if (USE_GLB) {
+    // GLB 파일에서 정적 scene 로드
+    console.log('Loading city from GLB...');
+    try {
+      await loadSceneFromGLB(scene);
+      console.log('GLB loaded!');
+    } catch (e) {
+      console.error('GLB load failed, falling back to dynamic generation:', e);
+      // 실패 시 동적 생성으로 폴백
+      createGround(scene);
+      createRoads(scene);
+      createCrosswalks(scene);
+      createAllBuildings(scene);
+      if (!isIOSorMobile) {
+        createAllTrees(scene);
+        createAllStreetLamps(scene);
+      }
+    }
+  } else {
+    // 동적 생성 (기존 방식)
+    createGround(scene);
+    createRoads(scene);
+    createCrosswalks(scene);
+    createAllBuildings(scene);
+    if (!isIOSorMobile) {
+      createAllTrees(scene);
+      createAllStreetLamps(scene);
+    }
   }
 
   // mesh 수 확인
@@ -382,9 +399,10 @@ export function initCity() {
   console.log(`Total meshes: ${meshCount}`);
 
   // GLB 내보내기 함수를 전역으로 노출 (개발용)
-  // 브라우저 콘솔에서 exportSceneToGLB() 호출하면 city.glb 다운로드
   window.exportSceneToGLB = () => exportSceneToGLB(scene);
-  console.log('GLB 내보내기: 콘솔에서 exportSceneToGLB() 호출');
+  if (!USE_GLB) {
+    console.log('GLB 내보내기: 콘솔에서 exportSceneToGLB() 호출');
+  }
 
   // 동적 객체 추가 (GLB에는 포함되지 않음)
   if (!isIOSorMobile) {
@@ -896,16 +914,14 @@ export function initCity() {
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    try {
-      initCity();
-    } catch(e) {
+    initCity().catch(e => {
+      console.error('initCity ERROR:', e);
       alert('initCity ERROR: ' + e.message);
-    }
+    });
   });
 } else {
-  try {
-    initCity();
-  } catch(e) {
+  initCity().catch(e => {
+    console.error('initCity ERROR:', e);
     alert('initCity ERROR: ' + e.message);
-  }
+  });
 }
