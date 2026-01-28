@@ -221,84 +221,29 @@ function validateCameraPosition(newX, newY, newZ, currentY) {
  * Create all buildings and structures
  */
 function createAllBuildings(scene) {
-  alert('buildings A: start');
   let buildings = [];
 
-  // Residential district (25 houses)
   buildings.push(...createResidentialDistrict(scene));
-  alert('buildings B: residential');
-
-  // Sloped residential area on right side
   buildings.push(...createSlopedResidentialArea(scene));
-  alert('buildings C: sloped residential');
-
-  // High-rise buildings (3 clusters - expanded)
   buildings.push(...createLeftBuildings(scene));
-  alert('buildings D: left buildings');
   buildings.push(...createRightBuildings(scene));
-  alert('buildings E: right buildings');
   buildings.push(...createCenterBuildings(scene));
-  alert('buildings F: center buildings');
-
-  // South side buildings (fill empty area)
   buildings.push(...createSouthBuildings(scene));
-  alert('buildings G: south buildings');
-
-  // Remove overlapping buildings (keep larger ones)
   buildings = removeOverlappingBuildings(scene, buildings);
-  alert('buildings H: overlap removed');
-
-  // Shopping district (16 shops) - added AFTER overlap removal to preserve all shops
   buildings.push(...createShoppingDistrict(scene));
-  alert('buildings I: shopping');
 
-  // Forest behind residential district
   createForest(scene);
-  alert('buildings J: forest');
-
-  // Large forest and mountains behind hotel
   createHotelBackForestAndMountains(scene);
-  alert('buildings K: hotel forest');
-
-  // Forest behind sloped residential area
   createSlopedAreaForest(scene);
-  alert('buildings L: sloped forest');
-
-  // Natural hills around sloped residential area edges
   createSlopedAreaEdgeHills(scene);
-  alert('buildings M: edge hills');
-
-  // Hills in left north area (replacing removed buildings above main road)
   createLeftNorthHills(scene);
-  alert('buildings N: left north hills');
-
-  // Forest and mountains west of curved road
   createCurveWestForestAndMountains(scene);
-  alert('buildings O: curve west');
-
-  // Stairs
   createZigzagStairs(scene);
-  alert('buildings P: stairs');
-
-  // Utility poles & power lines
   createUtilitySystem(scene);
-  alert('buildings Q: utility');
-
-  // Vendor stalls
   createVendorStalls(scene);
-  alert('buildings R: vendors');
-
-  // Parks beside shopping district
   createParks(scene);
-  alert('buildings S: parks');
-
-  // Pink hotel
   createPinkHotel(scene, 0);
-  alert('buildings T: hotel');
-
-  // Street furniture (benches, bus stops, trash cans, etc.)
   createAllFurniture(scene);
-  alert('buildings U: furniture done');
 
   return buildings;
 }
@@ -307,75 +252,47 @@ function createAllBuildings(scene) {
  * Initialize 3D City
  */
 export function initCity() {
-  alert('initCity step 1: start');
   const container = document.getElementById('city-container');
   if (!container) {
     console.error('city-container not found');
     return;
   }
 
-  alert('initCity step 2: container found');
-
   // Create scene, renderer, camera
   const scene = createScene();
-  alert('initCity step 3: scene created');
-
   const renderer = createRenderer(container);
-  alert('initCity step 4: renderer created');
-
   const camera = createCamera();
-  alert('initCity step 5: camera created');
 
   // Initial camera position (stairs top, human eye level ~1.6m above ground)
-  // stairsTopPlatform: y=10, center at x=0, z=18
   camera.position.set(0, 11.6, 18);
-  alert('initCity step 5a: camera position set');
-
-  camera.lookAt(0, 5, -20);  // Looking toward the city center
-  alert('initCity step 5b: camera lookAt set');
+  camera.lookAt(0, 5, -20);
 
   // Add lighting
   createLighting(scene);
-  alert('initCity step 6: lighting created');
 
   // Create environment
   createGround(scene);
-  alert('initCity step 7: ground created');
-
   createRoads(scene);
-  alert('initCity step 8: roads created');
-
-  // Create crosswalks
   createCrosswalks(scene);
-  alert('initCity step 9: crosswalks created');
 
   // Create city elements
   createAllBuildings(scene);
-  alert('initCity step 10: buildings created');
-
   createAllTrees(scene);
-  alert('initCity step 11: trees created');
-
   createAllStreetLamps(scene);
-  alert('initCity step 12: streetlamps created');
 
   // Initialize vehicles
   initVehicles(scene);
-  alert('initCity step 13: vehicles initialized');
-
-  // Connect pedestrian stop checker to vehicles (avoids circular dependency)
   setPedestrianStopChecker(shouldVehicleStop);
-  alert('initCity step 14: pedestrian stop checker set');
 
   // Initialize pedestrians
   initPedestrians(scene);
-  alert('initCity step 15: pedestrians initialized');
 
   // Visualize walkable zones (debug) - disabled
   // visualizeWalkableZones(scene);
 
   // Resize handler
   handleResize(camera, renderer);
+  alert('step 16: resize handler');
 
   // === Keyboard Camera Controls ===
   const keys = {
@@ -871,7 +788,9 @@ export function initCity() {
     renderer.render(scene, camera);
   }
 
+  alert('step 17: before animate');
   animate(0);
+  alert('step 18: after animate');
 
   return { scene, camera, renderer };
 }
@@ -879,20 +798,16 @@ export function initCity() {
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    alert('DEBUG: DOMContentLoaded, about to call initCity');
     try {
       initCity();
-      alert('DEBUG: initCity completed');
     } catch(e) {
-      alert('DEBUG initCity ERROR: ' + e.message + '\n' + e.stack);
+      alert('initCity ERROR: ' + e.message);
     }
   });
 } else {
-  alert('DEBUG: DOM ready, about to call initCity');
   try {
     initCity();
-    alert('DEBUG: initCity completed');
   } catch(e) {
-    alert('DEBUG initCity ERROR: ' + e.message + '\n' + e.stack);
+    alert('initCity ERROR: ' + e.message);
   }
 }
