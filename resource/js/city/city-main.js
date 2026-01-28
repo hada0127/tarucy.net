@@ -10,7 +10,7 @@
  */
 
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+// import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // Scene, sky, camera, renderer
 import { createScene, createRenderer, createCamera, createLighting, handleResize } from './city-sky.js';
@@ -303,7 +303,14 @@ function getMaterialKey(mat) {
 function createAllBuildings(scene) {
   let buildings = [];
 
-  // 모든 건물 생성 (최적화로 merge됨)
+  if (isIOSorMobile) {
+    // iOS/모바일: 경량 모드
+    buildings.push(...createCenterBuildings(scene));
+    createPinkHotel(scene, 0);
+    return buildings;
+  }
+
+  // 데스크톱: 전체
   buildings.push(...createResidentialDistrict(scene));
   buildings.push(...createSlopedResidentialArea(scene));
   buildings.push(...createLeftBuildings(scene));
@@ -358,26 +365,22 @@ export function initCity() {
 
   // Create city elements
   createAllBuildings(scene);
-  createAllTrees(scene);
-  createAllStreetLamps(scene);
 
-  // 최적화 전 mesh 수
-  let beforeCount = 0;
-  scene.traverse(obj => { if (obj.isMesh) beforeCount++; });
+  if (!isIOSorMobile) {
+    createAllTrees(scene);
+    createAllStreetLamps(scene);
+  }
 
-  // Scene 최적화 - geometry 합치기
-  optimizeScene(scene);
+  // mesh 수 확인
+  let meshCount = 0;
+  scene.traverse(obj => { if (obj.isMesh) meshCount++; });
+  alert('Meshes: ' + meshCount);
 
-  // 최적화 후 mesh 수
-  let afterCount = 0;
-  scene.traverse(obj => { if (obj.isMesh) afterCount++; });
-  console.log(`Optimization: ${beforeCount} -> ${afterCount} meshes`);
-  alert(`최적화: ${beforeCount} -> ${afterCount} meshes`);
-
-  // 차량/보행자 (최적화 후 추가 - merge 대상 아님)
-  initVehicles(scene);
-  setPedestrianStopChecker(shouldVehicleStop);
-  initPedestrians(scene);
+  if (!isIOSorMobile) {
+    initVehicles(scene);
+    setPedestrianStopChecker(shouldVehicleStop);
+    initPedestrians(scene);
+  }
 
   // Visualize walkable zones (debug) - disabled
   // visualizeWalkableZones(scene);
@@ -867,8 +870,10 @@ export function initCity() {
     lastTime = currentTime;
 
     updateCameraControls(deltaTime);
-    updateVehicles(scene, deltaTime);
-    updatePedestrians(deltaTime, currentTime / 1000);
+    if (!isIOSorMobile) {
+      updateVehicles(scene, deltaTime);
+      updatePedestrians(deltaTime, currentTime / 1000);
+    }
     renderer.render(scene, camera);
   }
 
