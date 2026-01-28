@@ -308,31 +308,47 @@ export function initCity() {
   // Initial camera position (stairs top, human eye level ~1.6m above ground)
   // stairsTopPlatform: y=10, center at x=0, z=18
   camera.position.set(0, 11.6, 18);
+  alert('initCity step 5a: camera position set');
+
   camera.lookAt(0, 5, -20);  // Looking toward the city center
+  alert('initCity step 5b: camera lookAt set');
 
   // Add lighting
   createLighting(scene);
+  alert('initCity step 6: lighting created');
 
   // Create environment
   createGround(scene);
+  alert('initCity step 7: ground created');
+
   createRoads(scene);
+  alert('initCity step 8: roads created');
 
   // Create crosswalks
   createCrosswalks(scene);
+  alert('initCity step 9: crosswalks created');
 
   // Create city elements
   createAllBuildings(scene);
+  alert('initCity step 10: buildings created');
+
   createAllTrees(scene);
+  alert('initCity step 11: trees created');
+
   createAllStreetLamps(scene);
+  alert('initCity step 12: streetlamps created');
 
   // Initialize vehicles
   initVehicles(scene);
+  alert('initCity step 13: vehicles initialized');
 
   // Connect pedestrian stop checker to vehicles (avoids circular dependency)
   setPedestrianStopChecker(shouldVehicleStop);
+  alert('initCity step 14: pedestrian stop checker set');
 
   // Initialize pedestrians
   initPedestrians(scene);
+  alert('initCity step 15: pedestrians initialized');
 
   // Visualize walkable zones (debug) - disabled
   // visualizeWalkableZones(scene);
