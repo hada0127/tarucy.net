@@ -971,8 +971,7 @@ export function createSouthBuildings(scene) {
     { x: 188, z: -90, w: 14, d: 12, h: 48 },
   ];
 
-  // Reduced for iOS compatibility - only every 3rd building
-  mainTowerPositions.filter((_, i) => i % 3 === 0).forEach((pos, idx) => {
+  mainTowerPositions.forEach((pos, idx) => {
     buildings.push(createMainTower(scene, pos.x, pos.z, groundY, {
       width: pos.w, depth: pos.d, height: pos.h,
       neonColor: neonPalette[idx % neonPalette.length]

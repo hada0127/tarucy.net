@@ -10,6 +10,7 @@
  */
 
 import * as THREE from 'three';
+import { mergeGeometries } from 'https://unpkg.com/three@0.160.0/examples/jsm/utils/BufferGeometryUtils.js';
 
 // Scene, sky, camera, renderer
 import { createScene, createRenderer, createCamera, createLighting, handleResize } from './city-sky.js';
@@ -217,23 +218,92 @@ function validateCameraPosition(newX, newY, newZ, currentY) {
   return null;
 }
 
+// iOS/모바일 감지
+const isIOSorMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+/**
+ * Scene 최적화 - 같은 material을 가진 mesh들의 geometry를 합침
+ * 5000+ mesh를 수백 개로 줄여 draw call 감소
+ */
+function optimizeScene(scene) {
+  // material별로 mesh 그룹화
+  const materialGroups = new Map();
+  const meshesToRemove = [];
+
+  scene.traverse((obj) => {
+    if (obj.isMesh && obj.geometry && obj.material) {
+      // Group이나 특수 객체는 제외
+      if (obj.parent && obj.parent.isGroup && obj.parent.userData.noMerge) return;
+
+      const mat = obj.material;
+      const key = getMaterialKey(mat);
+
+      if (!materialGroups.has(key)) {
+        materialGroups.set(key, { material: mat.clone(), meshes: [] });
+      }
+
+      // geometry를 world 좌표로 변환
+      const geo = obj.geometry.clone();
+      obj.updateMatrixWorld();
+      geo.applyMatrix4(obj.matrixWorld);
+
+      materialGroups.get(key).meshes.push(geo);
+      meshesToRemove.push(obj);
+    }
+  });
+
+  // 기존 mesh 제거
+  meshesToRemove.forEach(mesh => {
+    if (mesh.parent) mesh.parent.remove(mesh);
+    if (mesh.geometry) mesh.geometry.dispose();
+  });
+
+  // material별로 geometry 합치기
+  let mergedCount = 0;
+  materialGroups.forEach(({ material, meshes }, key) => {
+    if (meshes.length === 0) return;
+
+    try {
+      const mergedGeo = mergeGeometries(meshes, false);
+      if (mergedGeo) {
+        const mergedMesh = new THREE.Mesh(mergedGeo, material);
+        scene.add(mergedMesh);
+        mergedCount++;
+      }
+    } catch (e) {
+      // merge 실패 시 개별 mesh 유지
+      console.warn('Merge failed for', key, e);
+    }
+
+    // 원본 geometry dispose
+    meshes.forEach(geo => geo.dispose());
+  });
+
+  console.log('Optimization: merged into', mergedCount, 'meshes');
+  return mergedCount;
+}
+
+/**
+ * Material을 고유 키로 변환
+ */
+function getMaterialKey(mat) {
+  if (mat.isMeshBasicMaterial) {
+    const color = mat.color.getHexString();
+    const transparent = mat.transparent ? 't' : 'o';
+    const opacity = Math.round(mat.opacity * 100);
+    return `basic_${color}_${transparent}_${opacity}`;
+  }
+  return `other_${mat.uuid}`;
+}
+
 /**
  * Create all buildings and structures
  */
-// iOS/모바일 감지
-const isIOSorMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 function createAllBuildings(scene) {
   let buildings = [];
 
-  if (isIOSorMobile) {
-    // iOS/모바일: 최소한의 건물만
-    buildings.push(...createCenterBuildings(scene));
-    createPinkHotel(scene, 0);
-    return buildings;
-  }
-
-  // 데스크톱: 전체 건물
+  // 모든 건물 생성 (최적화로 merge됨)
   buildings.push(...createResidentialDistrict(scene));
   buildings.push(...createSlopedResidentialArea(scene));
   buildings.push(...createLeftBuildings(scene));
@@ -288,14 +358,26 @@ export function initCity() {
 
   // Create city elements
   createAllBuildings(scene);
+  createAllTrees(scene);
+  createAllStreetLamps(scene);
 
-  if (!isIOSorMobile) {
-    createAllTrees(scene);
-    createAllStreetLamps(scene);
-    initVehicles(scene);
-    setPedestrianStopChecker(shouldVehicleStop);
-    initPedestrians(scene);
-  }
+  // 최적화 전 mesh 수
+  let beforeCount = 0;
+  scene.traverse(obj => { if (obj.isMesh) beforeCount++; });
+
+  // Scene 최적화 - geometry 합치기
+  optimizeScene(scene);
+
+  // 최적화 후 mesh 수
+  let afterCount = 0;
+  scene.traverse(obj => { if (obj.isMesh) afterCount++; });
+  console.log(`Optimization: ${beforeCount} -> ${afterCount} meshes`);
+  alert(`최적화: ${beforeCount} -> ${afterCount} meshes`);
+
+  // 차량/보행자 (최적화 후 추가 - merge 대상 아님)
+  initVehicles(scene);
+  setPedestrianStopChecker(shouldVehicleStop);
+  initPedestrians(scene);
 
   // Visualize walkable zones (debug) - disabled
   // visualizeWalkableZones(scene);
@@ -785,24 +867,10 @@ export function initCity() {
     lastTime = currentTime;
 
     updateCameraControls(deltaTime);
-
-    if (!isIOSorMobile) {
-      updateVehicles(scene, deltaTime);
-      updatePedestrians(deltaTime, currentTime / 1000);
-    }
-
+    updateVehicles(scene, deltaTime);
+    updatePedestrians(deltaTime, currentTime / 1000);
     renderer.render(scene, camera);
   }
-
-  // Scene 통계 출력
-  let meshCount = 0;
-  let geometryCount = 0;
-  scene.traverse((obj) => {
-    if (obj.isMesh) meshCount++;
-    if (obj.geometry) geometryCount++;
-  });
-  console.log('Scene stats - Meshes:', meshCount, 'Geometries:', geometryCount);
-  alert('Meshes: ' + meshCount);
 
   animate(0);
 
