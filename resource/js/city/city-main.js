@@ -223,30 +223,26 @@ function validateCameraPosition(newX, newY, newZ, currentY) {
 function createAllBuildings(scene) {
   let buildings = [];
 
-  // Reduced for iOS compatibility
+  // Testing one by one
   buildings.push(...createResidentialDistrict(scene));
+  alert('A: residential');
   buildings.push(...createSlopedResidentialArea(scene));
+  alert('B: sloped');
   buildings.push(...createLeftBuildings(scene));
+  alert('C: left');
   buildings.push(...createRightBuildings(scene));
+  alert('D: right');
   buildings.push(...createCenterBuildings(scene));
-  buildings.push(...createSouthBuildings(scene));
-  buildings = removeOverlappingBuildings(scene, buildings);
-  buildings.push(...createShoppingDistrict(scene));
-
-  // Disabled forests/mountains for iOS testing
-  // createForest(scene);
-  // createHotelBackForestAndMountains(scene);
-  // createSlopedAreaForest(scene);
-  // createSlopedAreaEdgeHills(scene);
-  // createLeftNorthHills(scene);
-  // createCurveWestForestAndMountains(scene);
-
-  createZigzagStairs(scene);
-  createUtilitySystem(scene);
-  createVendorStalls(scene);
-  createParks(scene);
-  createPinkHotel(scene, 0);
-  createAllFurniture(scene);
+  alert('E: center');
+  // buildings.push(...createSouthBuildings(scene));
+  // buildings = removeOverlappingBuildings(scene, buildings);
+  // buildings.push(...createShoppingDistrict(scene));
+  // createZigzagStairs(scene);
+  // createUtilitySystem(scene);
+  // createVendorStalls(scene);
+  // createParks(scene);
+  // createPinkHotel(scene, 0);
+  // createAllFurniture(scene);
 
   return buildings;
 }
