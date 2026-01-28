@@ -11,6 +11,8 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 // Scene, sky, camera, renderer
 import { createScene, createRenderer, createCamera, createLighting, handleResize } from './city-sky.js';
@@ -221,165 +223,81 @@ function validateCameraPosition(newX, newY, newZ, currentY) {
 // iOS/모바일 감지
 const isIOSorMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
+// GLB 파일 사용 여부 (true면 GLB 로드, false면 동적 생성)
+const USE_GLB = false;
+const GLB_PATH = './resource/models/city.glb';
+
 /**
- * Geometry를 position과 color만 남기고 정규화 (non-indexed로 변환)
- * mergeGeometries는 모든 geometry가 같은 attributes를 가져야 함
- * index도 있거나 없거나 통일되어야 함 → 모두 non-indexed로 변환
+ * Scene을 GLB 파일로 내보내기 (개발용)
+ * 브라우저 콘솔에서 exportSceneToGLB(scene) 호출
  */
-function normalizeGeometry(geo) {
-  // indexed geometry면 non-indexed로 변환
-  let workGeo = geo;
-  if (geo.index) {
-    workGeo = geo.toNonIndexed();
-  }
+function exportSceneToGLB(scene) {
+  const exporter = new GLTFExporter();
 
-  const position = workGeo.attributes.position;
-  const color = workGeo.attributes.color;
+  // 동적 객체 제외하고 내보내기
+  const objectsToExport = [];
+  scene.traverse((obj) => {
+    if (obj.isMesh && !obj.userData.dynamic) {
+      objectsToExport.push(obj);
+    }
+  });
 
-  // 새 geometry 생성 (position과 color만, index 없음)
-  const newGeo = new THREE.BufferGeometry();
-  newGeo.setAttribute('position', position.clone());
-  if (color) {
-    newGeo.setAttribute('color', color.clone());
-  }
+  // 임시 scene에 복사
+  const exportScene = new THREE.Scene();
+  objectsToExport.forEach(obj => {
+    const clone = obj.clone();
+    exportScene.add(clone);
+  });
 
-  // userData 복사
-  newGeo.userData = geo.userData;
-
-  // 임시 geometry 정리
-  if (workGeo !== geo) {
-    workGeo.dispose();
-  }
-
-  return newGeo;
+  exporter.parse(
+    exportScene,
+    (result) => {
+      const blob = new Blob([result], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'city.glb';
+      link.click();
+      URL.revokeObjectURL(url);
+      console.log('GLB exported successfully!');
+    },
+    (error) => {
+      console.error('GLB export failed:', error);
+    },
+    { binary: true }
+  );
 }
 
+// 전역으로 내보내기 함수 노출 (개발용)
+window.exportSceneToGLB = null; // initCity에서 설정
+
 /**
- * Scene 최적화 - Vertex Colors를 사용하여 모든 geometry를 하나로 합침
- * Draw call을 5000+ → 10개 미만으로 줄여 iOS Safari 성능 개선
+ * GLB 파일에서 Scene 로드
  */
-function optimizeScene(scene) {
-  const geometriesToMerge = [];
-  const texturedGeometries = []; // texture가 있는 geometry는 별도 처리
-  const meshesToRemove = [];
-
-  // 1. 모든 mesh 수집 및 vertex color 적용
-  scene.traverse((obj) => {
-    if (!obj.isMesh || !obj.geometry || !obj.material) return;
-    // 동적 객체(차량, 보행자)는 제외 - userData로 표시된 경우
-    if (obj.userData && obj.userData.dynamic) return;
-    // Group의 noMerge 플래그 확인
-    if (obj.parent && obj.parent.isGroup && obj.parent.userData.noMerge) return;
-
-    const mat = obj.material;
-
-    // texture가 있는 material은 별도 처리 (merge하지 않음)
-    if (mat.map) {
-      texturedGeometries.push({ mesh: obj, material: mat });
-      return;
-    }
-
-    // geometry를 world 좌표로 변환
-    const geo = obj.geometry.clone();
-    obj.updateMatrixWorld();
-    geo.applyMatrix4(obj.matrixWorld);
-
-    // vertex color 적용
-    const color = mat.color ? mat.color.clone() : new THREE.Color(0xffffff);
-    const count = geo.attributes.position.count;
-    const colors = new Float32Array(count * 3);
-
-    for (let i = 0; i < count; i++) {
-      colors[i * 3] = color.r;
-      colors[i * 3 + 1] = color.g;
-      colors[i * 3 + 2] = color.b;
-    }
-    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    // transparent 처리를 위해 opacity 저장
-    geo.userData = {
-      transparent: mat.transparent || false,
-      opacity: mat.opacity !== undefined ? mat.opacity : 1
-    };
-
-    // position과 color만 남기도록 정규화
-    const normalizedGeo = normalizeGeometry(geo);
-    geo.dispose();
-
-    geometriesToMerge.push(normalizedGeo);
-    meshesToRemove.push(obj);
-  });
-
-  // 2. 기존 mesh 제거
-  meshesToRemove.forEach(mesh => {
-    if (mesh.parent) mesh.parent.remove(mesh);
-    if (mesh.geometry) mesh.geometry.dispose();
-    if (mesh.material && !mesh.material.map) mesh.material.dispose();
-  });
-
-  // 3. Opaque geometry와 transparent geometry 분리
-  const opaqueGeos = geometriesToMerge.filter(g => !g.userData.transparent || g.userData.opacity >= 0.99);
-  const transparentGeos = geometriesToMerge.filter(g => g.userData.transparent && g.userData.opacity < 0.99);
-
-  let mergedCount = 0;
-
-  // 4. Opaque geometry 합치기 (단일 mesh)
-  if (opaqueGeos.length > 0) {
-    try {
-      const mergedGeo = mergeGeometries(opaqueGeos, false);
-      if (mergedGeo) {
-        const mergedMat = new THREE.MeshBasicMaterial({
-          vertexColors: true,
-          side: THREE.DoubleSide  // world matrix로 인해 뒤집힌 면도 보이도록
+function loadSceneFromGLB(scene) {
+  return new Promise((resolve, reject) => {
+    const loader = new GLTFLoader();
+    loader.load(
+      GLB_PATH,
+      (gltf) => {
+        // 로드된 모든 객체를 scene에 추가
+        gltf.scene.traverse((obj) => {
+          if (obj.isMesh) {
+            scene.add(obj.clone());
+          }
         });
-        const mergedMesh = new THREE.Mesh(mergedGeo, mergedMat);
-        scene.add(mergedMesh);
-        mergedCount++;
-        console.log('Opaque merge success:', opaqueGeos.length, 'geometries');
-      } else {
-        console.warn('Opaque merge returned null');
+        console.log('GLB loaded successfully!');
+        resolve();
+      },
+      (progress) => {
+        console.log('Loading GLB:', Math.round(progress.loaded / progress.total * 100) + '%');
+      },
+      (error) => {
+        console.error('GLB load failed:', error);
+        reject(error);
       }
-    } catch (e) {
-      console.warn('Opaque merge failed:', e);
-    }
-    opaqueGeos.forEach(geo => geo.dispose());
-  }
-
-  // 5. Transparent geometry를 opacity별로 그룹화하여 합치기
-  const transparentByOpacity = new Map();
-  transparentGeos.forEach(geo => {
-    const key = Math.round(geo.userData.opacity * 100);
-    if (!transparentByOpacity.has(key)) {
-      transparentByOpacity.set(key, []);
-    }
-    transparentByOpacity.get(key).push(geo);
+    );
   });
-
-  transparentByOpacity.forEach((geos, opacityKey) => {
-    if (geos.length === 0) return;
-    try {
-      const mergedGeo = mergeGeometries(geos, false);
-      if (mergedGeo) {
-        const mergedMat = new THREE.MeshBasicMaterial({
-          vertexColors: true,
-          transparent: true,
-          opacity: opacityKey / 100,
-          depthWrite: false,
-          side: THREE.DoubleSide
-        });
-        const mergedMesh = new THREE.Mesh(mergedGeo, mergedMat);
-        scene.add(mergedMesh);
-        mergedCount++;
-        console.log('Transparent merge success for opacity', opacityKey, ':', geos.length, 'geometries');
-      }
-    } catch (e) {
-      console.warn('Transparent merge failed for opacity', opacityKey, ':', e);
-    }
-    geos.forEach(geo => geo.dispose());
-  });
-
-  console.log('Optimization: merged into', mergedCount, 'meshes');
-  return mergedCount;
 }
 
 /**
@@ -463,9 +381,12 @@ export function initCity() {
   scene.traverse(obj => { if (obj.isMesh) meshCount++; });
   console.log(`Total meshes: ${meshCount}`);
 
-  // TODO: iOS 최적화는 별도 방식 필요 (vertex color merge 방식은 문제 있음)
+  // GLB 내보내기 함수를 전역으로 노출 (개발용)
+  // 브라우저 콘솔에서 exportSceneToGLB() 호출하면 city.glb 다운로드
+  window.exportSceneToGLB = () => exportSceneToGLB(scene);
+  console.log('GLB 내보내기: 콘솔에서 exportSceneToGLB() 호출');
 
-  // 동적 객체는 최적화 후에 추가 (merge 대상에서 제외됨)
+  // 동적 객체 추가 (GLB에는 포함되지 않음)
   if (!isIOSorMobile) {
     initVehicles(scene);
     setPedestrianStopChecker(shouldVehicleStop);
