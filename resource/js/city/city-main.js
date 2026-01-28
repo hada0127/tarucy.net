@@ -10,7 +10,7 @@
  */
 
 import * as THREE from 'three';
-// import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // Scene, sky, camera, renderer
 import { createScene, createRenderer, createCamera, createLighting, handleResize } from './city-sky.js';
@@ -222,78 +222,119 @@ function validateCameraPosition(newX, newY, newZ, currentY) {
 const isIOSorMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 /**
- * Scene 최적화 - 같은 material을 가진 mesh들의 geometry를 합침
- * 5000+ mesh를 수백 개로 줄여 draw call 감소
+ * Scene 최적화 - Vertex Colors를 사용하여 모든 geometry를 하나로 합침
+ * Draw call을 5000+ → 10개 미만으로 줄여 iOS Safari 성능 개선
  */
 function optimizeScene(scene) {
-  // material별로 mesh 그룹화
-  const materialGroups = new Map();
+  const geometriesToMerge = [];
+  const texturedGeometries = []; // texture가 있는 geometry는 별도 처리
   const meshesToRemove = [];
 
+  // 1. 모든 mesh 수집 및 vertex color 적용
   scene.traverse((obj) => {
-    if (obj.isMesh && obj.geometry && obj.material) {
-      // Group이나 특수 객체는 제외
-      if (obj.parent && obj.parent.isGroup && obj.parent.userData.noMerge) return;
+    if (!obj.isMesh || !obj.geometry || !obj.material) return;
+    // 동적 객체(차량, 보행자)는 제외 - userData로 표시된 경우
+    if (obj.userData && obj.userData.dynamic) return;
+    // Group의 noMerge 플래그 확인
+    if (obj.parent && obj.parent.isGroup && obj.parent.userData.noMerge) return;
 
-      const mat = obj.material;
-      const key = getMaterialKey(mat);
+    const mat = obj.material;
 
-      if (!materialGroups.has(key)) {
-        materialGroups.set(key, { material: mat.clone(), meshes: [] });
-      }
-
-      // geometry를 world 좌표로 변환
-      const geo = obj.geometry.clone();
-      obj.updateMatrixWorld();
-      geo.applyMatrix4(obj.matrixWorld);
-
-      materialGroups.get(key).meshes.push(geo);
-      meshesToRemove.push(obj);
+    // texture가 있는 material은 별도 처리
+    if (mat.map) {
+      texturedGeometries.push({ mesh: obj, material: mat });
+      return;
     }
+
+    // geometry를 world 좌표로 변환
+    const geo = obj.geometry.clone();
+    obj.updateMatrixWorld();
+    geo.applyMatrix4(obj.matrixWorld);
+
+    // vertex color 적용
+    const color = mat.color ? mat.color.clone() : new THREE.Color(0xffffff);
+    const count = geo.attributes.position.count;
+    const colors = new Float32Array(count * 3);
+
+    for (let i = 0; i < count; i++) {
+      colors[i * 3] = color.r;
+      colors[i * 3 + 1] = color.g;
+      colors[i * 3 + 2] = color.b;
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    // transparent 처리를 위해 opacity가 1이 아닌 경우 알파값 저장 (나중에 확장 가능)
+    geo.userData = {
+      transparent: mat.transparent || false,
+      opacity: mat.opacity !== undefined ? mat.opacity : 1
+    };
+
+    geometriesToMerge.push(geo);
+    meshesToRemove.push(obj);
   });
 
-  // 기존 mesh 제거
+  // 2. 기존 mesh 제거
   meshesToRemove.forEach(mesh => {
     if (mesh.parent) mesh.parent.remove(mesh);
     if (mesh.geometry) mesh.geometry.dispose();
+    if (mesh.material && !mesh.material.map) mesh.material.dispose();
   });
 
-  // material별로 geometry 합치기
-  let mergedCount = 0;
-  materialGroups.forEach(({ material, meshes }, key) => {
-    if (meshes.length === 0) return;
+  // 3. Opaque geometry와 transparent geometry 분리
+  const opaqueGeos = geometriesToMerge.filter(g => !g.userData.transparent || g.userData.opacity >= 0.99);
+  const transparentGeos = geometriesToMerge.filter(g => g.userData.transparent && g.userData.opacity < 0.99);
 
+  let mergedCount = 0;
+
+  // 4. Opaque geometry 합치기 (단일 mesh)
+  if (opaqueGeos.length > 0) {
     try {
-      const mergedGeo = mergeGeometries(meshes, false);
+      const mergedGeo = mergeGeometries(opaqueGeos, false);
       if (mergedGeo) {
-        const mergedMesh = new THREE.Mesh(mergedGeo, material);
+        const mergedMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+        const mergedMesh = new THREE.Mesh(mergedGeo, mergedMat);
         scene.add(mergedMesh);
         mergedCount++;
       }
     } catch (e) {
-      // merge 실패 시 개별 mesh 유지
-      console.warn('Merge failed for', key, e);
+      console.warn('Opaque merge failed:', e);
     }
+    opaqueGeos.forEach(geo => geo.dispose());
+  }
 
-    // 원본 geometry dispose
-    meshes.forEach(geo => geo.dispose());
+  // 5. Transparent geometry를 opacity별로 그룹화하여 합치기
+  const transparentByOpacity = new Map();
+  transparentGeos.forEach(geo => {
+    const key = Math.round(geo.userData.opacity * 100);
+    if (!transparentByOpacity.has(key)) {
+      transparentByOpacity.set(key, []);
+    }
+    transparentByOpacity.get(key).push(geo);
+  });
+
+  transparentByOpacity.forEach((geos, opacityKey) => {
+    if (geos.length === 0) return;
+    try {
+      const mergedGeo = mergeGeometries(geos, false);
+      if (mergedGeo) {
+        const mergedMat = new THREE.MeshBasicMaterial({
+          vertexColors: true,
+          transparent: true,
+          opacity: opacityKey / 100,
+          depthWrite: false
+        });
+        const mergedMesh = new THREE.Mesh(mergedGeo, mergedMat);
+        scene.add(mergedMesh);
+        mergedCount++;
+      }
+    } catch (e) {
+      console.warn('Transparent merge failed for opacity', opacityKey, ':', e);
+    }
+    geos.forEach(geo => geo.dispose());
   });
 
   console.log('Optimization: merged into', mergedCount, 'meshes');
   return mergedCount;
-}
-
-/**
- * Material을 고유 키로 변환
- */
-function getMaterialKey(mat) {
-  if (mat.isMeshBasicMaterial) {
-    const color = mat.color.getHexString();
-    const transparent = mat.transparent ? 't' : 'o';
-    const opacity = Math.round(mat.opacity * 100);
-    return `basic_${color}_${transparent}_${opacity}`;
-  }
-  return `other_${mat.uuid}`;
 }
 
 /**
@@ -304,7 +345,8 @@ function createAllBuildings(scene) {
   let buildings = [];
 
   if (isIOSorMobile) {
-    // iOS/모바일: 경량 모드
+    // iOS/모바일: 경량 모드 - 점진적 추가 테스트
+    buildings.push(...createResidentialDistrict(scene));
     buildings.push(...createCenterBuildings(scene));
     createPinkHotel(scene, 0);
     return buildings;
@@ -371,11 +413,20 @@ export function initCity() {
     createAllStreetLamps(scene);
   }
 
-  // mesh 수 확인
-  let meshCount = 0;
-  scene.traverse(obj => { if (obj.isMesh) meshCount++; });
-  alert('Meshes: ' + meshCount);
+  // 최적화 전 mesh 수 확인
+  let meshCountBefore = 0;
+  scene.traverse(obj => { if (obj.isMesh) meshCountBefore++; });
 
+  // Scene 최적화 - vertex colors + geometry merge로 draw call 대폭 감소
+  const mergedCount = optimizeScene(scene);
+
+  // 최적화 후 mesh 수 확인
+  let meshCountAfter = 0;
+  scene.traverse(obj => { if (obj.isMesh) meshCountAfter++; });
+  console.log(`Optimization: ${meshCountBefore} meshes → ${meshCountAfter} meshes`);
+  alert(`Meshes: ${meshCountBefore} → ${meshCountAfter}`);
+
+  // 동적 객체는 최적화 후에 추가 (merge 대상에서 제외됨)
   if (!isIOSorMobile) {
     initVehicles(scene);
     setPedestrianStopChecker(shouldVehicleStop);
