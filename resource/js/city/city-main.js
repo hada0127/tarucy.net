@@ -790,6 +790,16 @@ export function initCity() {
     renderer.render(scene, camera);
   }
 
+  // Scene 통계 출력
+  let meshCount = 0;
+  let geometryCount = 0;
+  scene.traverse((obj) => {
+    if (obj.isMesh) meshCount++;
+    if (obj.geometry) geometryCount++;
+  });
+  console.log('Scene stats - Meshes:', meshCount, 'Geometries:', geometryCount);
+  alert('Meshes: ' + meshCount);
+
   animate(0);
 
   return { scene, camera, renderer };
