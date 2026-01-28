@@ -64,58 +64,25 @@ export function createShopBuilding(scene, x, z, groundY, config = {}) {
   handle.position.set(doorWidth/2 - 0.2, doorHeight/2, -depth/2 - 0.02);
   group.add(handle);
 
-  // ===== Fixed Window Grid Pattern for Shop Building =====
-  const shopWinGeom = new THREE.PlaneGeometry(0.8, 1);
-  const shopSideWinGeom = new THREE.PlaneGeometry(0.7, 0.9);
-  const shopWinSpacingX = 1.8;
-  const shopWinSpacingY = 2;
-  const shopWinMargin = 1;
-
-  // Fixed color pattern
-  const shopWinColors = [
-    colors.window[0], colors.window[3], colors.window[6], colors.window[1],
-    colors.window[4], colors.window[7], colors.window[2], colors.window[5]
-  ];
-
-  // Calculate fixed grid dimensions
-  const shopNumCols = Math.max(1, Math.floor((width - shopWinMargin * 2) / shopWinSpacingX) + 1);
-  const shopNumRows = Math.max(1, Math.floor((height - 2.5) / shopWinSpacingY));
-  const shopNumSideCols = Math.max(1, Math.floor((depth - shopWinMargin * 2) / shopWinSpacingX) + 1);
-
-  // Front Windows - fixed grid (above door)
-  for (let row = 0; row < shopNumRows; row++) {
-    for (let col = 0; col < shopNumCols; col++) {
-      const colorIdx = (row + col) % shopWinColors.length;
-      const win = new THREE.Mesh(shopWinGeom, new THREE.MeshBasicMaterial({ color: shopWinColors[colorIdx], side: THREE.DoubleSide }));
-      win.position.set(
-        -width/2 + shopWinMargin + col * shopWinSpacingX,
-        3 + row * shopWinSpacingY,
-        -depth/2 - 0.01
-      );
-      group.add(win);
-    }
-  }
-
-  // Back Windows - fixed grid
-  for (let row = 0; row < shopNumRows + 1; row++) {
-    for (let col = 0; col < shopNumCols; col++) {
-      const colorIdx = (row + col + 2) % shopWinColors.length;
-      const win = new THREE.Mesh(shopWinGeom, new THREE.MeshBasicMaterial({ color: shopWinColors[colorIdx], side: THREE.DoubleSide }));
-      win.position.set(
-        -width/2 + shopWinMargin + col * shopWinSpacingX,
-        1.5 + row * shopWinSpacingY,
-        depth/2 + 0.01
-      );
-      group.add(win);
-    }
-  }
-
   // Shop awning (colorful)
   const awningGeom = new THREE.BoxGeometry(width + 0.5, 0.2, 1.2);
   const awningMat = new THREE.MeshBasicMaterial({ color: neonColor });
   const awning = new THREE.Mesh(awningGeom, awningMat);
   awning.position.set(0, 2.8, -depth/2 - 0.5);
   group.add(awning);
+
+  // Horizontal sign above awning (raised for better visibility)
+  const signBgGeom = new THREE.BoxGeometry(width * 0.9, 1.0, 0.15);
+  const signBgMat = new THREE.MeshBasicMaterial({ color: 0x151520 });
+  const signBg = new THREE.Mesh(signBgGeom, signBgMat);
+  signBg.position.set(0, 4.0, -depth/2 - 0.6);
+  group.add(signBg);
+
+  const signPanelGeom = new THREE.BoxGeometry(width * 0.8, 0.8, 0.18);
+  const signPanelMat = new THREE.MeshBasicMaterial({ color: neonColor });
+  const signPanel = new THREE.Mesh(signPanelGeom, signPanelMat);
+  signPanel.position.set(0, 4.0, -depth/2 - 0.62);
+  group.add(signPanel);
 
   // Display window (showcase) on ground floor sides of door
   const showcaseGeom = new THREE.PlaneGeometry(1.2, 1.8);
@@ -210,16 +177,6 @@ export function createShoppingDistrict(scene) {
     shops.push(shop);
   }
 
-  // Vertical signs - split into upper and lower rows
-  // Upper row (near upper shops)
-  for (let i = 0; i < 7; i++) {
-    createVerticalSign(scene, upperStartX + 2.5 + i * 5.2, 10, groundY);
-  }
-  // Lower row (near lower shops)
-  for (let i = 0; i < 7; i++) {
-    createVerticalSign(scene, upperStartX + 2.5 + i * 5.2, 3, groundY);
-  }
-
   return shops;
 }
 
@@ -290,12 +247,7 @@ export function createVendorStalls(scene) {
   const stalls = [];
   const groundY = 0;
 
-  // Upper row (closer to upper shops at z=13): 11 stalls
-  for (let i = 0; i < 11; i++) {
-    stalls.push(createVendorStall(scene, -18 + i * 3.6, 9, groundY));
-  }
-
-  // Lower row (closer to lower shops at z=0): 11 stalls
+  // Lower row only (closer to lower shops at z=0): 11 stalls
   for (let i = 0; i < 11; i++) {
     stalls.push(createVendorStall(scene, -16.2 + i * 3.6, 2, groundY));
   }

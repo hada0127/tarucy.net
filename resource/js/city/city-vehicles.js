@@ -9,7 +9,17 @@
  */
 
 import * as THREE from 'three';
-import { shouldVehicleStop } from './city-people.js';
+
+// Callback for pedestrian stop check (set by city-main.js to avoid circular dependency)
+let pedestrianStopChecker = null;
+
+/**
+ * Set the pedestrian stop checker callback
+ * Called from city-main.js after both modules are loaded
+ */
+export function setPedestrianStopChecker(fn) {
+  pedestrianStopChecker = fn;
+}
 
 // Realistic car colors
 const carColors = [
@@ -113,7 +123,7 @@ let vehicles = [];
 let lastSpawnTime = 0;
 const spawnInterval = 2.5; // Spawn new car every 2.5 seconds
 const maxVehicles = 40;
-const vehicleSpeed = 18; // Fixed speed for all vehicles to prevent overlapping
+const vehicleSpeed = 9; // Fixed speed for all vehicles (reduced for realism)
 
 /**
  * Create sedan car
@@ -711,7 +721,7 @@ function updateVehicle(car, deltaTime, allVehicles) {
   const slowDistance = 15;     // Start slowing down distance
 
   // Check for pedestrians on crosswalks
-  const shouldStopForPedestrian = shouldVehicleStop(car.position.x, car.position.z, data.lane);
+  const shouldStopForPedestrian = pedestrianStopChecker ? pedestrianStopChecker(car.position.x, car.position.z, data.lane) : false;
 
   let currentSpeed = data.speed;
   if (shouldStopForPedestrian) {

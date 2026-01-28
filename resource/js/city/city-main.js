@@ -61,7 +61,7 @@ import { createZigzagStairs, createUtilitySystem } from './city-infrastructure.j
 import { createAllFurniture } from './city-furniture.js';
 
 // Vehicles
-import { initVehicles, updateVehicles } from './city-vehicles.js';
+import { initVehicles, updateVehicles, setPedestrianStopChecker } from './city-vehicles.js';
 
 // Pedestrians
 import {
@@ -72,7 +72,8 @@ import {
   roadZones,
   obstacleZones,
   stairPaths,
-  getZoneY
+  getZoneY,
+  shouldVehicleStop
 } from './city-people.js';
 
 // ============================================================
@@ -318,6 +319,9 @@ export function initCity() {
 
   // Initialize vehicles
   initVehicles(scene);
+
+  // Connect pedestrian stop checker to vehicles (avoids circular dependency)
+  setPedestrianStopChecker(shouldVehicleStop);
 
   // Initialize pedestrians
   initPedestrians(scene);

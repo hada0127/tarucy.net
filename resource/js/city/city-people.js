@@ -162,11 +162,6 @@ const obstacleZones = [
     xMin: -19 + i * 5.2 - 2.4, xMax: -19 + i * 5.2 + 2.4,
     zMin: 0 - 1.75, zMax: 0 + 1.75, y: 0
   })),
-  // Vendor stalls upper row (z=9, 11 stalls)
-  ...Array.from({ length: 11 }, (_, i) => ({
-    xMin: -18 + i * 3.6 - 1, xMax: -18 + i * 3.6 + 1,
-    zMin: 9 - 0.6, zMax: 9 + 0.6, y: 0
-  })),
   // Vendor stalls lower row (z=2, 11 stalls)
   ...Array.from({ length: 11 }, (_, i) => ({
     xMin: -16.2 + i * 3.6 - 1, xMax: -16.2 + i * 3.6 + 1,
@@ -635,21 +630,21 @@ const zonePopulationTargets = {
   shopBackArea: { min: 1, max: 3 },
   rightParkToHotel: { min: 1, max: 2 },
 
-  // Y=0 South building areas (+90 people distributed)
-  southAreaRight: { min: 40, max: 55 },
-  southAreaCenter: { min: 40, max: 55 },
-  southAreaLeft: { min: 38, max: 50 },
-  farSouthRight: { min: 28, max: 38 },
-  farSouthCenter: { min: 28, max: 38 },
-  farSouthLeft: { min: 25, max: 35 },
+  // Y=0 South building areas (increased with residential reduction)
+  southAreaRight: { min: 45, max: 60 },
+  southAreaCenter: { min: 45, max: 60 },
+  southAreaLeft: { min: 42, max: 55 },
+  farSouthRight: { min: 32, max: 42 },
+  farSouthCenter: { min: 32, max: 42 },
+  farSouthLeft: { min: 30, max: 40 },
   hotelEastArea: { min: 6, max: 10 },
   hotelEastAreaNorth: { min: 4, max: 8 },
 
-  // Y=10+ Residential (increased)
-  stairsTopPlatform: { min: 1, max: 3 },
-  residentialPath: { min: 12, max: 20 },
-  slopedPath: { min: 5, max: 10 },
-  flatTopPath: { min: 4, max: 8 },
+  // Y=10+ Residential (reduced by half)
+  stairsTopPlatform: { min: 1, max: 2 },
+  residentialPath: { min: 6, max: 10 },
+  slopedPath: { min: 2, max: 5 },
+  flatTopPath: { min: 2, max: 4 },
 };
 
 const MAX_POPULATION = 350;
