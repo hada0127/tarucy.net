@@ -232,9 +232,8 @@ function createAllBuildings(scene) {
   alert('F: south');
   buildings = removeOverlappingBuildings(scene, buildings);
   alert('G: overlap');
-  buildings.push(...createShoppingDistrict(scene));
-  alert('H: shopping');
-  // createZigzagStairs(scene);  // 비활성화 테스트
+  // buildings.push(...createShoppingDistrict(scene));
+  // createZigzagStairs(scene);
   // createUtilitySystem(scene);
   // createVendorStalls(scene);
   // createParks(scene);
