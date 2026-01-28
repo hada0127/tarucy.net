@@ -286,16 +286,24 @@ function createAllBuildings(scene) {
  * Initialize 3D City
  */
 export function initCity() {
+  alert('initCity step 1: start');
   const container = document.getElementById('city-container');
   if (!container) {
     console.error('city-container not found');
     return;
   }
 
+  alert('initCity step 2: container found');
+
   // Create scene, renderer, camera
   const scene = createScene();
+  alert('initCity step 3: scene created');
+
   const renderer = createRenderer(container);
+  alert('initCity step 4: renderer created');
+
   const camera = createCamera();
+  alert('initCity step 5: camera created');
 
   // Initial camera position (stairs top, human eye level ~1.6m above ground)
   // stairsTopPlatform: y=10, center at x=0, z=18
@@ -833,7 +841,21 @@ export function initCity() {
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initCity);
+  document.addEventListener('DOMContentLoaded', () => {
+    alert('DEBUG: DOMContentLoaded, about to call initCity');
+    try {
+      initCity();
+      alert('DEBUG: initCity completed');
+    } catch(e) {
+      alert('DEBUG initCity ERROR: ' + e.message + '\n' + e.stack);
+    }
+  });
 } else {
-  initCity();
+  alert('DEBUG: DOM ready, about to call initCity');
+  try {
+    initCity();
+    alert('DEBUG: initCity completed');
+  } catch(e) {
+    alert('DEBUG initCity ERROR: ' + e.message + '\n' + e.stack);
+  }
 }
