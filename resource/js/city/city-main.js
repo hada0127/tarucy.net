@@ -226,31 +226,35 @@ const isIOSorMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 function createAllBuildings(scene) {
   let buildings = [];
 
+  if (isIOSorMobile) {
+    // iOS/모바일: 최소한의 건물만
+    buildings.push(...createCenterBuildings(scene));
+    createPinkHotel(scene, 0);
+    return buildings;
+  }
+
+  // 데스크톱: 전체 건물
   buildings.push(...createResidentialDistrict(scene));
   buildings.push(...createSlopedResidentialArea(scene));
   buildings.push(...createLeftBuildings(scene));
   buildings.push(...createRightBuildings(scene));
   buildings.push(...createCenterBuildings(scene));
+  buildings.push(...createSouthBuildings(scene));
+  buildings = removeOverlappingBuildings(scene, buildings);
+  buildings.push(...createShoppingDistrict(scene));
 
-  if (!isIOSorMobile) {
-    // 데스크톱만 추가 건물 생성
-    buildings.push(...createSouthBuildings(scene));
-    buildings = removeOverlappingBuildings(scene, buildings);
-    buildings.push(...createShoppingDistrict(scene));
-    createForest(scene);
-    createHotelBackForestAndMountains(scene);
-    createSlopedAreaForest(scene);
-    createSlopedAreaEdgeHills(scene);
-    createLeftNorthHills(scene);
-    createCurveWestForestAndMountains(scene);
-    createUtilitySystem(scene);
-    createVendorStalls(scene);
-    createParks(scene);
-    createAllFurniture(scene);
-  }
-
+  createForest(scene);
+  createHotelBackForestAndMountains(scene);
+  createSlopedAreaForest(scene);
+  createSlopedAreaEdgeHills(scene);
+  createLeftNorthHills(scene);
+  createCurveWestForestAndMountains(scene);
   createZigzagStairs(scene);
+  createUtilitySystem(scene);
+  createVendorStalls(scene);
+  createParks(scene);
   createPinkHotel(scene, 0);
+  createAllFurniture(scene);
 
   return buildings;
 }
