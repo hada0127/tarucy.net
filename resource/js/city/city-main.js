@@ -225,7 +225,8 @@ function validateCameraPosition(newX, newY, newZ, currentY) {
 const isIOSorMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 // GLB 파일 사용 여부 (true면 GLB 로드, false면 동적 생성)
-const USE_GLB = true;
+// GLB 로드 시 렌더링 문제 있어서 비활성화
+const USE_GLB = false;
 const GLB_PATH = './resource/models/city.glb';
 
 /**
