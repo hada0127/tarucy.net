@@ -769,28 +769,34 @@ export function initCity() {
   /**
    * Animation loop
    */
+  let frameCount = 0;
   function animate(currentTime) {
+    if (frameCount < 3) {
+      alert('frame ' + frameCount + ' start');
+    }
+
     requestAnimationFrame(animate);
 
     const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.1);
     lastTime = currentTime;
 
-    // Update camera based on keyboard input
     updateCameraControls(deltaTime);
-
-    // Update vehicles
     updateVehicles(scene, deltaTime);
-
-    // Update pedestrians
     updatePedestrians(deltaTime, currentTime / 1000);
 
-    // Render
+    if (frameCount < 3) {
+      alert('frame ' + frameCount + ' before render');
+    }
+
     renderer.render(scene, camera);
+
+    if (frameCount < 3) {
+      alert('frame ' + frameCount + ' done');
+    }
+    frameCount++;
   }
 
-  alert('step 17: before animate');
   animate(0);
-  alert('step 18: after animate');
 
   return { scene, camera, renderer };
 }
