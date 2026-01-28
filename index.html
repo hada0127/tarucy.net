@@ -178,6 +178,14 @@
 	</section>
 </main>
 
-<script type="module" src="./resource/js/city/city-main.js"></script>
+<script>
+  alert('DEBUG 1: Before module load');
+</script>
+<script type="module">
+  alert('DEBUG 2: Module started');
+  import('./resource/js/city/city-main.js')
+    .then(() => alert('DEBUG 3: Main loaded'))
+    .catch(e => alert('DEBUG ERROR: ' + e.message));
+</script>
 </body>
 </html>
