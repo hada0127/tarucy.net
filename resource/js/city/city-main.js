@@ -10,7 +10,7 @@
  */
 
 import * as THREE from 'three';
-import { mergeGeometries } from 'https://unpkg.com/three@0.160.0/examples/jsm/utils/BufferGeometryUtils.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // Scene, sky, camera, renderer
 import { createScene, createRenderer, createCamera, createLighting, handleResize } from './city-sky.js';
