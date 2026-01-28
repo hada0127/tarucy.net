@@ -222,6 +222,32 @@ function validateCameraPosition(newX, newY, newZ, currentY) {
 const isIOSorMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 /**
+ * Geometry를 position과 color만 남기고 정규화
+ * mergeGeometries는 모든 geometry가 같은 attributes를 가져야 함
+ */
+function normalizeGeometry(geo) {
+  const position = geo.attributes.position;
+  const color = geo.attributes.color;
+
+  // 새 geometry 생성 (position과 color만)
+  const newGeo = new THREE.BufferGeometry();
+  newGeo.setAttribute('position', position.clone());
+  if (color) {
+    newGeo.setAttribute('color', color.clone());
+  }
+
+  // index가 있으면 복사
+  if (geo.index) {
+    newGeo.setIndex(geo.index.clone());
+  }
+
+  // userData 복사
+  newGeo.userData = geo.userData;
+
+  return newGeo;
+}
+
+/**
  * Scene 최적화 - Vertex Colors를 사용하여 모든 geometry를 하나로 합침
  * Draw call을 5000+ → 10개 미만으로 줄여 iOS Safari 성능 개선
  */
@@ -240,7 +266,7 @@ function optimizeScene(scene) {
 
     const mat = obj.material;
 
-    // texture가 있는 material은 별도 처리
+    // texture가 있는 material은 별도 처리 (merge하지 않음)
     if (mat.map) {
       texturedGeometries.push({ mesh: obj, material: mat });
       return;
@@ -263,13 +289,17 @@ function optimizeScene(scene) {
     }
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-    // transparent 처리를 위해 opacity가 1이 아닌 경우 알파값 저장 (나중에 확장 가능)
+    // transparent 처리를 위해 opacity 저장
     geo.userData = {
       transparent: mat.transparent || false,
       opacity: mat.opacity !== undefined ? mat.opacity : 1
     };
 
-    geometriesToMerge.push(geo);
+    // position과 color만 남기도록 정규화
+    const normalizedGeo = normalizeGeometry(geo);
+    geo.dispose();
+
+    geometriesToMerge.push(normalizedGeo);
     meshesToRemove.push(obj);
   });
 
@@ -295,6 +325,9 @@ function optimizeScene(scene) {
         const mergedMesh = new THREE.Mesh(mergedGeo, mergedMat);
         scene.add(mergedMesh);
         mergedCount++;
+        console.log('Opaque merge success:', opaqueGeos.length, 'geometries');
+      } else {
+        console.warn('Opaque merge returned null');
       }
     } catch (e) {
       console.warn('Opaque merge failed:', e);
@@ -326,6 +359,7 @@ function optimizeScene(scene) {
         const mergedMesh = new THREE.Mesh(mergedGeo, mergedMat);
         scene.add(mergedMesh);
         mergedCount++;
+        console.log('Transparent merge success for opacity', opacityKey, ':', geos.length, 'geometries');
       }
     } catch (e) {
       console.warn('Transparent merge failed for opacity', opacityKey, ':', e);
