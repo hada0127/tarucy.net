@@ -328,7 +328,10 @@ function optimizeScene(scene) {
     try {
       const mergedGeo = mergeGeometries(opaqueGeos, false);
       if (mergedGeo) {
-        const mergedMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+        const mergedMat = new THREE.MeshBasicMaterial({
+          vertexColors: true,
+          side: THREE.DoubleSide  // world matrix로 인해 뒤집힌 면도 보이도록
+        });
         const mergedMesh = new THREE.Mesh(mergedGeo, mergedMat);
         scene.add(mergedMesh);
         mergedCount++;
@@ -361,7 +364,8 @@ function optimizeScene(scene) {
           vertexColors: true,
           transparent: true,
           opacity: opacityKey / 100,
-          depthWrite: false
+          depthWrite: false,
+          side: THREE.DoubleSide
         });
         const mergedMesh = new THREE.Mesh(mergedGeo, mergedMat);
         scene.add(mergedMesh);
