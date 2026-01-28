@@ -223,6 +223,7 @@ function validateCameraPosition(newX, newY, newZ, currentY) {
 function createAllBuildings(scene) {
   let buildings = [];
 
+  // Reduced for iOS compatibility
   buildings.push(...createResidentialDistrict(scene));
   buildings.push(...createSlopedResidentialArea(scene));
   buildings.push(...createLeftBuildings(scene));
@@ -232,12 +233,14 @@ function createAllBuildings(scene) {
   buildings = removeOverlappingBuildings(scene, buildings);
   buildings.push(...createShoppingDistrict(scene));
 
-  createForest(scene);
-  createHotelBackForestAndMountains(scene);
-  createSlopedAreaForest(scene);
-  createSlopedAreaEdgeHills(scene);
-  createLeftNorthHills(scene);
-  createCurveWestForestAndMountains(scene);
+  // Disabled forests/mountains for iOS testing
+  // createForest(scene);
+  // createHotelBackForestAndMountains(scene);
+  // createSlopedAreaForest(scene);
+  // createSlopedAreaEdgeHills(scene);
+  // createLeftNorthHills(scene);
+  // createCurveWestForestAndMountains(scene);
+
   createZigzagStairs(scene);
   createUtilitySystem(scene);
   createVendorStalls(scene);
