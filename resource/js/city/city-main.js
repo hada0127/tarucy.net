@@ -278,17 +278,17 @@ export function initCity() {
   createRoads(scene);
   createCrosswalks(scene);
 
-  // Create city elements
-  createAllBuildings(scene);
-  createAllTrees(scene);
-  createAllStreetLamps(scene);
+  // Create city elements - MINIMAL for iOS testing
+  // createAllBuildings(scene);
+  // createAllTrees(scene);
+  // createAllStreetLamps(scene);
 
   // Initialize vehicles
-  initVehicles(scene);
-  setPedestrianStopChecker(shouldVehicleStop);
+  // initVehicles(scene);
+  // setPedestrianStopChecker(shouldVehicleStop);
 
   // Initialize pedestrians
-  initPedestrians(scene);
+  // initPedestrians(scene);
 
   // Visualize walkable zones (debug) - disabled
   // visualizeWalkableZones(scene);
