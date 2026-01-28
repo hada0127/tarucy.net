@@ -222,27 +222,34 @@ function validateCameraPosition(newX, newY, newZ, currentY) {
 const isIOSorMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 /**
- * Geometry를 position과 color만 남기고 정규화
+ * Geometry를 position과 color만 남기고 정규화 (non-indexed로 변환)
  * mergeGeometries는 모든 geometry가 같은 attributes를 가져야 함
+ * index도 있거나 없거나 통일되어야 함 → 모두 non-indexed로 변환
  */
 function normalizeGeometry(geo) {
-  const position = geo.attributes.position;
-  const color = geo.attributes.color;
+  // indexed geometry면 non-indexed로 변환
+  let workGeo = geo;
+  if (geo.index) {
+    workGeo = geo.toNonIndexed();
+  }
 
-  // 새 geometry 생성 (position과 color만)
+  const position = workGeo.attributes.position;
+  const color = workGeo.attributes.color;
+
+  // 새 geometry 생성 (position과 color만, index 없음)
   const newGeo = new THREE.BufferGeometry();
   newGeo.setAttribute('position', position.clone());
   if (color) {
     newGeo.setAttribute('color', color.clone());
   }
 
-  // index가 있으면 복사
-  if (geo.index) {
-    newGeo.setIndex(geo.index.clone());
-  }
-
   // userData 복사
   newGeo.userData = geo.userData;
+
+  // 임시 geometry 정리
+  if (workGeo !== geo) {
+    workGeo.dispose();
+  }
 
   return newGeo;
 }
