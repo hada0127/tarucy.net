@@ -225,7 +225,7 @@ function validateCameraPosition(newX, newY, newZ, currentY) {
 const isIOSorMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 // GLB 파일 사용 여부 (true면 GLB 로드, false면 동적 생성)
-// GLB 로드 시 렌더링 문제 있어서 비활성화
+// false로 접속 후 콘솔에서 exportSceneToGLB() → meshopt 압축 → true로 변경
 const USE_GLB = false;
 const GLB_PATH = './resource/models/city.glb';
 
@@ -236,19 +236,12 @@ const GLB_PATH = './resource/models/city.glb';
 function exportSceneToGLB(scene) {
   const exporter = new GLTFExporter();
 
-  // 동적 객체 제외하고 내보내기
-  const objectsToExport = [];
-  scene.traverse((obj) => {
-    if (obj.isMesh && !obj.userData.dynamic) {
-      objectsToExport.push(obj);
-    }
-  });
-
-  // 임시 scene에 복사
+  // 동적 객체 제외한 scene 복사 (부모-자식 transform 보존)
   const exportScene = new THREE.Scene();
-  objectsToExport.forEach(obj => {
-    const clone = obj.clone();
-    exportScene.add(clone);
+  scene.children.forEach(child => {
+    // 동적 객체(차량, 보행자)와 조명은 제외
+    if (child.userData.dynamic || child.isLight || child.isAmbientLight || child.isDirectionalLight || child.isHemisphereLight) return;
+    exportScene.add(child.clone());
   });
 
   exporter.parse(
@@ -284,17 +277,15 @@ function loadSceneFromGLB(scene) {
     loader.load(
       GLB_PATH,
       (gltf) => {
-        // 로드된 모든 객체를 scene에 추가
-        gltf.scene.traverse((obj) => {
-          if (obj.isMesh) {
-            scene.add(obj.clone());
-          }
-        });
+        // scene 전체를 추가 (부모-자식 transform 보존)
+        scene.add(gltf.scene);
         console.log('GLB loaded successfully!');
         resolve();
       },
       (progress) => {
-        console.log('Loading GLB:', Math.round(progress.loaded / progress.total * 100) + '%');
+        if (progress.total) {
+          console.log('Loading GLB:', Math.round(progress.loaded / progress.total * 100) + '%');
+        }
       },
       (error) => {
         console.error('GLB load failed:', error);
