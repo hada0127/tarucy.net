@@ -221,63 +221,84 @@ function validateCameraPosition(newX, newY, newZ, currentY) {
  * Create all buildings and structures
  */
 function createAllBuildings(scene) {
+  alert('buildings A: start');
   let buildings = [];
 
   // Residential district (25 houses)
   buildings.push(...createResidentialDistrict(scene));
+  alert('buildings B: residential');
 
   // Sloped residential area on right side
   buildings.push(...createSlopedResidentialArea(scene));
+  alert('buildings C: sloped residential');
 
   // High-rise buildings (3 clusters - expanded)
   buildings.push(...createLeftBuildings(scene));
+  alert('buildings D: left buildings');
   buildings.push(...createRightBuildings(scene));
+  alert('buildings E: right buildings');
   buildings.push(...createCenterBuildings(scene));
+  alert('buildings F: center buildings');
 
   // South side buildings (fill empty area)
   buildings.push(...createSouthBuildings(scene));
+  alert('buildings G: south buildings');
 
   // Remove overlapping buildings (keep larger ones)
   buildings = removeOverlappingBuildings(scene, buildings);
+  alert('buildings H: overlap removed');
 
   // Shopping district (16 shops) - added AFTER overlap removal to preserve all shops
   buildings.push(...createShoppingDistrict(scene));
+  alert('buildings I: shopping');
 
   // Forest behind residential district
   createForest(scene);
+  alert('buildings J: forest');
 
   // Large forest and mountains behind hotel
   createHotelBackForestAndMountains(scene);
+  alert('buildings K: hotel forest');
 
   // Forest behind sloped residential area
   createSlopedAreaForest(scene);
+  alert('buildings L: sloped forest');
 
   // Natural hills around sloped residential area edges
   createSlopedAreaEdgeHills(scene);
+  alert('buildings M: edge hills');
 
   // Hills in left north area (replacing removed buildings above main road)
   createLeftNorthHills(scene);
+  alert('buildings N: left north hills');
 
   // Forest and mountains west of curved road
   createCurveWestForestAndMountains(scene);
+  alert('buildings O: curve west');
 
   // Stairs
   createZigzagStairs(scene);
+  alert('buildings P: stairs');
 
   // Utility poles & power lines
   createUtilitySystem(scene);
+  alert('buildings Q: utility');
 
   // Vendor stalls
   createVendorStalls(scene);
+  alert('buildings R: vendors');
 
   // Parks beside shopping district
   createParks(scene);
+  alert('buildings S: parks');
 
   // Pink hotel
   createPinkHotel(scene, 0);
+  alert('buildings T: hotel');
 
   // Street furniture (benches, bus stops, trash cans, etc.)
   createAllFurniture(scene);
+  alert('buildings U: furniture done');
 
   return buildings;
 }

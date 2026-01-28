@@ -66,9 +66,9 @@ function createForest(scene) {
   const forestMinX = -65;
   const forestMaxX = 65;
 
-  // Dense tree placement
-  for (let z = forestMinZ; z < forestMaxZ; z += 3 + Math.random() * 2) {
-    for (let x = forestMinX; x < forestMaxX; x += 3 + Math.random() * 2) {
+  // Dense tree placement (reduced density for iOS compatibility)
+  for (let z = forestMinZ; z < forestMaxZ; z += 6 + Math.random() * 4) {
+    for (let x = forestMinX; x < forestMaxX; x += 6 + Math.random() * 4) {
       // Add some randomness to position
       const offsetX = (Math.random() - 0.5) * 2;
       const offsetZ = (Math.random() - 0.5) * 2;
