@@ -236,8 +236,7 @@ function createAllBuildings(scene) {
   alert('H: shopping');
   createZigzagStairs(scene);
   alert('I: stairs');
-  createUtilitySystem(scene);
-  alert('J: utility');
+  // createUtilitySystem(scene);  // 비활성화 테스트
   // createVendorStalls(scene);
   // createParks(scene);
   // createPinkHotel(scene, 0);
