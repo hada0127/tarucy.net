@@ -220,6 +220,9 @@ function validateCameraPosition(newX, newY, newZ, currentY) {
 /**
  * Create all buildings and structures
  */
+// iOS/모바일 감지
+const isIOSorMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
 function createAllBuildings(scene) {
   let buildings = [];
 
@@ -228,15 +231,26 @@ function createAllBuildings(scene) {
   buildings.push(...createLeftBuildings(scene));
   buildings.push(...createRightBuildings(scene));
   buildings.push(...createCenterBuildings(scene));
-  // buildings.push(...createSouthBuildings(scene));
-  // buildings = removeOverlappingBuildings(scene, buildings);
-  // buildings.push(...createShoppingDistrict(scene));
-  // createZigzagStairs(scene);
-  // createUtilitySystem(scene);
-  // createVendorStalls(scene);
-  // createParks(scene);
-  // createPinkHotel(scene, 0);
-  // createAllFurniture(scene);
+
+  if (!isIOSorMobile) {
+    // 데스크톱만 추가 건물 생성
+    buildings.push(...createSouthBuildings(scene));
+    buildings = removeOverlappingBuildings(scene, buildings);
+    buildings.push(...createShoppingDistrict(scene));
+    createForest(scene);
+    createHotelBackForestAndMountains(scene);
+    createSlopedAreaForest(scene);
+    createSlopedAreaEdgeHills(scene);
+    createLeftNorthHills(scene);
+    createCurveWestForestAndMountains(scene);
+    createUtilitySystem(scene);
+    createVendorStalls(scene);
+    createParks(scene);
+    createAllFurniture(scene);
+  }
+
+  createZigzagStairs(scene);
+  createPinkHotel(scene, 0);
 
   return buildings;
 }
@@ -268,21 +282,22 @@ export function initCity() {
   createRoads(scene);
   createCrosswalks(scene);
 
-  // Create city elements - testing one by one
+  // Create city elements
   createAllBuildings(scene);
-  alert('test: buildings done');
-  // createAllTrees(scene);
-  // createAllStreetLamps(scene);
-  // initVehicles(scene);
-  // setPedestrianStopChecker(shouldVehicleStop);
-  // initPedestrians(scene);
+
+  if (!isIOSorMobile) {
+    createAllTrees(scene);
+    createAllStreetLamps(scene);
+    initVehicles(scene);
+    setPedestrianStopChecker(shouldVehicleStop);
+    initPedestrians(scene);
+  }
 
   // Visualize walkable zones (debug) - disabled
   // visualizeWalkableZones(scene);
 
   // Resize handler
   handleResize(camera, renderer);
-  alert('step 16: resize handler');
 
   // === Keyboard Camera Controls ===
   const keys = {
@@ -759,31 +774,20 @@ export function initCity() {
   /**
    * Animation loop
    */
-  let frameCount = 0;
   function animate(currentTime) {
-    if (frameCount < 3) {
-      alert('frame ' + frameCount + ' start');
-    }
-
     requestAnimationFrame(animate);
 
     const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.1);
     lastTime = currentTime;
 
     updateCameraControls(deltaTime);
-    updateVehicles(scene, deltaTime);
-    updatePedestrians(deltaTime, currentTime / 1000);
 
-    if (frameCount < 3) {
-      alert('frame ' + frameCount + ' before render');
+    if (!isIOSorMobile) {
+      updateVehicles(scene, deltaTime);
+      updatePedestrians(deltaTime, currentTime / 1000);
     }
 
     renderer.render(scene, camera);
-
-    if (frameCount < 3) {
-      alert('frame ' + frameCount + ' done');
-    }
-    frameCount++;
   }
 
   animate(0);
