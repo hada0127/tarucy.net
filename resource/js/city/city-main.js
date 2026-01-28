@@ -234,9 +234,8 @@ function createAllBuildings(scene) {
   alert('G: overlap');
   buildings.push(...createShoppingDistrict(scene));
   alert('H: shopping');
-  createZigzagStairs(scene);
-  alert('I: stairs');
-  // createUtilitySystem(scene);  // 비활성화 테스트
+  // createZigzagStairs(scene);  // 비활성화 테스트
+  // createUtilitySystem(scene);
   // createVendorStalls(scene);
   // createParks(scene);
   // createPinkHotel(scene, 0);
