@@ -1254,7 +1254,7 @@ function startCrossing(person, conn) {
     endZ: endZ,
     progress: 0,
     distance: distance,
-    targetZone: conn.from === data.currentZone?.id ? conn.to : conn.from
+    targetZone: conn.from === (data.currentZone && data.currentZone.id) ? conn.to : conn.from
   };
 
   updateRotation(person);
@@ -1616,7 +1616,7 @@ function isPedestrianOnCrosswalk(crosswalk) {
  * Count pedestrians in a zone
  */
 function countPedestriansInZone(zoneId) {
-  return pedestrians.filter(p => p.userData.currentZone?.id === zoneId).length;
+  return pedestrians.filter(p => p.userData.currentZone && p.userData.currentZone.id === zoneId).length;
 }
 
 /**
@@ -1638,7 +1638,7 @@ function balanceZonePopulation(zoneId, config) {
   // Remove if above maximum
   if (count > config.max && Math.random() < 0.3) {
     for (let i = pedestrians.length - 1; i >= 0; i--) {
-      if (pedestrians[i].userData.currentZone?.id === zoneId) {
+      if (pedestrians[i].userData.currentZone && pedestrians[i].userData.currentZone.id === zoneId) {
         sceneRef.remove(pedestrians[i]);
         pedestrians.splice(i, 1);
         break;
