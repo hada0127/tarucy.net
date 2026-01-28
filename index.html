@@ -178,14 +178,40 @@
 	</section>
 </main>
 
-<script>
-  alert('DEBUG 1: Before module load');
-</script>
 <script type="module">
-  alert('DEBUG 2: Module started');
-  import('./resource/js/city/city-main.js')
-    .then(() => alert('DEBUG 3: Main loaded'))
-    .catch(e => alert('DEBUG ERROR: ' + e.message));
+  const modules = [
+    ['three', 'https://unpkg.com/three@0.160.0/build/three.module.js'],
+    ['city-sky', './resource/js/city/city-sky.js'],
+    ['city-ground', './resource/js/city/city-ground.js'],
+    ['city-road', './resource/js/city/city-road.js'],
+    ['city-environment', './resource/js/city/city-environment.js'],
+    ['city-building', './resource/js/city/city-building.js'],
+    ['city-house', './resource/js/city/city-house.js'],
+    ['city-hotel', './resource/js/city/city-hotel.js'],
+    ['city-shop', './resource/js/city/city-shop.js'],
+    ['city-park', './resource/js/city/city-park.js'],
+    ['city-tree', './resource/js/city/city-tree.js'],
+    ['city-streetlamp', './resource/js/city/city-streetlamp.js'],
+    ['city-infrastructure', './resource/js/city/city-infrastructure.js'],
+    ['city-furniture', './resource/js/city/city-furniture.js'],
+    ['city-vehicles', './resource/js/city/city-vehicles.js'],
+    ['city-people', './resource/js/city/city-people.js'],
+    ['city-main', './resource/js/city/city-main.js']
+  ];
+
+  async function loadModules() {
+    for (const [name, path] of modules) {
+      try {
+        alert('Loading: ' + name);
+        await import(path);
+        alert('OK: ' + name);
+      } catch (e) {
+        alert('FAIL: ' + name + ' - ' + e.message);
+        break;
+      }
+    }
+  }
+  loadModules();
 </script>
 </body>
 </html>
