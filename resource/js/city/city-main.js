@@ -459,15 +459,11 @@ export function initCity() {
   }
 
   // mesh 수 확인
-  let meshCountBefore = 0;
-  scene.traverse(obj => { if (obj.isMesh) meshCountBefore++; });
+  let meshCount = 0;
+  scene.traverse(obj => { if (obj.isMesh) meshCount++; });
+  console.log(`Total meshes: ${meshCount}`);
 
-  // Scene 최적화 - vertex colors + geometry merge로 draw call 대폭 감소
-  const mergedCount = optimizeScene(scene);
-
-  let meshCountAfter = 0;
-  scene.traverse(obj => { if (obj.isMesh) meshCountAfter++; });
-  console.log(`Optimization: ${meshCountBefore} meshes → ${meshCountAfter} meshes`);
+  // TODO: iOS 최적화는 별도 방식 필요 (vertex color merge 방식은 문제 있음)
 
   // 동적 객체는 최적화 후에 추가 (merge 대상에서 제외됨)
   if (!isIOSorMobile) {
