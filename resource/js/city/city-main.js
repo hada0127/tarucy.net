@@ -13,6 +13,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
 // Scene, sky, camera, renderer
 import { createScene, createRenderer, createCamera, createLighting, handleResize } from './city-sky.js';
@@ -224,8 +225,7 @@ function validateCameraPosition(newX, newY, newZ, currentY) {
 const isIOSorMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 // GLB 파일 사용 여부 (true면 GLB 로드, false면 동적 생성)
-// Cloudflare Pages 25MB 제한으로 현재 비활성화
-const USE_GLB = false;
+const USE_GLB = true;
 const GLB_PATH = './resource/models/city.glb';
 
 /**
@@ -278,6 +278,8 @@ window.exportSceneToGLB = null; // initCity에서 설정
 function loadSceneFromGLB(scene) {
   return new Promise((resolve, reject) => {
     const loader = new GLTFLoader();
+    // meshopt 압축 지원
+    loader.setMeshoptDecoder(MeshoptDecoder);
     loader.load(
       GLB_PATH,
       (gltf) => {
