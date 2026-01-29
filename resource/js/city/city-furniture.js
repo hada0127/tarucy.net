@@ -353,10 +353,15 @@ function createVendingMachine(scene, x, z, groundY, rotation = 0, type = 'drink'
   const frontTextHeight = 0.25;
   const frontTexture = createVendingFrontTexture(frontTextWidth * 100, frontTextHeight * 100);
   const frontPanelGeom = new THREE.PlaneGeometry(frontTextWidth, frontTextHeight);
-  const frontPanelMat = new THREE.MeshBasicMaterial({ map: frontTexture, transparent: true });
+  const frontPanelMat = new THREE.MeshBasicMaterial({
+    map: frontTexture,
+    transparent: true,
+    depthWrite: false
+  });
   const frontPanel = new THREE.Mesh(frontPanelGeom, frontPanelMat);
-  // Display window front is at z=0.355, place text in front of it
-  frontPanel.position.set(0, 1.45, 0.36);
+  frontPanel.renderOrder = 1;
+  // Display window front is at z=0.355, place text just in front
+  frontPanel.position.set(0, 1.45, 0.356);
   group.add(frontPanel);
 
   group.position.set(x, groundY, z);
