@@ -335,10 +335,11 @@ function discoverWindowsFromGLB(scene) {
     obj.userData.originalColor = originalColor;
     obj.userData.isWindow = true;
 
-    // worldX 좌표 저장 (나중에 주파수 대역 결정용)
+    // world 좌표 저장 (X: 주파수 대역, Y: 이퀄라이저 높이)
     const worldPos = new THREE.Vector3();
     obj.getWorldPosition(worldPos);
     obj.userData.worldX = worldPos.x;
+    obj.userData.worldY = worldPos.y;
 
     windowMeshes.push(obj);
     windowCount++;
@@ -372,36 +373,74 @@ function isWindowLikeColor(r, g, b) {
 }
 
 
+// 창문 Y 범위 (이퀄라이저 효과용)
+let windowYMin = Infinity;
+let windowYMax = -Infinity;
+
 /**
- * 주파수 데이터에 따라 창문 밝기 업데이트
+ * 창문 Y 범위 계산 (discoverWindowsFromGLB 후 호출)
+ */
+function calculateWindowYRange() {
+  for (const mesh of windowMeshes) {
+    const y = mesh.userData.worldY || 0;
+    if (y < windowYMin) windowYMin = y;
+    if (y > windowYMax) windowYMax = y;
+  }
+  console.log(`Window Y range: ${windowYMin.toFixed(1)} ~ ${windowYMax.toFixed(1)}`);
+}
+
+/**
+ * 주파수 데이터에 따라 창문 밝기 업데이트 (이퀄라이저 효과)
+ * - X 좌표: 주파수 대역 결정 (서쪽=저음, 동쪽=고음)
+ * - Y 좌표: intensity에 따라 아래에서 위로 차오르는 효과
  */
 function updateWindowBrightness() {
   if (!isAudioPlaying()) return;
+
+  const yRange = windowYMax - windowYMin;
+  if (yRange <= 0) return;
 
   for (const mesh of windowMeshes) {
     if (!mesh.userData.originalColor) continue;
 
     const worldX = mesh.userData.worldX || 0;
+    const worldY = mesh.userData.worldY || 0;
     const intensity = getIntensityForPosition(worldX);
 
-    // 밝기 조절 (1.0 ~ 3.0배)
-    const brightness = 1.0 + intensity * 2.0;
+    // Y 좌표를 0~1 범위로 정규화
+    const normalizedY = (worldY - windowYMin) / yRange;
+
+    // 이퀄라이저 효과: intensity가 높을수록 더 높은 Y까지 밝아짐
+    // intensity = 0.5면 높이의 50%까지 밝아짐
+    const threshold = intensity;
+
+    // 창문이 threshold 아래에 있으면 밝게
+    let brightness = 1.0;
+    if (normalizedY <= threshold) {
+      // 아래쪽 창문은 더 밝게
+      const fadeIn = 1.0 - (normalizedY / Math.max(threshold, 0.01));
+      brightness = 1.5 + fadeIn * 2.0; // 1.5 ~ 3.5배
+    } else {
+      // 위쪽 창문은 기본 밝기
+      brightness = 0.7;
+    }
 
     const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
     if (!material) continue;
 
     // MeshStandardMaterial인 경우 emissive 사용
     if (material.isMeshStandardMaterial) {
-      if (!mesh.userData.originalEmissive) {
-        mesh.userData.originalEmissive = material.emissive.clone();
+      if (normalizedY <= threshold) {
+        material.emissive.copy(mesh.userData.originalColor);
+        material.emissive.multiplyScalar(0.3);
+        material.emissiveIntensity = brightness - 1.0;
+      } else {
+        material.emissive.setHex(0x000000);
+        material.emissiveIntensity = 0;
       }
-      // emissive를 원본 색상 기반으로 설정
-      material.emissive.copy(mesh.userData.originalColor);
-      material.emissive.multiplyScalar(intensity * 0.5);
-      material.emissiveIntensity = intensity * 2;
     }
 
-    // color도 함께 조절 (모든 material 타입)
+    // color 조절
     if (material.color) {
       material.color.copy(mesh.userData.originalColor);
       material.color.multiplyScalar(brightness);
@@ -582,6 +621,7 @@ export async function initCity() {
 
   // 창문 발견 및 이퀄라이저 시스템 준비 (GLB/동적 생성 모두 지원)
   discoverWindowsFromGLB(scene);
+  calculateWindowYRange();
 
   // GLB 내보내기 함수를 전역으로 노출 (개발용)
   window.exportSceneToGLB = () => exportSceneToGLB(scene);
