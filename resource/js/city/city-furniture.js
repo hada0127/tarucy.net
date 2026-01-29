@@ -355,25 +355,16 @@ function createVendingMachine(scene, x, z, groundY, rotation = 0, type = 'drink'
   coinArea.position.set(0.3, 1.0, 0.33);
   group.add(coinArea);
 
-  // Side text panels (same two-line text on both sides)
-  const sideHeight = 1.8;
-  const sideDepth = 0.7;
-  const sideTexture = createVendingSideTexture(sideDepth * 100, sideHeight * 100);
-  const sidePanelGeom = new THREE.PlaneGeometry(sideDepth, sideHeight);
-
-  // Left side
-  const leftPanelMat = new THREE.MeshBasicMaterial({ map: sideTexture, transparent: true });
-  const leftPanel = new THREE.Mesh(sidePanelGeom, leftPanelMat);
-  leftPanel.position.set(-0.451, 0.9, 0);
-  leftPanel.rotation.y = -Math.PI / 2;
-  group.add(leftPanel);
-
-  // Right side
-  const rightPanelMat = new THREE.MeshBasicMaterial({ map: sideTexture.clone(), transparent: true });
-  const rightPanel = new THREE.Mesh(sidePanelGeom, rightPanelMat);
-  rightPanel.position.set(0.451, 0.9, 0);
-  rightPanel.rotation.y = Math.PI / 2;
-  group.add(rightPanel);
+  // Front text panel (inside display window, 1/3 from top)
+  const frontTextWidth = 0.6;
+  const frontTextHeight = 0.2;
+  const frontTexture = createVendingSideTexture(frontTextWidth * 100, frontTextHeight * 100);
+  const frontPanelGeom = new THREE.PlaneGeometry(frontTextWidth, frontTextHeight);
+  const frontPanelMat = new THREE.MeshBasicMaterial({ map: frontTexture, transparent: true });
+  const frontPanel = new THREE.Mesh(frontPanelGeom, frontPanelMat);
+  // Display window is at y=1.15, height 0.9, so top is at 1.6, 1/3 from top is ~1.45
+  frontPanel.position.set(0, 1.45, 0.32);
+  group.add(frontPanel);
 
   group.position.set(x, groundY, z);
   group.rotation.y = rotation;
