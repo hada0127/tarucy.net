@@ -402,7 +402,8 @@ export async function initCity() {
   // 동적 객체 추가 (GLB에는 포함되지 않음)
   initVehicles(scene);
   setPedestrianStopChecker(shouldVehicleStop);
-  initPedestrians(scene);
+  const peds = initPedestrians(scene);
+  console.log('Vehicles/Pedestrians initialized:', { pedestrians: peds?.length, isIOSorMobile });
 
   // Visualize walkable zones (debug) - disabled
   // visualizeWalkableZones(scene);
@@ -885,6 +886,7 @@ export async function initCity() {
   /**
    * Animation loop
    */
+  let frameCount = 0;
   function animate(currentTime) {
     requestAnimationFrame(animate);
 
@@ -895,6 +897,11 @@ export async function initCity() {
     updateVehicles(scene, deltaTime);
     updatePedestrians(deltaTime, currentTime / 1000);
     renderer.render(scene, camera);
+
+    frameCount++;
+    if (frameCount === 60) {
+      console.log('Animation running, deltaTime:', deltaTime.toFixed(4));
+    }
   }
 
   animate(0);
