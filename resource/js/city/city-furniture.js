@@ -753,14 +753,8 @@ export function createAllFurniture(scene) {
   furniture.push(createTrashCan(scene, 30, -12, 0));
   furniture.push(createTrashCan(scene, 62, -12, 0));
 
-  // Vending machines
-  furniture.push(createVendingMachine(scene, 10, -12, 0, 0, 'drink'));
-  furniture.push(createVendingMachine(scene, 11, -12, 0, 0, 'snack'));
-  furniture.push(createVendingMachine(scene, 58, -12, 0, 0, 'drink'));
-
-  // Phone booths
-  furniture.push(createPhoneBooth(scene, -8, -12, 0, 0));
-  furniture.push(createPhoneBooth(scene, 43, -12, 0, 0));
+  // Vending machines - 동적 생성으로 이동 (캔버스 텍스처)
+  // Phone booths - 동적 생성으로 이동 (캔버스 텍스처)
 
   // Planters
   furniture.push(createPlanter(scene, -14, -12, 0));
@@ -794,12 +788,8 @@ export function createAllFurniture(scene) {
   furniture.push(createTrashCan(scene, 35, -30, 0));
   furniture.push(createTrashCan(scene, 67, -30, 0));
 
-  // Vending machines
-  furniture.push(createVendingMachine(scene, 15, -30, 0, Math.PI, 'drink'));
-  furniture.push(createVendingMachine(scene, 36, -30, 0, Math.PI, 'snack'));
-
-  // Phone booth
-  furniture.push(createPhoneBooth(scene, -3, -30, 0, Math.PI));
+  // Vending machines - 동적 생성으로 이동 (캔버스 텍스처)
+  // Phone booth - 동적 생성으로 이동 (캔버스 텍스처)
 
   // Planters
   furniture.push(createPlanter(scene, -22, -30, 0));
@@ -843,10 +833,8 @@ export function createAllFurniture(scene) {
   furniture.push(createTrashCan(scene, -48, -170, 0));
   furniture.push(createTrashCan(scene, -48, -210, 0));
 
-  furniture.push(createVendingMachine(scene, -48, -95, 0, -Math.PI / 2, 'drink'));
-  furniture.push(createVendingMachine(scene, -48, -175, 0, -Math.PI / 2, 'snack'));
-
-  furniture.push(createPhoneBooth(scene, -48, -135, 0, -Math.PI / 2));
+  // Vending machines - 동적 생성으로 이동 (캔버스 텍스처)
+  // Phone booth - 동적 생성으로 이동 (캔버스 텍스처)
 
   furniture.push(createPlanter(scene, -48, -100, 0));
   furniture.push(createPlanter(scene, -48, -180, 0));

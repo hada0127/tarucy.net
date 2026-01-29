@@ -62,7 +62,7 @@ import { createAllStreetLamps } from './city-streetlamp.js';
 import { createZigzagStairs, createUtilitySystem } from './city-infrastructure.js';
 
 // Street furniture (benches, bus stops, etc.)
-import { createAllFurniture } from './city-furniture.js';
+import { createAllFurniture, createVendingMachine, createPhoneBooth } from './city-furniture.js';
 
 // Vehicles
 import { initVehicles, updateVehicles, setPedestrianStopChecker } from './city-vehicles.js';
@@ -694,6 +694,19 @@ export async function initCity() {
   createAudioButton();
 
   // 동적 객체 추가 (GLB에는 포함되지 않음)
+  // 자판기와 공중전화 (캔버스 텍스처 때문에 동적 생성)
+  createVendingMachine(scene, 10, -12, 0, 0, 'drink');
+  createVendingMachine(scene, 11, -12, 0, 0, 'snack');
+  createVendingMachine(scene, 58, -12, 0, 0, 'drink');
+  createVendingMachine(scene, 15, -30, 0, Math.PI, 'drink');
+  createVendingMachine(scene, 36, -30, 0, Math.PI, 'snack');
+  createVendingMachine(scene, -48, -95, 0, -Math.PI / 2, 'drink');
+  createVendingMachine(scene, -48, -175, 0, -Math.PI / 2, 'snack');
+  createPhoneBooth(scene, -8, -12, 0, 0);
+  createPhoneBooth(scene, 43, -12, 0, 0);
+  createPhoneBooth(scene, -3, -30, 0, Math.PI);
+  createPhoneBooth(scene, -48, -135, 0, -Math.PI / 2);
+
   initVehicles(scene);
   setPedestrianStopChecker(shouldVehicleStop);
   initPedestrians(scene);
