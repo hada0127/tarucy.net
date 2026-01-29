@@ -29,20 +29,21 @@ const vendingMachineSideTexts = [
  */
 function createVendingFrontTexture(width, height) {
   const canvas = document.createElement('canvas');
-  const scale = 8; // Higher resolution for readability
+  const scale = 8;
   canvas.width = width * scale;
   canvas.height = height * scale;
 
   const ctx = canvas.getContext('2d');
 
-  // Transparent background
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Dark background for visibility
+  ctx.fillStyle = '#1a1a2a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Text settings
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Calculate optimal font size for two lines (30% of height for each line)
+  // Calculate optimal font size for two lines
   let fontSize = canvas.height * 0.35;
   ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
 
@@ -51,7 +52,7 @@ function createVendingFrontTexture(width, height) {
     ctx.measureText(vendingMachineSideTexts[0]).width,
     ctx.measureText(vendingMachineSideTexts[1]).width
   );
-  const maxWidth = canvas.width * 0.95;
+  const maxWidth = canvas.width * 0.9;
 
   if (maxTextWidth > maxWidth) {
     fontSize = fontSize * (maxWidth / maxTextWidth);
@@ -355,15 +356,15 @@ function createVendingMachine(scene, x, z, groundY, rotation = 0, type = 'drink'
   coinArea.position.set(0.3, 1.0, 0.33);
   group.add(coinArea);
 
-  // Front text panel (inside display window, 1/3 from top)
+  // Front text panel (on display window, 1/3 from top)
   const frontTextWidth = 0.65;
   const frontTextHeight = 0.25;
   const frontTexture = createVendingFrontTexture(frontTextWidth * 100, frontTextHeight * 100);
   const frontPanelGeom = new THREE.PlaneGeometry(frontTextWidth, frontTextHeight);
-  const frontPanelMat = new THREE.MeshBasicMaterial({ map: frontTexture, transparent: true });
+  const frontPanelMat = new THREE.MeshBasicMaterial({ map: frontTexture });
   const frontPanel = new THREE.Mesh(frontPanelGeom, frontPanelMat);
-  // Display window is at y=1.15, height 0.9, so top is at 1.6, 1/3 from top is ~1.45
-  frontPanel.position.set(0, 1.45, 0.34);
+  // Display window front is at z=0.355, place text in front of it
+  frontPanel.position.set(0, 1.45, 0.36);
   group.add(frontPanel);
 
   group.position.set(x, groundY, z);
