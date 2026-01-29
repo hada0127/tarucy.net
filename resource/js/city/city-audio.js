@@ -60,10 +60,11 @@ const bandRanges = {
 };
 
 // AGC 설정
-const AGC_ATTACK = 0.05;   // 피크 상승 속도
-const AGC_DECAY = 0.001;   // 피크 하강 속도 (천천히)
-const MIN_PEAK = 0.15;     // 최소 피크값 (너무 작은 신호 방지)
-const SMOOTHING = 0.7;     // 출력 스무딩 (0~1, 높을수록 부드러움)
+const AGC_ATTACK = 0.1;    // 피크 상승 속도 (빠르게)
+const AGC_DECAY = 0.0005;  // 피크 하강 속도 (더 천천히)
+const MIN_PEAK = 0.4;      // 최소 피크값 (높여서 덜 차오르게)
+const SMOOTHING = 0.6;     // 출력 스무딩
+const OUTPUT_SCALE = 0.7;  // 출력 스케일 (전체적으로 낮추기)
 
 /**
  * 오디오 시스템 초기화
@@ -204,8 +205,9 @@ function normalizeValue(band, value) {
   const peak = bandPeaks[band];
   const normalized = value / peak;
 
-  // 0~1 범위로 클램핑 후 스무딩
-  const clamped = Math.min(1, Math.max(0, normalized));
+  // 출력 스케일 적용 후 0~1 범위로 클램핑
+  const scaled = normalized * OUTPUT_SCALE;
+  const clamped = Math.min(1, Math.max(0, scaled));
   const prev = normalizedBands[band] || 0;
 
   // 스무딩 적용 (급격한 변화 방지)
