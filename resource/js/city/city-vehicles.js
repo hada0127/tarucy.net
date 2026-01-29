@@ -264,22 +264,22 @@ function createSedanCar(color) {
 
   // Add text below windows on both sides
   const adText = getNextVehicleText();
-  const textWidth = 2.0;
-  const textHeight = 0.25;
+  const textWidth = 2.5;
+  const textHeight = 0.3;
   const adTexture = createVehicleTextTexture(adText, textWidth * 100, textHeight * 100);
   const adGeom = new THREE.PlaneGeometry(textWidth, textHeight);
-  const adMat = new THREE.MeshBasicMaterial({ map: adTexture, transparent: true });
+  const adMat = new THREE.MeshBasicMaterial({ map: adTexture, transparent: true, side: THREE.DoubleSide });
 
-  // Left side
+  // Left side (outside body)
   const adLeft = new THREE.Mesh(adGeom, adMat);
-  adLeft.position.set(-1.11, 0.7, 0);
-  adLeft.rotation.y = Math.PI / 2;
+  adLeft.position.set(-1.12, 0.65, 0);
+  adLeft.rotation.y = -Math.PI / 2;
   group.add(adLeft);
 
-  // Right side
+  // Right side (outside body)
   const adRight = new THREE.Mesh(adGeom, adMat);
-  adRight.position.set(1.11, 0.7, 0);
-  adRight.rotation.y = -Math.PI / 2;
+  adRight.position.set(1.12, 0.65, 0);
+  adRight.rotation.y = Math.PI / 2;
   group.add(adRight);
 
   return group;
@@ -350,22 +350,22 @@ function createSUVCar(color) {
 
   // Add text below windows on both sides
   const adText = getNextVehicleText();
-  const textWidth = 2.4;
-  const textHeight = 0.3;
+  const textWidth = 3.0;
+  const textHeight = 0.4;
   const adTexture = createVehicleTextTexture(adText, textWidth * 100, textHeight * 100);
   const adGeom = new THREE.PlaneGeometry(textWidth, textHeight);
-  const adMat = new THREE.MeshBasicMaterial({ map: adTexture, transparent: true });
+  const adMat = new THREE.MeshBasicMaterial({ map: adTexture, transparent: true, side: THREE.DoubleSide });
 
-  // Left side
+  // Left side (outside body)
   const adLeft = new THREE.Mesh(adGeom, adMat);
-  adLeft.position.set(-1.21, 1.0, -0.5);
-  adLeft.rotation.y = Math.PI / 2;
+  adLeft.position.set(-1.22, 1.0, -0.5);
+  adLeft.rotation.y = -Math.PI / 2;
   group.add(adLeft);
 
-  // Right side
+  // Right side (outside body)
   const adRight = new THREE.Mesh(adGeom, adMat);
-  adRight.position.set(1.21, 1.0, -0.5);
-  adRight.rotation.y = -Math.PI / 2;
+  adRight.position.set(1.22, 1.0, -0.5);
+  adRight.rotation.y = Math.PI / 2;
   group.add(adRight);
 
   return group;
@@ -431,21 +431,21 @@ function createBus(color) {
   // Add text below windows on both sides
   const adText = getNextVehicleText();
   const textWidth = 8.0;
-  const textHeight = 0.6;
+  const textHeight = 0.8;
   const adTexture = createVehicleTextTexture(adText, textWidth * 100, textHeight * 100);
   const adGeom = new THREE.PlaneGeometry(textWidth, textHeight);
-  const adMat = new THREE.MeshBasicMaterial({ map: adTexture, transparent: true });
+  const adMat = new THREE.MeshBasicMaterial({ map: adTexture, transparent: true, side: THREE.DoubleSide });
 
-  // Left side
+  // Left side (outside body)
   const adLeft = new THREE.Mesh(adGeom, adMat);
-  adLeft.position.set(-1.41, 1.2, 0);
-  adLeft.rotation.y = Math.PI / 2;
+  adLeft.position.set(-1.42, 1.2, 0);
+  adLeft.rotation.y = -Math.PI / 2;
   group.add(adLeft);
 
-  // Right side
+  // Right side (outside body)
   const adRight = new THREE.Mesh(adGeom, adMat);
-  adRight.position.set(1.41, 1.2, 0);
-  adRight.rotation.y = -Math.PI / 2;
+  adRight.position.set(1.42, 1.2, 0);
+  adRight.rotation.y = Math.PI / 2;
   group.add(adRight);
 
   return group;
@@ -531,21 +531,21 @@ function createTruck(color) {
   // Add text on cargo container sides
   const adText = getNextVehicleText();
   const textWidth = 5.0;
-  const textHeight = 1.2;
+  const textHeight = 1.5;
   const adTexture = createVehicleTextTexture(adText, textWidth * 100, textHeight * 100);
   const adGeom = new THREE.PlaneGeometry(textWidth, textHeight);
-  const adMat = new THREE.MeshBasicMaterial({ map: adTexture, transparent: true });
+  const adMat = new THREE.MeshBasicMaterial({ map: adTexture, transparent: true, side: THREE.DoubleSide });
 
-  // Left side of cargo
+  // Left side of cargo (outside)
   const adLeft = new THREE.Mesh(adGeom, adMat);
-  adLeft.position.set(-1.31, 2.0, -1.0);
-  adLeft.rotation.y = Math.PI / 2;
+  adLeft.position.set(-1.32, 2.0, -1.0);
+  adLeft.rotation.y = -Math.PI / 2;
   group.add(adLeft);
 
-  // Right side of cargo
+  // Right side of cargo (outside)
   const adRight = new THREE.Mesh(adGeom, adMat);
-  adRight.position.set(1.31, 2.0, -1.0);
-  adRight.rotation.y = -Math.PI / 2;
+  adRight.position.set(1.32, 2.0, -1.0);
+  adRight.rotation.y = Math.PI / 2;
   group.add(adRight);
 
   return group;
@@ -613,22 +613,22 @@ function createDeliveryVan(color) {
 
   // Add text on cargo area sides
   const adText = getNextVehicleText();
-  const textWidth = 3.5;
-  const textHeight = 0.6;
+  const textWidth = 4.0;
+  const textHeight = 0.8;
   const adTexture = createVehicleTextTexture(adText, textWidth * 100, textHeight * 100);
   const adGeom = new THREE.PlaneGeometry(textWidth, textHeight);
-  const adMat = new THREE.MeshBasicMaterial({ map: adTexture, transparent: true });
+  const adMat = new THREE.MeshBasicMaterial({ map: adTexture, transparent: true, side: THREE.DoubleSide });
 
-  // Left side
+  // Left side (outside)
   const adLeft = new THREE.Mesh(adGeom, adMat);
-  adLeft.position.set(-1.11, 1.0, -0.5);
-  adLeft.rotation.y = Math.PI / 2;
+  adLeft.position.set(-1.12, 1.0, -0.5);
+  adLeft.rotation.y = -Math.PI / 2;
   group.add(adLeft);
 
-  // Right side
+  // Right side (outside)
   const adRight = new THREE.Mesh(adGeom, adMat);
-  adRight.position.set(1.11, 1.0, -0.5);
-  adRight.rotation.y = -Math.PI / 2;
+  adRight.position.set(1.12, 1.0, -0.5);
+  adRight.rotation.y = Math.PI / 2;
   group.add(adRight);
 
   return group;
