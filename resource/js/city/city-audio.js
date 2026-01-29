@@ -2,8 +2,9 @@
  * city-audio.js
  * Web Audio API 기반 오디오 분석 시스템
  * - 배경음악 재생 및 주파수 분석
- * - 재생 초기 10초간 실시간 FFT 데이터로 통계 수집
- * - 통계 기반 정규화로 균일한 이퀄라이저 반응
+ * - 사전 분석된 통계로 균일한 이퀄라이저 반응
+ *
+ * 통계는 analyze-audio.js로 분석됨 (city-drive.mp3 기준)
  */
 
 let audioContext = null;
@@ -22,7 +23,7 @@ const frequencyBands = {
   treble: 0
 };
 
-// 정규화된 값 (통계 기반, 0~1 범위)
+// 정규화된 값 (0~1 범위)
 const normalizedBands = {
   bass: 0,
   lowMid: 0,
@@ -31,33 +32,31 @@ const normalizedBands = {
   treble: 0
 };
 
-// 대역별 통계 (calibration 중 수집)
+// ============================================
+// 사전 분석된 대역별 통계 (city-drive.mp3)
+// analyze-audio.js로 분석됨
+// P10-P90 범위 사용 (아웃라이어 제거)
+// ============================================
 const bandStats = {
-  bass: { min: 0, max: 0.5, samples: [] },
-  lowMid: { min: 0, max: 0.5, samples: [] },
-  mid: { min: 0, max: 0.5, samples: [] },
-  highMid: { min: 0, max: 0.5, samples: [] },
-  treble: { min: 0, max: 0.5, samples: [] }
+  bass: { min: 0.6431, max: 0.9004 },
+  lowMid: { min: 0.6701, max: 0.8135 },
+  mid: { min: 0.5975, max: 0.7385 },
+  highMid: { min: 0.4919, max: 0.6586 },
+  treble: { min: 0.2472, max: 0.4839 },
 };
 
-// Calibration 상태
-let calibrationStartTime = 0;
-let isCalibrating = false;
-let calibrationComplete = false;
-const CALIBRATION_DURATION = 15000; // 15초간 수집
-
-// 대역별 주파수 bin 범위 (44100Hz 샘플레이트, 2048 FFT 기준)
+// 대역별 주파수 bin 범위 (48000Hz 샘플레이트, 2048 FFT 기준)
 const bandRanges = {
-  bass: { start: 1, end: 7 },       // ~20-150 Hz
-  lowMid: { start: 7, end: 19 },    // ~150-400 Hz
-  mid: { start: 19, end: 47 },      // ~400-1000 Hz
-  highMid: { start: 47, end: 186 }, // ~1000-4000 Hz
-  treble: { start: 186, end: 512 }  // ~4000+ Hz
+  bass: { start: 1, end: 8 },
+  lowMid: { start: 8, end: 21 },
+  mid: { start: 21, end: 51 },
+  highMid: { start: 51, end: 202 },
+  treble: { start: 202, end: 512 }
 };
 
 // 설정
-const SMOOTHING = 0.3;     // 출력 스무딩 (낮을수록 빠른 반응)
-const OUTPUT_SCALE = 0.9;  // 출력 스케일
+const SMOOTHING = 0.25;    // 출력 스무딩 (낮을수록 빠른 반응)
+const OUTPUT_SCALE = 0.95; // 출력 스케일
 
 /**
  * 오디오 시스템 초기화
@@ -69,7 +68,7 @@ export function initAudio() {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     analyser = audioContext.createAnalyser();
     analyser.fftSize = 2048;
-    analyser.smoothingTimeConstant = 0.4;
+    analyser.smoothingTimeConstant = 0.3;
 
     frequencyData = new Uint8Array(analyser.frequencyBinCount);
 
@@ -84,6 +83,7 @@ export function initAudio() {
     analyser.connect(audioContext.destination);
 
     console.log('Audio system initialized');
+    console.log('Using pre-analyzed band statistics for city-drive.mp3');
   } catch (e) {
     console.error('Audio initialization failed:', e);
   }
@@ -109,66 +109,9 @@ export function toggleAudio() {
       console.error('Audio play failed:', e);
     });
     isPlaying = true;
-
-    // Calibration 시작 (아직 완료되지 않은 경우)
-    if (!calibrationComplete && !isCalibrating) {
-      startCalibration();
-    }
   }
 
   return isPlaying;
-}
-
-/**
- * Calibration 시작
- */
-function startCalibration() {
-  isCalibrating = true;
-  calibrationStartTime = performance.now();
-
-  // 샘플 배열 초기화
-  for (const band of Object.keys(bandStats)) {
-    bandStats[band].samples = [];
-  }
-
-  console.log('Starting calibration (collecting FFT data for 15 seconds)...');
-}
-
-/**
- * Calibration 완료 - 통계 계산
- */
-function finishCalibration() {
-  isCalibrating = false;
-  calibrationComplete = true;
-
-  for (const band of Object.keys(bandStats)) {
-    const samples = bandStats[band].samples;
-    if (samples.length === 0) continue;
-
-    // 정렬
-    samples.sort((a, b) => a - b);
-
-    // 하위 10%와 상위 90% 사용 (아웃라이어 제거)
-    const lowIdx = Math.floor(samples.length * 0.1);
-    const highIdx = Math.floor(samples.length * 0.9);
-
-    bandStats[band].min = samples[lowIdx];
-    bandStats[band].max = samples[highIdx];
-
-    // 범위가 너무 작으면 보정
-    if (bandStats[band].max - bandStats[band].min < 0.05) {
-      bandStats[band].max = bandStats[band].min + 0.15;
-    }
-
-    // 샘플 배열 메모리 해제
-    bandStats[band].samples = [];
-  }
-
-  console.log('Calibration complete (real-time FFT stats):');
-  for (const band of Object.keys(bandStats)) {
-    const s = bandStats[band];
-    console.log(`  ${band}: min=${s.min.toFixed(3)}, max=${s.max.toFixed(3)}`);
-  }
 }
 
 /**
@@ -187,14 +130,14 @@ function calculateBandEnergy(startBin, endBin) {
   let sum = 0;
   const count = endBin - startBin;
   for (let i = startBin; i < endBin && i < frequencyData.length; i++) {
-    const val = frequencyData[i] / 255;
+    const val = frequencyData[i] / 255; // 0~1 범위로 정규화
     sum += val * val;
   }
   return Math.sqrt(sum / count);
 }
 
 /**
- * 통계 기반 정규화
+ * 사전 분석된 통계 기반 정규화
  */
 function normalizeWithStats(band, value) {
   const stats = bandStats[band];
@@ -231,22 +174,7 @@ export function updateAudioAnalysis() {
   frequencyBands.highMid = calculateBandEnergy(bandRanges.highMid.start, bandRanges.highMid.end);
   frequencyBands.treble = calculateBandEnergy(bandRanges.treble.start, bandRanges.treble.end);
 
-  // Calibration 중이면 샘플 수집
-  if (isCalibrating) {
-    const elapsed = performance.now() - calibrationStartTime;
-
-    if (elapsed < CALIBRATION_DURATION) {
-      // 샘플 추가
-      for (const band of Object.keys(bandStats)) {
-        bandStats[band].samples.push(frequencyBands[band]);
-      }
-    } else {
-      // Calibration 완료
-      finishCalibration();
-    }
-  }
-
-  // 통계 기반 정규화 (calibration 완료 여부와 무관하게 항상 적용)
+  // 사전 분석된 통계 기반 정규화
   normalizedBands.bass = normalizeWithStats('bass', frequencyBands.bass);
   normalizedBands.lowMid = normalizeWithStats('lowMid', frequencyBands.lowMid);
   normalizedBands.mid = normalizeWithStats('mid', frequencyBands.mid);
@@ -263,6 +191,7 @@ export function getIntensityForPosition(x) {
   const normalizedX = Math.max(-1, Math.min(1, x / 100));
 
   // 5개 구역으로 나누어 각 대역에 매핑
+  // 서쪽(-1) = bass, 동쪽(+1) = treble
   if (normalizedX < -0.6) {
     return normalizedBands.bass;
   } else if (normalizedX < -0.2) {
@@ -270,12 +199,13 @@ export function getIntensityForPosition(x) {
     return normalizedBands.bass * (1 - t) + normalizedBands.lowMid * t;
   } else if (normalizedX < 0.2) {
     const t = (normalizedX + 0.2) / 0.4;
-    return normalizedBands.lowMid * (1 - t) + normalizedBands.highMid * t;
+    return normalizedBands.lowMid * (1 - t) + normalizedBands.mid * t;
   } else if (normalizedX < 0.6) {
     const t = (normalizedX - 0.2) / 0.4;
-    return normalizedBands.highMid * (1 - t) + normalizedBands.treble * t;
+    return normalizedBands.mid * (1 - t) + normalizedBands.highMid * t;
   } else {
-    return normalizedBands.treble;
+    const t = (normalizedX - 0.6) / 0.4;
+    return normalizedBands.highMid * (1 - t) + normalizedBands.treble * t;
   }
 }
 
@@ -286,14 +216,6 @@ export function getFrequencyBands() {
   return {
     raw: { ...frequencyBands },
     normalized: { ...normalizedBands },
-    stats: {
-      bass: { min: bandStats.bass.min, max: bandStats.bass.max },
-      lowMid: { min: bandStats.lowMid.min, max: bandStats.lowMid.max },
-      mid: { min: bandStats.mid.min, max: bandStats.mid.max },
-      highMid: { min: bandStats.highMid.min, max: bandStats.highMid.max },
-      treble: { min: bandStats.treble.min, max: bandStats.treble.max }
-    },
-    calibrationComplete,
-    isCalibrating
+    stats: bandStats
   };
 }
