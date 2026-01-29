@@ -4,6 +4,7 @@
  * - 배경음악 재생 및 주파수 분석
  * - 5개 주파수 대역: bass, lowMid, mid, highMid, treble
  * - X 좌표에 따른 intensity 계산 (동쪽=고음, 서쪽=저음)
+ * - 자동 게인 조절 (AGC)로 모든 대역이 균일하게 반응
  */
 
 let audioContext = null;
@@ -13,7 +14,7 @@ let audioElement = null;
 let isPlaying = false;
 let frequencyData = null;
 
-// 주파수 대역별 값 (0~1 범위)
+// 주파수 대역별 raw 값 (0~1 범위)
 const frequencyBands = {
   bass: 0,      // 20-150 Hz (저음)
   lowMid: 0,    // 150-400 Hz
@@ -22,15 +23,47 @@ const frequencyBands = {
   treble: 0     // 4000-20000 Hz (고음)
 };
 
-// 대역별 주파수 bin 범위 (44100Hz 샘플레이트, 2048 FFT 기준)
-// bin = frequency * fftSize / sampleRate
-const bandRanges = {
-  bass: { start: 1, end: 7 },       // ~20-150 Hz
-  lowMid: { start: 7, end: 19 },    // ~150-400 Hz
-  mid: { start: 19, end: 47 },      // ~400-1000 Hz
-  highMid: { start: 47, end: 186 }, // ~1000-4000 Hz
-  treble: { start: 186, end: 512 }  // ~4000+ Hz
+// 정규화된 값 (AGC 적용 후, 0~1 범위)
+const normalizedBands = {
+  bass: 0,
+  lowMid: 0,
+  mid: 0,
+  highMid: 0,
+  treble: 0
 };
+
+// 각 대역의 피크값 추적 (AGC용)
+const bandPeaks = {
+  bass: 0.3,
+  lowMid: 0.3,
+  mid: 0.3,
+  highMid: 0.3,
+  treble: 0.3
+};
+
+// 각 대역의 최소값 추적 (AGC용)
+const bandMins = {
+  bass: 0,
+  lowMid: 0,
+  mid: 0,
+  highMid: 0,
+  treble: 0
+};
+
+// 대역별 주파수 bin 범위 (44100Hz 샘플레이트, 1024 FFT 기준)
+const bandRanges = {
+  bass: { start: 1, end: 4 },       // ~20-150 Hz
+  lowMid: { start: 4, end: 10 },    // ~150-400 Hz
+  mid: { start: 10, end: 24 },      // ~400-1000 Hz
+  highMid: { start: 24, end: 93 },  // ~1000-4000 Hz
+  treble: { start: 93, end: 256 }   // ~4000+ Hz
+};
+
+// AGC 설정
+const AGC_ATTACK = 0.05;   // 피크 상승 속도
+const AGC_DECAY = 0.001;   // 피크 하강 속도 (천천히)
+const MIN_PEAK = 0.15;     // 최소 피크값 (너무 작은 신호 방지)
+const SMOOTHING = 0.7;     // 출력 스무딩 (0~1, 높을수록 부드러움)
 
 /**
  * 오디오 시스템 초기화
@@ -41,8 +74,8 @@ export function initAudio() {
   try {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     analyser = audioContext.createAnalyser();
-    analyser.fftSize = 1024;
-    analyser.smoothingTimeConstant = 0.8;
+    analyser.fftSize = 512;  // 더 빠른 반응을 위해 작은 FFT
+    analyser.smoothingTimeConstant = 0.6;  // 약간의 스무딩
 
     frequencyData = new Uint8Array(analyser.frequencyBinCount);
 
@@ -96,17 +129,18 @@ export function isAudioPlaying() {
 }
 
 /**
- * 주파수 대역별 평균값 계산
+ * 주파수 대역별 평균값 계산 (RMS 방식으로 더 정확한 에너지 측정)
  */
-function calculateBandAverage(startBin, endBin) {
+function calculateBandEnergy(startBin, endBin) {
   if (!frequencyData) return 0;
 
   let sum = 0;
   const count = endBin - startBin;
   for (let i = startBin; i < endBin && i < frequencyData.length; i++) {
-    sum += frequencyData[i];
+    const val = frequencyData[i] / 255;
+    sum += val * val;  // RMS를 위한 제곱
   }
-  return (sum / count) / 255; // 0~1 범위로 정규화
+  return Math.sqrt(sum / count);  // RMS
 }
 
 /**
@@ -118,12 +152,64 @@ export function updateAudioAnalysis() {
 
   analyser.getByteFrequencyData(frequencyData);
 
-  // 각 대역별 값 계산
-  frequencyBands.bass = calculateBandAverage(bandRanges.bass.start, bandRanges.bass.end);
-  frequencyBands.lowMid = calculateBandAverage(bandRanges.lowMid.start, bandRanges.lowMid.end);
-  frequencyBands.mid = calculateBandAverage(bandRanges.mid.start, bandRanges.mid.end);
-  frequencyBands.highMid = calculateBandAverage(bandRanges.highMid.start, bandRanges.highMid.end);
-  frequencyBands.treble = calculateBandAverage(bandRanges.treble.start, bandRanges.treble.end);
+  // 각 대역별 raw 값 계산
+  const rawBass = calculateBandEnergy(bandRanges.bass.start, bandRanges.bass.end);
+  const rawLowMid = calculateBandEnergy(bandRanges.lowMid.start, bandRanges.lowMid.end);
+  const rawMid = calculateBandEnergy(bandRanges.mid.start, bandRanges.mid.end);
+  const rawHighMid = calculateBandEnergy(bandRanges.highMid.start, bandRanges.highMid.end);
+  const rawTreble = calculateBandEnergy(bandRanges.treble.start, bandRanges.treble.end);
+
+  // raw 값 저장
+  frequencyBands.bass = rawBass;
+  frequencyBands.lowMid = rawLowMid;
+  frequencyBands.mid = rawMid;
+  frequencyBands.highMid = rawHighMid;
+  frequencyBands.treble = rawTreble;
+
+  // AGC: 피크값 업데이트
+  updatePeak('bass', rawBass);
+  updatePeak('lowMid', rawLowMid);
+  updatePeak('mid', rawMid);
+  updatePeak('highMid', rawHighMid);
+  updatePeak('treble', rawTreble);
+
+  // 정규화된 값 계산 (0~1 범위로 스케일링)
+  normalizedBands.bass = normalizeValue('bass', rawBass);
+  normalizedBands.lowMid = normalizeValue('lowMid', rawLowMid);
+  normalizedBands.mid = normalizeValue('mid', rawMid);
+  normalizedBands.highMid = normalizeValue('highMid', rawHighMid);
+  normalizedBands.treble = normalizeValue('treble', rawTreble);
+}
+
+/**
+ * AGC: 피크값 업데이트
+ */
+function updatePeak(band, value) {
+  // 현재 값이 피크보다 크면 빠르게 상승
+  if (value > bandPeaks[band]) {
+    bandPeaks[band] += (value - bandPeaks[band]) * AGC_ATTACK;
+  } else {
+    // 피크 천천히 하강
+    bandPeaks[band] -= AGC_DECAY;
+  }
+
+  // 최소 피크값 보장
+  bandPeaks[band] = Math.max(MIN_PEAK, bandPeaks[band]);
+}
+
+/**
+ * 값을 피크 기준으로 정규화
+ */
+function normalizeValue(band, value) {
+  const peak = bandPeaks[band];
+  const normalized = value / peak;
+
+  // 0~1 범위로 클램핑 후 스무딩
+  const clamped = Math.min(1, Math.max(0, normalized));
+  const prev = normalizedBands[band] || 0;
+
+  // 스무딩 적용 (급격한 변화 방지)
+  return prev * SMOOTHING + clamped * (1 - SMOOTHING);
 }
 
 /**
@@ -142,17 +228,29 @@ export function getIntensityForPosition(x) {
   // 왼쪽(-) = 저음, 오른쪽(+) = 고음
   const normalizedX = Math.max(-1, Math.min(1, x / 100));
 
-  if (normalizedX < -0.3) {
-    // 서쪽 (저음 반응)
-    const t = (normalizedX + 1) / 0.7; // 0~1 블렌딩
-    return frequencyBands.bass * 0.7 + frequencyBands.lowMid * 0.3;
-  } else if (normalizedX > 0.3) {
-    // 동쪽 (고음 반응)
-    const t = (normalizedX - 0.3) / 0.7;
-    return frequencyBands.treble * 0.6 + frequencyBands.highMid * 0.4;
+  // 5개 구역으로 나누어 각 대역에 매핑
+  if (normalizedX < -0.6) {
+    // 가장 서쪽: bass
+    return normalizedBands.bass;
+  } else if (normalizedX < -0.2) {
+    // 서쪽: bass + lowMid 블렌드
+    const t = (normalizedX + 0.6) / 0.4;
+    return normalizedBands.bass * (1 - t) + normalizedBands.lowMid * t;
+  } else if (normalizedX < 0.2) {
+    // 중앙: lowMid + mid + highMid 블렌드
+    const t = (normalizedX + 0.2) / 0.4;
+    if (t < 0.5) {
+      return normalizedBands.lowMid * (1 - t * 2) + normalizedBands.mid * (t * 2);
+    } else {
+      return normalizedBands.mid * (1 - (t - 0.5) * 2) + normalizedBands.highMid * ((t - 0.5) * 2);
+    }
+  } else if (normalizedX < 0.6) {
+    // 동쪽: highMid + treble 블렌드
+    const t = (normalizedX - 0.2) / 0.4;
+    return normalizedBands.highMid * (1 - t) + normalizedBands.treble * t;
   } else {
-    // 중앙 (중음 반응)
-    return frequencyBands.mid * 0.5 + frequencyBands.lowMid * 0.25 + frequencyBands.highMid * 0.25;
+    // 가장 동쪽: treble
+    return normalizedBands.treble;
   }
 }
 
@@ -160,5 +258,9 @@ export function getIntensityForPosition(x) {
  * 현재 주파수 대역 값들 반환 (디버그용)
  */
 export function getFrequencyBands() {
-  return { ...frequencyBands };
+  return {
+    raw: { ...frequencyBands },
+    normalized: { ...normalizedBands },
+    peaks: { ...bandPeaks }
+  };
 }
