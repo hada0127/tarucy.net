@@ -459,9 +459,9 @@ function updateWindowBrightness() {
 
     // 창문이 threshold 아래에 있으면 밝게 (이퀄라이저 활성)
     if (normalizedY <= threshold) {
-      // 활성화: 원래 색상의 2배 밝기
+      // 활성화: 원래 색상의 1.5배 밝기
       const fadeIn = 1.0 - (normalizedY / Math.max(threshold, 0.01));
-      const brightness = 1.8 + fadeIn * 0.4; // 1.8 ~ 2.2배
+      const brightness = 1.3 + fadeIn * 0.4; // 1.3 ~ 1.7배
 
       if (material.color) {
         material.color.copy(mesh.userData.originalColor);
