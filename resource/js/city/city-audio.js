@@ -2,7 +2,7 @@
  * city-audio.js
  * Web Audio API 기반 오디오 분석 시스템
  * - 배경음악 재생 및 주파수 분석
- * - 음악 파일 사전 분석으로 대역별 통계 계산
+ * - 재생 초기 10초간 실시간 FFT 데이터로 통계 수집
  * - 통계 기반 정규화로 균일한 이퀄라이저 반응
  */
 
@@ -31,17 +31,20 @@ const normalizedBands = {
   treble: 0
 };
 
-// 사전 분석된 대역별 통계 (아래에서 분석 후 채움)
+// 대역별 통계 (calibration 중 수집)
 const bandStats = {
-  bass: { min: 0, max: 1, avg: 0.5 },
-  lowMid: { min: 0, max: 1, avg: 0.5 },
-  mid: { min: 0, max: 1, avg: 0.5 },
-  highMid: { min: 0, max: 1, avg: 0.5 },
-  treble: { min: 0, max: 1, avg: 0.5 }
+  bass: { min: 0, max: 0.5, samples: [] },
+  lowMid: { min: 0, max: 0.5, samples: [] },
+  mid: { min: 0, max: 0.5, samples: [] },
+  highMid: { min: 0, max: 0.5, samples: [] },
+  treble: { min: 0, max: 0.5, samples: [] }
 };
 
-// 분석 완료 여부
-let analysisComplete = false;
+// Calibration 상태
+let calibrationStartTime = 0;
+let isCalibrating = false;
+let calibrationComplete = false;
+const CALIBRATION_DURATION = 15000; // 15초간 수집
 
 // 대역별 주파수 bin 범위 (44100Hz 샘플레이트, 2048 FFT 기준)
 const bandRanges = {
@@ -53,8 +56,8 @@ const bandRanges = {
 };
 
 // 설정
-const SMOOTHING = 0.4;     // 출력 스무딩 (낮을수록 빠른 반응)
-const OUTPUT_SCALE = 0.85; // 출력 스케일
+const SMOOTHING = 0.3;     // 출력 스무딩 (낮을수록 빠른 반응)
+const OUTPUT_SCALE = 0.9;  // 출력 스케일
 
 /**
  * 오디오 시스템 초기화
@@ -66,7 +69,7 @@ export function initAudio() {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     analyser = audioContext.createAnalyser();
     analyser.fftSize = 2048;
-    analyser.smoothingTimeConstant = 0.5;
+    analyser.smoothingTimeConstant = 0.4;
 
     frequencyData = new Uint8Array(analyser.frequencyBinCount);
 
@@ -80,143 +83,10 @@ export function initAudio() {
     audioSource.connect(analyser);
     analyser.connect(audioContext.destination);
 
-    // 음악 파일 사전 분석 시작
-    analyzeAudioFile();
-
     console.log('Audio system initialized');
   } catch (e) {
     console.error('Audio initialization failed:', e);
   }
-}
-
-/**
- * 음악 파일 전체 분석 (오프라인)
- * 각 대역별 min, max, avg 계산
- */
-async function analyzeAudioFile() {
-  try {
-    console.log('Starting audio file analysis...');
-
-    // 파일 fetch
-    const response = await fetch('resource/sound/city-drive.mp3');
-    const arrayBuffer = await response.arrayBuffer();
-
-    // 오프라인 컨텍스트로 디코딩
-    const offlineContext = new OfflineAudioContext(2, 44100 * 300, 44100); // 최대 5분
-    const audioBuffer = await offlineContext.decodeAudioData(arrayBuffer);
-
-    console.log(`Audio duration: ${audioBuffer.duration.toFixed(1)}s`);
-
-    // 분석용 데이터 추출
-    const channelData = audioBuffer.getChannelData(0); // 모노로 분석
-    const sampleRate = audioBuffer.sampleRate;
-    const fftSize = 2048;
-    const hopSize = fftSize / 2; // 50% 오버랩
-
-    // 각 대역별 값 수집
-    const bandValues = {
-      bass: [],
-      lowMid: [],
-      mid: [],
-      highMid: [],
-      treble: []
-    };
-
-    // FFT 분석 (간단한 구현)
-    const numFrames = Math.floor((channelData.length - fftSize) / hopSize);
-    const tempArray = new Float32Array(fftSize);
-
-    for (let frame = 0; frame < numFrames; frame += 10) { // 10프레임마다 샘플링 (속도)
-      const startSample = frame * hopSize;
-
-      // 윈도우 적용 및 복사
-      for (let i = 0; i < fftSize; i++) {
-        const windowValue = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / fftSize); // Hann window
-        tempArray[i] = channelData[startSample + i] * windowValue;
-      }
-
-      // 간단한 에너지 계산 (대역별)
-      // 실제 FFT 대신 대역 필터링된 에너지 추정
-      const energies = estimateBandEnergies(tempArray, sampleRate);
-
-      bandValues.bass.push(energies.bass);
-      bandValues.lowMid.push(energies.lowMid);
-      bandValues.mid.push(energies.mid);
-      bandValues.highMid.push(energies.highMid);
-      bandValues.treble.push(energies.treble);
-    }
-
-    // 통계 계산
-    for (const band of Object.keys(bandStats)) {
-      const values = bandValues[band];
-      if (values.length === 0) continue;
-
-      values.sort((a, b) => a - b);
-
-      // 하위 5%와 상위 95% 사용 (아웃라이어 제거)
-      const lowIdx = Math.floor(values.length * 0.05);
-      const highIdx = Math.floor(values.length * 0.95);
-
-      bandStats[band].min = values[lowIdx];
-      bandStats[band].max = values[highIdx];
-      bandStats[band].avg = values.reduce((a, b) => a + b, 0) / values.length;
-
-      // 범위가 너무 작으면 보정
-      if (bandStats[band].max - bandStats[band].min < 0.01) {
-        bandStats[band].max = bandStats[band].min + 0.1;
-      }
-    }
-
-    analysisComplete = true;
-
-    console.log('Audio analysis complete:');
-    for (const band of Object.keys(bandStats)) {
-      const s = bandStats[band];
-      console.log(`  ${band}: min=${s.min.toFixed(3)}, max=${s.max.toFixed(3)}, avg=${s.avg.toFixed(3)}`);
-    }
-
-  } catch (e) {
-    console.error('Audio analysis failed:', e);
-    // 실패 시 기본값 사용
-    analysisComplete = true;
-  }
-}
-
-/**
- * 대역별 에너지 추정 (간단한 필터 기반)
- */
-function estimateBandEnergies(samples, sampleRate) {
-  const n = samples.length;
-
-  // 각 대역의 주파수 범위에 해당하는 에너지 추정
-  // 간단한 방법: 샘플의 변화율로 주파수 추정
-
-  let bass = 0, lowMid = 0, mid = 0, highMid = 0, treble = 0;
-
-  // 저역 통과 필터 시뮬레이션 (bass)
-  let lpSum = 0;
-  for (let i = 1; i < n; i++) {
-    lpSum += Math.abs(samples[i] * 0.1 + samples[i - 1] * 0.9 - samples[Math.max(0, i - 2)] * 0.9);
-  }
-  bass = lpSum / n;
-
-  // 대역별 변화율 기반 에너지
-  for (let i = 4; i < n - 4; i++) {
-    const diff1 = Math.abs(samples[i] - samples[i - 1]); // 고주파 성분
-    const diff2 = Math.abs(samples[i] - samples[i - 2]);
-    const diff4 = Math.abs(samples[i] - samples[i - 4]);
-
-    treble += diff1 * diff1;
-    highMid += diff2 * diff2;
-    mid += diff4 * diff4;
-  }
-
-  treble = Math.sqrt(treble / n);
-  highMid = Math.sqrt(highMid / n);
-  mid = Math.sqrt(mid / n);
-  lowMid = (bass + mid) / 2;
-
-  return { bass, lowMid, mid, highMid, treble };
 }
 
 /**
@@ -239,9 +109,66 @@ export function toggleAudio() {
       console.error('Audio play failed:', e);
     });
     isPlaying = true;
+
+    // Calibration 시작 (아직 완료되지 않은 경우)
+    if (!calibrationComplete && !isCalibrating) {
+      startCalibration();
+    }
   }
 
   return isPlaying;
+}
+
+/**
+ * Calibration 시작
+ */
+function startCalibration() {
+  isCalibrating = true;
+  calibrationStartTime = performance.now();
+
+  // 샘플 배열 초기화
+  for (const band of Object.keys(bandStats)) {
+    bandStats[band].samples = [];
+  }
+
+  console.log('Starting calibration (collecting FFT data for 15 seconds)...');
+}
+
+/**
+ * Calibration 완료 - 통계 계산
+ */
+function finishCalibration() {
+  isCalibrating = false;
+  calibrationComplete = true;
+
+  for (const band of Object.keys(bandStats)) {
+    const samples = bandStats[band].samples;
+    if (samples.length === 0) continue;
+
+    // 정렬
+    samples.sort((a, b) => a - b);
+
+    // 하위 10%와 상위 90% 사용 (아웃라이어 제거)
+    const lowIdx = Math.floor(samples.length * 0.1);
+    const highIdx = Math.floor(samples.length * 0.9);
+
+    bandStats[band].min = samples[lowIdx];
+    bandStats[band].max = samples[highIdx];
+
+    // 범위가 너무 작으면 보정
+    if (bandStats[band].max - bandStats[band].min < 0.05) {
+      bandStats[band].max = bandStats[band].min + 0.15;
+    }
+
+    // 샘플 배열 메모리 해제
+    bandStats[band].samples = [];
+  }
+
+  console.log('Calibration complete (real-time FFT stats):');
+  for (const band of Object.keys(bandStats)) {
+    const s = bandStats[band];
+    console.log(`  ${band}: min=${s.min.toFixed(3)}, max=${s.max.toFixed(3)}`);
+  }
 }
 
 /**
@@ -304,7 +231,22 @@ export function updateAudioAnalysis() {
   frequencyBands.highMid = calculateBandEnergy(bandRanges.highMid.start, bandRanges.highMid.end);
   frequencyBands.treble = calculateBandEnergy(bandRanges.treble.start, bandRanges.treble.end);
 
-  // 통계 기반 정규화
+  // Calibration 중이면 샘플 수집
+  if (isCalibrating) {
+    const elapsed = performance.now() - calibrationStartTime;
+
+    if (elapsed < CALIBRATION_DURATION) {
+      // 샘플 추가
+      for (const band of Object.keys(bandStats)) {
+        bandStats[band].samples.push(frequencyBands[band]);
+      }
+    } else {
+      // Calibration 완료
+      finishCalibration();
+    }
+  }
+
+  // 통계 기반 정규화 (calibration 완료 여부와 무관하게 항상 적용)
   normalizedBands.bass = normalizeWithStats('bass', frequencyBands.bass);
   normalizedBands.lowMid = normalizeWithStats('lowMid', frequencyBands.lowMid);
   normalizedBands.mid = normalizeWithStats('mid', frequencyBands.mid);
@@ -344,7 +286,14 @@ export function getFrequencyBands() {
   return {
     raw: { ...frequencyBands },
     normalized: { ...normalizedBands },
-    stats: { ...bandStats },
-    analysisComplete
+    stats: {
+      bass: { min: bandStats.bass.min, max: bandStats.bass.max },
+      lowMid: { min: bandStats.lowMid.min, max: bandStats.lowMid.max },
+      mid: { min: bandStats.mid.min, max: bandStats.mid.max },
+      highMid: { min: bandStats.highMid.min, max: bandStats.highMid.max },
+      treble: { min: bandStats.treble.min, max: bandStats.treble.max }
+    },
+    calibrationComplete,
+    isCalibrating
   };
 }
