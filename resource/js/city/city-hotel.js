@@ -529,7 +529,12 @@ export function addHotelSignText(scene) {
     side: THREE.DoubleSide
   });
   const textPlane = new THREE.Mesh(textPlaneGeom, textPlaneMat);
-  textPlane.position.set(mainX - mainWidth / 2 - 1.72, groundY + archHeight + 6.5, mainZ);
-  textPlane.rotation.y = -Math.PI / 2;
+  // 호텔 서쪽 면 바깥에 위치
+  const posX = mainX - mainWidth / 2 - 1.72; // 57.28
+  const posY = groundY + archHeight + 6.5;   // 16.5
+  const posZ = mainZ;                         // 1
+  textPlane.position.set(posX, posY, posZ);
+  textPlane.rotation.y = -Math.PI / 2; // 서쪽(-X)을 바라봄
   scene.add(textPlane);
+  console.log('Hotel sign text added at:', posX, posY, posZ);
 }

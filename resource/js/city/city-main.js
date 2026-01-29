@@ -400,20 +400,25 @@ function discoverWindowsFromGLB(scene) {
 
 /**
  * 창문과 유사한 색상인지 확인
- * GLB 선형 색상 공간 변환 후 색상:
- * - 핑크/빨강: #be1e3f, #de1430, #ff1437, #ce1447, #ff1e47, #ff2950
- * - 시안: #1e93af, #14a1be, #47bebe
+ * 원본 색상 (city-colors.js):
+ * - 핑크: 0xff6090, 0xff5080, 0xe06088, 0xff7098, 0xf05078, 0xe85090
+ * - 시안: 0x50d0e0, 0x60c8d8, 0x70e0f0
+ * GLB 압축 후 색상이 변할 수 있으므로 넓은 범위로 감지
  */
 function isWindowLikeColor(r, g, b) {
-  // 핑크/빨강 계열 (GLB 변환 후)
-  // R > 180, G < 80, B > 30
-  const isPink = r > 180 && g < 80 && b > 30 && b < 150;
+  // 핑크/마젠타 계열 (R이 높고, G가 낮거나 중간, B가 중간)
+  // R > 150, G < 120, B > 50
+  const isPink = r > 150 && g < 120 && b > 50 && b < 180;
 
-  // 시안 계열 (GLB 변환 후)
-  // R < 100, G > 140, B > 150
-  const isCyan = r < 100 && g > 140 && b > 150;
+  // 시안 계열 (R이 낮고, G와 B가 높음)
+  // R < 130, G > 150, B > 180
+  const isCyan = r < 130 && g > 150 && b > 180;
 
-  return isPink || isCyan;
+  // 밝은 창문 (거의 흰색에 가까운 따뜻한 색)
+  // R > 200, G > 200, B > 180
+  const isWarmWhite = r > 200 && g > 200 && b > 180;
+
+  return isPink || isCyan || isWarmWhite;
 }
 
 
