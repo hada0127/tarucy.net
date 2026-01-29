@@ -351,8 +351,9 @@ function createTrashCan(scene, x, z, groundY) {
 
 /**
  * Create a vending machine
+ * @param {boolean} skipText - If true, skip text panel (for GLB export)
  */
-function createVendingMachine(scene, x, z, groundY, rotation = 0, type = 'drink') {
+function createVendingMachine(scene, x, z, groundY, rotation = 0, type = 'drink', skipText = false) {
   const group = new THREE.Group();
 
   // Main body (reduced brightness/saturation)
@@ -405,21 +406,23 @@ function createVendingMachine(scene, x, z, groundY, rotation = 0, type = 'drink'
   coinArea.position.set(0.3, 1.0, 0.33);
   group.add(coinArea);
 
-  // Front text panel (on display window, 1/3 from top)
-  const frontTextWidth = 0.65;
-  const frontTextHeight = 0.25;
-  const frontTexture = createVendingFrontTexture(frontTextWidth * 100, frontTextHeight * 100);
-  const frontPanelGeom = new THREE.PlaneGeometry(frontTextWidth, frontTextHeight);
-  const frontPanelMat = new THREE.MeshBasicMaterial({
-    map: frontTexture,
-    transparent: true,
-    depthWrite: false
-  });
-  const frontPanel = new THREE.Mesh(frontPanelGeom, frontPanelMat);
-  frontPanel.renderOrder = 1;
-  // Display window front is at z=0.355, place text just in front
-  frontPanel.position.set(0, 1.45, 0.356);
-  group.add(frontPanel);
+  // Front text panel (only if not skipping text)
+  if (!skipText) {
+    const frontTextWidth = 0.65;
+    const frontTextHeight = 0.25;
+    const frontTexture = createVendingFrontTexture(frontTextWidth * 100, frontTextHeight * 100);
+    const frontPanelGeom = new THREE.PlaneGeometry(frontTextWidth, frontTextHeight);
+    const frontPanelMat = new THREE.MeshBasicMaterial({
+      map: frontTexture,
+      transparent: true,
+      depthWrite: false
+    });
+    const frontPanel = new THREE.Mesh(frontPanelGeom, frontPanelMat);
+    frontPanel.renderOrder = 1;
+    // Display window front is at z=0.355, place text just in front
+    frontPanel.position.set(0, 1.45, 0.356);
+    group.add(frontPanel);
+  }
 
   group.position.set(x, groundY, z);
   group.rotation.y = rotation;
@@ -433,8 +436,9 @@ function createVendingMachine(scene, x, z, groundY, rotation = 0, type = 'drink'
 
 /**
  * Create a phone booth
+ * @param {boolean} skipText - If true, skip flyer (for GLB export)
  */
-function createPhoneBooth(scene, x, z, groundY, rotation = 0) {
+function createPhoneBooth(scene, x, z, groundY, rotation = 0, skipText = false) {
   const group = new THREE.Group();
 
   const metalMat = new THREE.MeshBasicMaterial({ color: 0x505050 });
@@ -493,16 +497,18 @@ function createPhoneBooth(scene, x, z, groundY, rotation = 0) {
   light.position.set(0, 2.18, 0);
   group.add(light);
 
-  // White flyer above the phone
-  const flyerWidth = 0.35;
-  const flyerHeight = 0.2;
-  const flyerTexture = createPhoneBoothFlyerTexture(flyerWidth * 100, flyerHeight * 100);
-  const flyerGeom = new THREE.PlaneGeometry(flyerWidth, flyerHeight);
-  const flyerMat = new THREE.MeshBasicMaterial({ map: flyerTexture });
-  const flyer = new THREE.Mesh(flyerGeom, flyerMat);
-  // Phone is at y=1.3, z=-0.35, place flyer above it
-  flyer.position.set(0, 1.65, -0.34);
-  group.add(flyer);
+  // White flyer above the phone (only if not skipping text)
+  if (!skipText) {
+    const flyerWidth = 0.35;
+    const flyerHeight = 0.2;
+    const flyerTexture = createPhoneBoothFlyerTexture(flyerWidth * 100, flyerHeight * 100);
+    const flyerGeom = new THREE.PlaneGeometry(flyerWidth, flyerHeight);
+    const flyerMat = new THREE.MeshBasicMaterial({ map: flyerTexture });
+    const flyer = new THREE.Mesh(flyerGeom, flyerMat);
+    // Phone is at y=1.3, z=-0.35, place flyer above it
+    flyer.position.set(0, 1.65, -0.34);
+    group.add(flyer);
+  }
 
   group.position.set(x, groundY, z);
   group.rotation.y = rotation;
@@ -708,12 +714,202 @@ function createBicycleRack(scene, x, z, groundY, rotation = 0) {
   return group;
 }
 
+// Vending machine and phone booth position data for dynamic text
+const vendingMachinePositions = [
+  { x: 10, z: -12, groundY: 0, rotation: 0, type: 'drink' },
+  { x: 11, z: -12, groundY: 0, rotation: 0, type: 'snack' },
+  { x: 58, z: -12, groundY: 0, rotation: 0, type: 'drink' },
+  { x: 15, z: -30, groundY: 0, rotation: Math.PI, type: 'drink' },
+  { x: 36, z: -30, groundY: 0, rotation: Math.PI, type: 'snack' },
+  { x: -48, z: -95, groundY: 0, rotation: -Math.PI / 2, type: 'drink' },
+  { x: -48, z: -175, groundY: 0, rotation: -Math.PI / 2, type: 'snack' }
+];
+
+const phoneBoothPositions = [
+  { x: -8, z: -12, groundY: 0, rotation: 0 },
+  { x: 43, z: -12, groundY: 0, rotation: 0 },
+  { x: -3, z: -30, groundY: 0, rotation: Math.PI },
+  { x: -48, z: -135, groundY: 0, rotation: -Math.PI / 2 }
+];
+
 // ════════════════════════════════════════════════════════════════════════════
 // Main function to place all furniture
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Create all street furniture
+ * Create all street furniture (for GLB export - no text on vending machines/phone booths)
+ */
+export function createAllFurnitureBase(scene) {
+  const furniture = [];
+
+  // === Upper sidewalk (z=-12, north of main road) ===
+  furniture.push(createBusStop(scene, 75, -12, 0, 0));
+  furniture.push(createStreetBench(scene, -28, -12, 0, 0));
+  furniture.push(createStreetBench(scene, -10, -12, 0, 0));
+  furniture.push(createStreetBench(scene, 8, -12, 0, 0));
+  furniture.push(createStreetBench(scene, 28, -12, 0, 0));
+  furniture.push(createStreetBench(scene, 45, -12, 0, 0));
+  furniture.push(createStreetBench(scene, 60, -12, 0, 0));
+  furniture.push(createPostBox(scene, -12, -12, 0));
+  furniture.push(createPostBox(scene, 47, -12, 0));
+  furniture.push(createTrashCan(scene, -27, -12, 0));
+  furniture.push(createTrashCan(scene, 6, -12, 0));
+  furniture.push(createTrashCan(scene, 30, -12, 0));
+  furniture.push(createTrashCan(scene, 62, -12, 0));
+
+  // Vending machines (no text for GLB)
+  furniture.push(createVendingMachine(scene, 10, -12, 0, 0, 'drink', true));
+  furniture.push(createVendingMachine(scene, 11, -12, 0, 0, 'snack', true));
+  furniture.push(createVendingMachine(scene, 58, -12, 0, 0, 'drink', true));
+
+  // Phone booths (no text for GLB)
+  furniture.push(createPhoneBooth(scene, -8, -12, 0, 0, true));
+  furniture.push(createPhoneBooth(scene, 43, -12, 0, 0, true));
+
+  furniture.push(createPlanter(scene, -14, -12, 0));
+  furniture.push(createPlanter(scene, 26, -12, 0));
+  furniture.push(createPlanter(scene, 48, -12, 0));
+  furniture.push(createNewspaperStand(scene, 32, -12, 0, 0));
+  furniture.push(createBicycleRack(scene, 78, -12, 0, 0));
+
+  // === Lower sidewalk (z=-30, south of main road) ===
+  furniture.push(createStreetBench(scene, -25, -30, 0, Math.PI));
+  furniture.push(createStreetBench(scene, -5, -30, 0, Math.PI));
+  furniture.push(createStreetBench(scene, 12, -30, 0, Math.PI));
+  furniture.push(createStreetBench(scene, 32, -30, 0, Math.PI));
+  furniture.push(createStreetBench(scene, 50, -30, 0, Math.PI));
+  furniture.push(createStreetBench(scene, 65, -30, 0, Math.PI));
+  furniture.push(createPostBox(scene, -8, -30, 0));
+  furniture.push(createPostBox(scene, 52, -30, 0));
+  furniture.push(createTrashCan(scene, -28, -30, 0));
+  furniture.push(createTrashCan(scene, 10, -30, 0));
+  furniture.push(createTrashCan(scene, 35, -30, 0));
+  furniture.push(createTrashCan(scene, 67, -30, 0));
+
+  // Vending machines (no text for GLB)
+  furniture.push(createVendingMachine(scene, 15, -30, 0, Math.PI, 'drink', true));
+  furniture.push(createVendingMachine(scene, 36, -30, 0, Math.PI, 'snack', true));
+
+  // Phone booth (no text for GLB)
+  furniture.push(createPhoneBooth(scene, -3, -30, 0, Math.PI, true));
+
+  furniture.push(createPlanter(scene, -22, -30, 0));
+  furniture.push(createPlanter(scene, 30, -30, 0));
+  furniture.push(createPlanter(scene, 48, -30, 0));
+  furniture.push(createNewspaperStand(scene, 38, -30, 0, Math.PI));
+  furniture.push(createBicycleRack(scene, 75, -30, 0, 0));
+
+  // === South road sidewalks ===
+  furniture.push(createStreetBench(scene, -62, -75, 0, Math.PI / 2));
+  furniture.push(createStreetBench(scene, -62, -115, 0, Math.PI / 2));
+  furniture.push(createStreetBench(scene, -62, -155, 0, Math.PI / 2));
+  furniture.push(createStreetBench(scene, -62, -195, 0, Math.PI / 2));
+  furniture.push(createTrashCan(scene, -62, -80, 0));
+  furniture.push(createTrashCan(scene, -62, -120, 0));
+  furniture.push(createTrashCan(scene, -62, -160, 0));
+  furniture.push(createTrashCan(scene, -62, -200, 0));
+  furniture.push(createPlanter(scene, -62, -85, 0));
+  furniture.push(createPlanter(scene, -62, -165, 0));
+  furniture.push(createPostBox(scene, -62, -125, 0));
+
+  furniture.push(createStreetBench(scene, -48, -85, 0, -Math.PI / 2));
+  furniture.push(createStreetBench(scene, -48, -125, 0, -Math.PI / 2));
+  furniture.push(createStreetBench(scene, -48, -165, 0, -Math.PI / 2));
+  furniture.push(createStreetBench(scene, -48, -205, 0, -Math.PI / 2));
+  furniture.push(createTrashCan(scene, -48, -90, 0));
+  furniture.push(createTrashCan(scene, -48, -130, 0));
+  furniture.push(createTrashCan(scene, -48, -170, 0));
+  furniture.push(createTrashCan(scene, -48, -210, 0));
+
+  // Vending machines (no text for GLB)
+  furniture.push(createVendingMachine(scene, -48, -95, 0, -Math.PI / 2, 'drink', true));
+  furniture.push(createVendingMachine(scene, -48, -175, 0, -Math.PI / 2, 'snack', true));
+
+  // Phone booth (no text for GLB)
+  furniture.push(createPhoneBooth(scene, -48, -135, 0, -Math.PI / 2, true));
+
+  furniture.push(createPlanter(scene, -48, -100, 0));
+  furniture.push(createPlanter(scene, -48, -180, 0));
+  furniture.push(createBusStop(scene, -48, -50, 0, -Math.PI / 2));
+  furniture.push(createNewspaperStand(scene, -48, -140, 0, -Math.PI / 2));
+
+  return furniture;
+}
+
+/**
+ * Add vending machine and phone booth texts dynamically (after GLB load)
+ */
+export function addFurnitureTexts(scene) {
+  // Add vending machine front text panels
+  for (const vm of vendingMachinePositions) {
+    addVendingMachineText(scene, vm.x, vm.z, vm.groundY, vm.rotation);
+  }
+
+  // Add phone booth flyers
+  for (const pb of phoneBoothPositions) {
+    addPhoneBoothFlyer(scene, pb.x, pb.z, pb.groundY, pb.rotation);
+  }
+}
+
+/**
+ * Add vending machine front text panel
+ */
+function addVendingMachineText(scene, x, z, groundY, rotation) {
+  const frontTextWidth = 0.65;
+  const frontTextHeight = 0.25;
+  const frontTexture = createVendingFrontTexture(frontTextWidth * 100, frontTextHeight * 100);
+  const frontPanelGeom = new THREE.PlaneGeometry(frontTextWidth, frontTextHeight);
+  const frontPanelMat = new THREE.MeshBasicMaterial({
+    map: frontTexture,
+    transparent: true,
+    depthWrite: false
+  });
+  const frontPanel = new THREE.Mesh(frontPanelGeom, frontPanelMat);
+  frontPanel.renderOrder = 1;
+
+  // Calculate world position based on rotation
+  const localZ = 0.356;
+  const localY = 1.45;
+
+  // Apply rotation to local position
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  const worldX = x + localZ * sin;
+  const worldZ = z + localZ * cos;
+
+  frontPanel.position.set(worldX, groundY + localY, worldZ);
+  frontPanel.rotation.y = rotation;
+  scene.add(frontPanel);
+}
+
+/**
+ * Add phone booth flyer
+ */
+function addPhoneBoothFlyer(scene, x, z, groundY, rotation) {
+  const flyerWidth = 0.35;
+  const flyerHeight = 0.2;
+  const flyerTexture = createPhoneBoothFlyerTexture(flyerWidth * 100, flyerHeight * 100);
+  const flyerGeom = new THREE.PlaneGeometry(flyerWidth, flyerHeight);
+  const flyerMat = new THREE.MeshBasicMaterial({ map: flyerTexture });
+  const flyer = new THREE.Mesh(flyerGeom, flyerMat);
+
+  // Local position (relative to phone booth center)
+  const localZ = -0.34;
+  const localY = 1.65;
+
+  // Apply rotation to local position
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  const worldX = x + localZ * sin;
+  const worldZ = z + localZ * cos;
+
+  flyer.position.set(worldX, groundY + localY, worldZ);
+  flyer.rotation.y = rotation;
+  scene.add(flyer);
+}
+
+/**
+ * Create all street furniture (full version with text)
  *
  * Trees/Lamps at 2/3:
  * Trees upper (z=-14): x = -40, -20, 0, 20, 40, 55

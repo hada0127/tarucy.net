@@ -47,7 +47,7 @@ import { createResidentialDistrict, createSlopedResidentialArea } from './city-h
 import { createPinkHotel } from './city-hotel.js';
 
 // Shops
-import { createShoppingDistrict, createVendorStalls } from './city-shop.js';
+import { createShoppingDistrict, createShoppingDistrictBase, addShopSignTexts, createVendorStalls } from './city-shop.js';
 
 // Parks
 import { createParks } from './city-park.js';
@@ -62,7 +62,7 @@ import { createAllStreetLamps } from './city-streetlamp.js';
 import { createZigzagStairs, createUtilitySystem } from './city-infrastructure.js';
 
 // Street furniture (benches, bus stops, etc.)
-import { createAllFurniture, createVendingMachine, createPhoneBooth } from './city-furniture.js';
+import { createAllFurniture, createAllFurnitureBase, addFurnitureTexts, createVendingMachine, createPhoneBooth } from './city-furniture.js';
 
 // Vehicles
 import { initVehicles, updateVehicles, setPedestrianStopChecker } from './city-vehicles.js';
@@ -240,54 +240,80 @@ const GLB_PATH = 'https://pub-0c79382ed5a947839fede2eac510554d.r2.dev/city.glb';
 
 /**
  * Scene을 GLB 파일로 내보내기 (개발용)
- * 브라우저 콘솔에서 exportSceneToGLB(scene) 호출
+ * 브라우저 콘솔에서 exportSceneToGLB() 호출
+ * 캔버스 텍스처 없이 기본 지오메트리만 포함
  */
-function exportSceneToGLB(scene) {
-  console.log('Preparing GLB export...');
+function exportSceneToGLB() {
+  console.log('Creating GLB export scene (without canvas textures)...');
 
-  // 모든 캔버스 텍스처 업데이트 강제
-  scene.traverse((obj) => {
-    if (obj.isMesh && obj.material) {
-      const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
-      materials.forEach(mat => {
-        if (mat.map && mat.map.isCanvasTexture) {
-          mat.map.needsUpdate = true;
-        }
-      });
-    }
-  });
+  // GLB 내보내기용 새 scene 생성 (캔버스 텍스처 제외)
+  const exportScene = new THREE.Scene();
 
-  // 한 프레임 대기 후 내보내기 (텍스처 렌더링 보장)
-  requestAnimationFrame(() => {
-    const exporter = new GLTFExporter();
+  // 기본 구조물 생성 (forGLB=true로 텍스트 제외)
+  createGround(exportScene);
+  createRoads(exportScene);
+  createCrosswalks(exportScene);
 
-    // 동적 객체 제외한 scene 복사 (부모-자식 transform 보존)
-    const exportScene = new THREE.Scene();
-    scene.children.forEach(child => {
-      // 동적 객체(차량, 보행자)와 조명은 제외
-      if (child.userData.dynamic || child.isLight || child.isAmbientLight || child.isDirectionalLight || child.isHemisphereLight) return;
-      exportScene.add(child.clone(true)); // deep clone
-    });
+  // 건물과 가구 생성 (텍스트 없이)
+  let buildings = [];
+  buildings.push(...createResidentialDistrict(exportScene));
+  buildings.push(...createSlopedResidentialArea(exportScene));
+  buildings.push(...createLeftBuildings(exportScene));
+  buildings.push(...createRightBuildings(exportScene));
+  buildings.push(...createCenterBuildings(exportScene));
+  buildings.push(...createSouthBuildings(exportScene));
+  buildings = removeOverlappingBuildings(exportScene, buildings);
 
-    console.log('Exporting GLB...');
-    exporter.parse(
-      exportScene,
-      (result) => {
-        const blob = new Blob([result], { type: 'application/octet-stream' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'city.glb';
-        link.click();
-        URL.revokeObjectURL(url);
-        console.log('GLB exported successfully!');
-      },
-      (error) => {
-        console.error('GLB export failed:', error);
-      },
-      { binary: true }
-    );
-  });
+  // 상점가 (텍스트 없이)
+  createShoppingDistrictBase(exportScene);
+
+  // 환경
+  createForest(exportScene);
+  createHotelBackForestAndMountains(exportScene);
+  createSlopedAreaForest(exportScene);
+  createSlopedAreaEdgeHills(exportScene);
+  createLeftNorthHills(exportScene);
+  createCurveWestForestAndMountains(exportScene);
+  createZigzagStairs(exportScene);
+  createUtilitySystem(exportScene);
+  createVendorStalls(exportScene);
+  createParks(exportScene);
+  createPinkHotel(exportScene, 0);
+
+  // 가구 (텍스트 없이)
+  createAllFurnitureBase(exportScene);
+
+  // 나무와 가로등
+  createAllTrees(exportScene);
+  createAllStreetLamps(exportScene);
+
+  // 메시 수 확인
+  let meshCount = 0;
+  exportScene.traverse(obj => { if (obj.isMesh) meshCount++; });
+  console.log(`Export scene meshes: ${meshCount}`);
+
+  // GLB 내보내기
+  const exporter = new GLTFExporter();
+  console.log('Exporting GLB...');
+
+  exporter.parse(
+    exportScene,
+    (result) => {
+      const blob = new Blob([result], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'city.glb';
+      link.click();
+      URL.revokeObjectURL(url);
+      console.log('GLB exported successfully!');
+      console.log('다음 단계: gltf-transform optimize city.glb city-opt.glb --compress meshopt');
+    },
+    (error) => {
+      console.error('GLB export failed:', error);
+    },
+    { binary: true }
+  );
 }
 
 // 전역으로 내보내기 함수 노출 (개발용)
@@ -585,7 +611,11 @@ function loadSceneFromGLB(scene) {
  * Create all buildings and structures
  */
 
-function createAllBuildings(scene) {
+/**
+ * Create all buildings (for dynamic generation or GLB export)
+ * @param {boolean} forGLB - If true, use base versions without canvas textures
+ */
+function createAllBuildings(scene, forGLB = false) {
   let buildings = [];
 
   if (isIOSorMobile) {
@@ -604,7 +634,13 @@ function createAllBuildings(scene) {
   buildings.push(...createCenterBuildings(scene));
   buildings.push(...createSouthBuildings(scene));
   buildings = removeOverlappingBuildings(scene, buildings);
-  // createShoppingDistrict - 동적 생성으로 이동 (캔버스 텍스처)
+
+  // 상점가 - GLB용은 텍스트 없이, 그 외는 텍스트 포함
+  if (forGLB) {
+    createShoppingDistrictBase(scene);
+  } else {
+    createShoppingDistrict(scene);
+  }
 
   createForest(scene);
   createHotelBackForestAndMountains(scene);
@@ -617,7 +653,13 @@ function createAllBuildings(scene) {
   createVendorStalls(scene);
   createParks(scene);
   createPinkHotel(scene, 0);
-  createAllFurniture(scene);
+
+  // 가구류 - GLB용은 텍스트 없이, 그 외는 텍스트 포함
+  if (forGLB) {
+    createAllFurnitureBase(scene);
+  } else {
+    createAllFurniture(scene);
+  }
 
   return buildings;
 }
@@ -650,13 +692,18 @@ export async function initCity() {
     try {
       await loadSceneFromGLB(scene);
       console.log('GLB loaded!');
+
+      // GLB 로드 후 동적 텍스트 추가
+      addShopSignTexts(scene);
+      addFurnitureTexts(scene);
+      console.log('Dynamic texts added!');
     } catch (e) {
       console.error('GLB load failed, falling back to dynamic generation:', e);
       // 실패 시 동적 생성으로 폴백
       createGround(scene);
       createRoads(scene);
       createCrosswalks(scene);
-      createAllBuildings(scene);
+      createAllBuildings(scene, false);
       if (!isIOSorMobile) {
         createAllTrees(scene);
         createAllStreetLamps(scene);
@@ -667,7 +714,7 @@ export async function initCity() {
     createGround(scene);
     createRoads(scene);
     createCrosswalks(scene);
-    createAllBuildings(scene);
+    createAllBuildings(scene, false);
     if (!isIOSorMobile) {
       createAllTrees(scene);
       createAllStreetLamps(scene);
@@ -684,31 +731,19 @@ export async function initCity() {
   calculateWindowYRange();
 
   // GLB 내보내기 함수를 전역으로 노출 (개발용)
-  window.exportSceneToGLB = () => exportSceneToGLB(scene);
+  window.exportSceneToGLB = exportSceneToGLB;
   if (!USE_GLB) {
     console.log('GLB 내보내기: 콘솔에서 exportSceneToGLB() 호출');
+    console.log('(캔버스 텍스처 제외, 텍스트는 GLB 로드 후 동적 추가됨)');
   }
 
   // 오디오 시스템 초기화 및 버튼 생성
   initAudio();
   createAudioButton();
 
-  // 동적 객체 추가 (GLB에는 포함되지 않음)
-  // 상점가 (캔버스 텍스처 때문에 동적 생성)
-  createShoppingDistrict(scene);
-
-  // 자판기와 공중전화 (캔버스 텍스처 때문에 동적 생성)
-  createVendingMachine(scene, 10, -12, 0, 0, 'drink');
-  createVendingMachine(scene, 11, -12, 0, 0, 'snack');
-  createVendingMachine(scene, 58, -12, 0, 0, 'drink');
-  createVendingMachine(scene, 15, -30, 0, Math.PI, 'drink');
-  createVendingMachine(scene, 36, -30, 0, Math.PI, 'snack');
-  createVendingMachine(scene, -48, -95, 0, -Math.PI / 2, 'drink');
-  createVendingMachine(scene, -48, -175, 0, -Math.PI / 2, 'snack');
-  createPhoneBooth(scene, -8, -12, 0, 0);
-  createPhoneBooth(scene, 43, -12, 0, 0);
-  createPhoneBooth(scene, -3, -30, 0, Math.PI);
-  createPhoneBooth(scene, -48, -135, 0, -Math.PI / 2);
+  // 동적 객체 추가 (차량, 보행자)
+  // 상점가, 자판기, 공중전화의 기본 지오메트리는 이제 GLB에 포함됨
+  // 텍스트만 동적으로 추가됨 (addShopSignTexts, addFurnitureTexts)
 
   initVehicles(scene);
   setPedestrianStopChecker(shouldVehicleStop);

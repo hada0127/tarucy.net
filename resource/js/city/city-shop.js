@@ -71,6 +71,7 @@ function createShopSignTexture(text, width, height, bgColor) {
 
 /**
  * Create a shop building with neon border
+ * @param {boolean} config.skipText - If true, skip text panel (for GLB export)
  */
 export function createShopBuilding(scene, x, z, groundY, config = {}) {
   const group = new THREE.Group();
@@ -132,20 +133,24 @@ export function createShopBuilding(scene, x, z, groundY, config = {}) {
 
   const signWidth = width * 0.8;
   const signHeight = 0.8;
-  const signPanelGeom = new THREE.BoxGeometry(signWidth, signHeight, 0.18);
 
-  // Create sign with text if signText is provided
-  let signPanelMat;
-  if (config.signText) {
+  // Create sign panel - with or without text based on skipText flag
+  if (!config.skipText && config.signText) {
+    // Dynamic creation with canvas texture
+    const signPanelGeom = new THREE.BoxGeometry(signWidth, signHeight, 0.18);
     const texture = createShopSignTexture(config.signText, signWidth * 100, signHeight * 100, neonColor);
-    signPanelMat = new THREE.MeshBasicMaterial({ map: texture });
+    const signPanelMat = new THREE.MeshBasicMaterial({ map: texture });
+    const signPanel = new THREE.Mesh(signPanelGeom, signPanelMat);
+    signPanel.position.set(0, 4.0, -depth/2 - 0.62);
+    group.add(signPanel);
   } else {
-    signPanelMat = new THREE.MeshBasicMaterial({ color: neonColor });
+    // GLB export: solid color panel (text will be added dynamically later)
+    const signPanelGeom = new THREE.BoxGeometry(signWidth, signHeight, 0.18);
+    const signPanelMat = new THREE.MeshBasicMaterial({ color: neonColor });
+    const signPanel = new THREE.Mesh(signPanelGeom, signPanelMat);
+    signPanel.position.set(0, 4.0, -depth/2 - 0.62);
+    group.add(signPanel);
   }
-
-  const signPanel = new THREE.Mesh(signPanelGeom, signPanelMat);
-  signPanel.position.set(0, 4.0, -depth/2 - 0.62);
-  group.add(signPanel);
 
   // Display window (showcase) on ground floor sides of door
   const showcaseGeom = new THREE.PlaneGeometry(1.2, 1.8);
@@ -159,6 +164,7 @@ export function createShopBuilding(scene, x, z, groundY, config = {}) {
 
   group.position.set(x, groundY, z);
   group.userData.buildingSize = { width, depth, height };
+  group.userData.shopConfig = { width, depth, neonColor, signText: config.signText };
   scene.add(group);
   return group;
 }
@@ -205,8 +211,121 @@ export function createVerticalSign(scene, x, z, groundY) {
 // Shopping District
 // ============================================
 
+// Store shop positions for dynamic text addition
+const shopPositions = [];
+
 /**
- * Create all shopping district buildings
+ * Create all shopping district buildings (for GLB export - no text)
+ */
+export function createShoppingDistrictBase(scene) {
+  const shops = [];
+  const groundY = 0;
+  const neonPalette = [
+    colors.neon.pink, colors.neon.cyan, colors.neon.yellow,
+    colors.neon.magenta, colors.neon.blue, colors.neon.green
+  ];
+
+  shopPositions.length = 0; // Clear previous
+
+  // Upper row shops (9 shops at z=13, closer to stairs)
+  const upperStartX = -19;
+  for (let i = 0; i < 9; i++) {
+    const x = upperStartX + i * 5.2;
+    const z = 13;
+    const width = 4.8;
+    const depth = 4;
+    const height = 5 + Math.random() * 2;
+    const neonColor = neonPalette[i % neonPalette.length];
+
+    const shop = createShopBuilding(scene, x, z, groundY, {
+      width, depth, height, neonColor,
+      skipText: true // No canvas texture for GLB
+    });
+    shops.push(shop);
+
+    // Store position info for dynamic text
+    shopPositions.push({ x, z, groundY, width, depth, neonColor, signText: shopSignTexts[i] });
+  }
+
+  // Lower row shops (9 shops at z=0)
+  const lowerStartX = -19;
+  for (let i = 0; i < 9; i++) {
+    const x = lowerStartX + i * 5.2;
+    const z = 0;
+    const width = 4.8;
+    const depth = 3.5;
+    const height = 4 + Math.random() * 2;
+    const neonColor = neonPalette[(i + 3) % neonPalette.length];
+
+    const shop = createShopBuilding(scene, x, z, groundY, {
+      width, depth, height, neonColor,
+      skipText: true // No canvas texture for GLB
+    });
+    shops.push(shop);
+
+    // Store position info for dynamic text
+    shopPositions.push({ x, z, groundY, width, depth, neonColor, signText: shopSignTexts[9 + i] });
+  }
+
+  return shops;
+}
+
+/**
+ * Add shop sign texts dynamically (after GLB load)
+ */
+export function addShopSignTexts(scene) {
+  const neonPalette = [
+    colors.neon.pink, colors.neon.cyan, colors.neon.yellow,
+    colors.neon.magenta, colors.neon.blue, colors.neon.green
+  ];
+
+  // Upper row
+  const upperStartX = -19;
+  for (let i = 0; i < 9; i++) {
+    const x = upperStartX + i * 5.2;
+    const z = 13;
+    const width = 4.8;
+    const depth = 4;
+    const neonColor = neonPalette[i % neonPalette.length];
+
+    addSignTextPanel(scene, x, z, 0, width, depth, neonColor, shopSignTexts[i]);
+  }
+
+  // Lower row
+  const lowerStartX = -19;
+  for (let i = 0; i < 9; i++) {
+    const x = lowerStartX + i * 5.2;
+    const z = 0;
+    const width = 4.8;
+    const depth = 3.5;
+    const neonColor = neonPalette[(i + 3) % neonPalette.length];
+
+    addSignTextPanel(scene, x, z, 0, width, depth, neonColor, shopSignTexts[9 + i]);
+  }
+}
+
+/**
+ * Add a single sign text panel
+ */
+function addSignTextPanel(scene, x, z, groundY, width, depth, neonColor, signText) {
+  const signWidth = width * 0.8;
+  const signHeight = 0.8;
+
+  const texture = createShopSignTexture(signText, signWidth * 100, signHeight * 100, neonColor);
+  const signPanelGeom = new THREE.PlaneGeometry(signWidth, signHeight);
+  const signPanelMat = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    depthWrite: false
+  });
+  const signPanel = new THREE.Mesh(signPanelGeom, signPanelMat);
+  signPanel.renderOrder = 1;
+  signPanel.position.set(x, groundY + 4.0, z - depth/2 - 0.72);
+  scene.add(signPanel);
+}
+
+/**
+ * Create all shopping district buildings (full version with text)
  */
 export function createShoppingDistrict(scene) {
   const shops = [];
