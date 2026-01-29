@@ -373,45 +373,79 @@ function isWindowLikeColor(r, g, b) {
 }
 
 
-// 창문 Y 범위 (이퀄라이저 효과용)
-let windowYMin = Infinity;
-let windowYMax = -Infinity;
+// X 구역별 Y 범위 (각 건물 열별 독립 이퀄라이저)
+const NUM_X_ZONES = 40; // X축을 40개 구역으로 나눔 (더 세밀한 이퀄라이저)
+const xZoneYRanges = []; // 각 구역의 {yMin, yMax}
+let globalXMin = Infinity;
+let globalXMax = -Infinity;
 
 /**
- * 창문 Y 범위 계산 (discoverWindowsFromGLB 후 호출)
+ * X 구역별 Y 범위 계산 (각 건물 열별 독립 이퀄라이저)
  */
 function calculateWindowYRange() {
+  // 먼저 전체 X 범위 계산
   for (const mesh of windowMeshes) {
-    const y = mesh.userData.worldY || 0;
-    if (y < windowYMin) windowYMin = y;
-    if (y > windowYMax) windowYMax = y;
+    const x = mesh.userData.worldX || 0;
+    if (x < globalXMin) globalXMin = x;
+    if (x > globalXMax) globalXMax = x;
   }
-  console.log(`Window Y range: ${windowYMin.toFixed(1)} ~ ${windowYMax.toFixed(1)}`);
+
+  const xRange = globalXMax - globalXMin;
+  const zoneWidth = xRange / NUM_X_ZONES;
+
+  // 각 구역 초기화
+  for (let i = 0; i < NUM_X_ZONES; i++) {
+    xZoneYRanges[i] = { yMin: Infinity, yMax: -Infinity };
+  }
+
+  // 각 창문을 구역에 할당하고 Y 범위 계산
+  for (const mesh of windowMeshes) {
+    const x = mesh.userData.worldX || 0;
+    const y = mesh.userData.worldY || 0;
+
+    // X 좌표로 구역 결정
+    let zoneIndex = Math.floor((x - globalXMin) / zoneWidth);
+    zoneIndex = Math.max(0, Math.min(NUM_X_ZONES - 1, zoneIndex));
+
+    // 해당 구역에 창문 인덱스 저장
+    mesh.userData.xZoneIndex = zoneIndex;
+
+    // 구역별 Y 범위 업데이트
+    if (y < xZoneYRanges[zoneIndex].yMin) xZoneYRanges[zoneIndex].yMin = y;
+    if (y > xZoneYRanges[zoneIndex].yMax) xZoneYRanges[zoneIndex].yMax = y;
+  }
+
+  console.log(`X range: ${globalXMin.toFixed(1)} ~ ${globalXMax.toFixed(1)}, ${NUM_X_ZONES} zones`);
 }
 
 /**
  * 주파수 데이터에 따라 창문 밝기 업데이트 (이퀄라이저 효과)
- * - X 좌표: 주파수 대역 결정 (서쪽=저음, 동쪽=고음)
- * - Y 좌표: intensity에 따라 아래에서 위로 차오르는 효과
+ * - X 구역: 주파수 대역 결정 (서쪽=저음, 동쪽=고음)
+ * - Y 좌표: 각 구역별 intensity에 따라 아래에서 위로 차오르는 효과
  */
 function updateWindowBrightness() {
   if (!isAudioPlaying()) return;
-
-  const yRange = windowYMax - windowYMin;
-  if (yRange <= 0) return;
 
   for (const mesh of windowMeshes) {
     if (!mesh.userData.originalColor) continue;
 
     const worldX = mesh.userData.worldX || 0;
     const worldY = mesh.userData.worldY || 0;
+    const zoneIndex = mesh.userData.xZoneIndex || 0;
+
+    // 해당 구역의 Y 범위
+    const zoneYRange = xZoneYRanges[zoneIndex];
+    if (!zoneYRange || zoneYRange.yMax <= zoneYRange.yMin) continue;
+
+    const yRange = zoneYRange.yMax - zoneYRange.yMin;
+
+    // 해당 구역 내에서 Y 좌표 정규화 (0~1)
+    const normalizedY = (worldY - zoneYRange.yMin) / yRange;
+
+    // X 좌표로 주파수 대역별 intensity 계산
     const intensity = getIntensityForPosition(worldX);
 
-    // Y 좌표를 0~1 범위로 정규화
-    const normalizedY = (worldY - windowYMin) / yRange;
-
     // 이퀄라이저 효과: intensity가 높을수록 더 높은 Y까지 밝아짐
-    // intensity = 0.5면 높이의 50%까지 밝아짐
     const threshold = intensity;
 
     // 창문이 threshold 아래에 있으면 밝게
@@ -421,8 +455,8 @@ function updateWindowBrightness() {
       const fadeIn = 1.0 - (normalizedY / Math.max(threshold, 0.01));
       brightness = 1.5 + fadeIn * 2.0; // 1.5 ~ 3.5배
     } else {
-      // 위쪽 창문은 기본 밝기
-      brightness = 0.7;
+      // 위쪽 창문은 기본 밝기 (어둡게)
+      brightness = 0.5;
     }
 
     const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
