@@ -476,7 +476,7 @@ function updateWindowBrightness() {
       }
     } else {
       // 비활성화: 어두운 창문
-      const dimBrightness = 0.3;
+      const dimBrightness = 0.4;
 
       if (material.color) {
         material.color.copy(mesh.userData.originalColor);
