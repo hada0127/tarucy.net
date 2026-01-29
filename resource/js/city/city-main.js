@@ -44,7 +44,7 @@ import {
 import { createResidentialDistrict, createSlopedResidentialArea } from './city-house.js';
 
 // Hotel
-import { createPinkHotel } from './city-hotel.js';
+import { createPinkHotel, addHotelSignText } from './city-hotel.js';
 
 // Shops
 import { createShoppingDistrict, createShoppingDistrictBase, addShopSignTexts, createVendorStalls } from './city-shop.js';
@@ -235,7 +235,7 @@ const isIOSorMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 // GLB 파일 사용 여부 (true면 GLB 로드, false면 동적 생성)
 // false로 접속 후 콘솔에서 exportSceneToGLB() → meshopt 압축 → true로 변경
-const USE_GLB = true;
+const USE_GLB = false;
 const GLB_PATH = 'https://pub-0c79382ed5a947839fede2eac510554d.r2.dev/city.glb';
 
 /**
@@ -278,7 +278,7 @@ function exportSceneToGLB() {
   createUtilitySystem(exportScene);
   createVendorStalls(exportScene);
   createParks(exportScene);
-  createPinkHotel(exportScene, 0);
+  createPinkHotel(exportScene, 0, true); // skipText for GLB
 
   // 가구 (텍스트 없이)
   createAllFurnitureBase(exportScene);
@@ -652,7 +652,9 @@ function createAllBuildings(scene, forGLB = false) {
   createUtilitySystem(scene);
   createVendorStalls(scene);
   createParks(scene);
-  createPinkHotel(scene, 0);
+
+  // 호텔 - GLB용은 텍스트 없이
+  createPinkHotel(scene, 0, forGLB);
 
   // 가구류 - GLB용은 텍스트 없이, 그 외는 텍스트 포함
   if (forGLB) {
@@ -696,6 +698,7 @@ export async function initCity() {
       // GLB 로드 후 동적 텍스트 추가
       addShopSignTexts(scene);
       addFurnitureTexts(scene);
+      addHotelSignText(scene);
       console.log('Dynamic texts added!');
     } catch (e) {
       console.error('GLB load failed, falling back to dynamic generation:', e);

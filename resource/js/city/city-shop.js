@@ -316,7 +316,8 @@ function addSignTextPanel(scene, x, z, groundY, width, depth, neonColor, signTex
   const signPanelMat = new THREE.MeshBasicMaterial({
     map: texture,
     transparent: true,
-    depthWrite: false
+    depthWrite: false,
+    side: THREE.DoubleSide
   });
   const signPanel = new THREE.Mesh(signPanelGeom, signPanelMat);
   signPanel.renderOrder = 1;

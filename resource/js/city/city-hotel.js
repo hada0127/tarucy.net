@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 
-export function createPinkHotel(scene, groundY) {
+/**
+ * Create pink hotel
+ * @param {boolean} skipText - If true, skip text panel (for GLB export)
+ */
+export function createPinkHotel(scene, groundY, skipText = false) {
   const group = new THREE.Group();
 
   // Colors
@@ -433,7 +437,63 @@ export function createPinkHotel(scene, groundY) {
   signBack.rotation.y = Math.PI / 2;
   group.add(signBack);
 
-  // === Hotel Sign Text "hada0127" ===
+  // === Hotel Sign Text "hada0127" === (only if not skipping text)
+  if (!skipText) {
+    // Create canvas for text texture
+    const textCanvas = document.createElement('canvas');
+    textCanvas.width = 512;
+    textCanvas.height = 128;
+    const ctx = textCanvas.getContext('2d');
+
+    // Clear canvas (transparent)
+    ctx.clearRect(0, 0, textCanvas.width, textCanvas.height);
+
+    // Text settings - cursive font
+    ctx.font = 'italic 72px "Brush Script MT", "Segoe Script", cursive';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Draw text stroke (border) in darker pink color
+    ctx.strokeStyle = '#9b4055';
+    ctx.lineWidth = 12;
+    ctx.strokeText('Hada0127', textCanvas.width / 2, textCanvas.height / 2);
+
+    // Draw text fill in white
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('Hada0127', textCanvas.width / 2, textCanvas.height / 2);
+
+    // Create texture from canvas
+    const textTexture = new THREE.CanvasTexture(textCanvas);
+    textTexture.needsUpdate = true;
+
+    // Create text plane (slightly protruding from sign)
+    const textPlaneGeom = new THREE.PlaneGeometry(10, 2.5);
+    const textPlaneMat = new THREE.MeshBasicMaterial({
+      map: textTexture,
+      transparent: true,
+      side: THREE.DoubleSide
+    });
+    const textPlane = new THREE.Mesh(textPlaneGeom, textPlaneMat);
+    textPlane.position.set(mainX - mainWidth / 2 - 1.72, groundY + archHeight + 6.5, mainZ);
+    textPlane.rotation.y = -Math.PI / 2;
+    group.add(textPlane);
+  }
+
+  scene.add(group);
+  return group;
+}
+
+/**
+ * Add hotel sign text dynamically (after GLB load)
+ */
+export function addHotelSignText(scene) {
+  // Hotel position constants (must match createPinkHotel)
+  const mainX = 68;
+  const mainZ = 1;
+  const mainWidth = 18;
+  const archHeight = 10;
+  const groundY = 0;
+
   // Create canvas for text texture
   const textCanvas = document.createElement('canvas');
   textCanvas.width = 512;
@@ -461,7 +521,7 @@ export function createPinkHotel(scene, groundY) {
   const textTexture = new THREE.CanvasTexture(textCanvas);
   textTexture.needsUpdate = true;
 
-  // Create text plane (slightly protruding from sign)
+  // Create text plane
   const textPlaneGeom = new THREE.PlaneGeometry(10, 2.5);
   const textPlaneMat = new THREE.MeshBasicMaterial({
     map: textTexture,
@@ -471,8 +531,5 @@ export function createPinkHotel(scene, groundY) {
   const textPlane = new THREE.Mesh(textPlaneGeom, textPlaneMat);
   textPlane.position.set(mainX - mainWidth / 2 - 1.72, groundY + archHeight + 6.5, mainZ);
   textPlane.rotation.y = -Math.PI / 2;
-  group.add(textPlane);
-
-  scene.add(group);
-  return group;
+  scene.add(textPlane);
 }
