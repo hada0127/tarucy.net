@@ -226,8 +226,8 @@ const isIOSorMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 // GLB 파일 사용 여부 (true면 GLB 로드, false면 동적 생성)
 // false로 접속 후 콘솔에서 exportSceneToGLB() → meshopt 압축 → true로 변경
-const USE_GLB = false;
-const GLB_PATH = './resource/models/city.glb';
+const USE_GLB = true;
+const GLB_PATH = 'https://pub-0c79382ed5a947839fede2eac510554d.r2.dev/city.glb';
 
 /**
  * Scene을 GLB 파일로 내보내기 (개발용)
