@@ -264,8 +264,8 @@ function createSedanCar(color) {
 
   // Add text below windows on both sides
   const adText = getNextVehicleText();
-  const textWidth = 2.5;
-  const textHeight = 0.3;
+  const textWidth = 3.5;
+  const textHeight = 0.45;
   const adTexture = createVehicleTextTexture(adText, textWidth * 100, textHeight * 100);
   const adGeom = new THREE.PlaneGeometry(textWidth, textHeight);
   const adMat = new THREE.MeshBasicMaterial({ map: adTexture, transparent: true, side: THREE.DoubleSide });
@@ -350,8 +350,8 @@ function createSUVCar(color) {
 
   // Add text below windows on both sides
   const adText = getNextVehicleText();
-  const textWidth = 3.0;
-  const textHeight = 0.4;
+  const textWidth = 4.0;
+  const textHeight = 0.55;
   const adTexture = createVehicleTextTexture(adText, textWidth * 100, textHeight * 100);
   const adGeom = new THREE.PlaneGeometry(textWidth, textHeight);
   const adMat = new THREE.MeshBasicMaterial({ map: adTexture, transparent: true, side: THREE.DoubleSide });
