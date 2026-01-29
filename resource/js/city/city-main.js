@@ -235,7 +235,7 @@ const isIOSorMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 // GLB 파일 사용 여부 (true면 GLB 로드, false면 동적 생성)
 // false로 접속 후 콘솔에서 exportSceneToGLB() → meshopt 압축 → true로 변경
-const USE_GLB = true;
+const USE_GLB = false;
 const GLB_PATH = 'https://pub-0c79382ed5a947839fede2eac510554d.r2.dev/city.glb';
 
 /**
@@ -243,33 +243,51 @@ const GLB_PATH = 'https://pub-0c79382ed5a947839fede2eac510554d.r2.dev/city.glb';
  * 브라우저 콘솔에서 exportSceneToGLB(scene) 호출
  */
 function exportSceneToGLB(scene) {
-  const exporter = new GLTFExporter();
+  console.log('Preparing GLB export...');
 
-  // 동적 객체 제외한 scene 복사 (부모-자식 transform 보존)
-  const exportScene = new THREE.Scene();
-  scene.children.forEach(child => {
-    // 동적 객체(차량, 보행자)와 조명은 제외
-    if (child.userData.dynamic || child.isLight || child.isAmbientLight || child.isDirectionalLight || child.isHemisphereLight) return;
-    exportScene.add(child.clone());
+  // 모든 캔버스 텍스처 업데이트 강제
+  scene.traverse((obj) => {
+    if (obj.isMesh && obj.material) {
+      const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
+      materials.forEach(mat => {
+        if (mat.map && mat.map.isCanvasTexture) {
+          mat.map.needsUpdate = true;
+        }
+      });
+    }
   });
 
-  exporter.parse(
-    exportScene,
-    (result) => {
-      const blob = new Blob([result], { type: 'application/octet-stream' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'city.glb';
-      link.click();
-      URL.revokeObjectURL(url);
-      console.log('GLB exported successfully!');
-    },
-    (error) => {
-      console.error('GLB export failed:', error);
-    },
-    { binary: true }
-  );
+  // 한 프레임 대기 후 내보내기 (텍스처 렌더링 보장)
+  requestAnimationFrame(() => {
+    const exporter = new GLTFExporter();
+
+    // 동적 객체 제외한 scene 복사 (부모-자식 transform 보존)
+    const exportScene = new THREE.Scene();
+    scene.children.forEach(child => {
+      // 동적 객체(차량, 보행자)와 조명은 제외
+      if (child.userData.dynamic || child.isLight || child.isAmbientLight || child.isDirectionalLight || child.isHemisphereLight) return;
+      exportScene.add(child.clone(true)); // deep clone
+    });
+
+    console.log('Exporting GLB...');
+    exporter.parse(
+      exportScene,
+      (result) => {
+        const blob = new Blob([result], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'city.glb';
+        link.click();
+        URL.revokeObjectURL(url);
+        console.log('GLB exported successfully!');
+      },
+      (error) => {
+        console.error('GLB export failed:', error);
+      },
+      { binary: true }
+    );
+  });
 }
 
 // 전역으로 내보내기 함수 노출 (개발용)
