@@ -355,17 +355,18 @@ function discoverWindowsFromGLB(scene) {
 
 /**
  * 창문과 유사한 색상인지 확인
- * - 핑크/마젠타 계열: R이 높고 B가 중간~높음, G는 낮음
- * - 시안 계열: G와 B가 높고 R이 낮음
+ * GLB 선형 색상 공간 변환 후 색상:
+ * - 핑크/빨강: #be1e3f, #de1430, #ff1437, #ce1447, #ff1e47, #ff2950
+ * - 시안: #1e93af, #14a1be, #47bebe
  */
 function isWindowLikeColor(r, g, b) {
-  // 핑크/마젠타 계열 (0xff6090, 0xff5080, 0xe06088 등)
-  // R > 200, G < 150, B > 100
-  const isPink = r > 200 && g < 150 && g > 50 && b > 80 && b < 180;
+  // 핑크/빨강 계열 (GLB 변환 후)
+  // R > 180, G < 80, B > 30
+  const isPink = r > 180 && g < 80 && b > 30 && b < 150;
 
-  // 시안 계열 (0x50d0e0, 0x60c8d8, 0x70e0f0)
-  // R < 150, G > 180, B > 200
-  const isCyan = r < 150 && r > 50 && g > 180 && b > 200;
+  // 시안 계열 (GLB 변환 후)
+  // R < 100, G > 140, B > 150
+  const isCyan = r < 100 && g > 140 && b > 150;
 
   return isPink || isCyan;
 }
