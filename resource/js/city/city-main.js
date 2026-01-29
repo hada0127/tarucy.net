@@ -80,6 +80,15 @@ import {
   shouldVehicleStop
 } from './city-people.js';
 
+// Audio system for equalizer effect
+import {
+  initAudio,
+  toggleAudio,
+  isAudioPlaying,
+  updateAudioAnalysis,
+  getIntensityForPosition
+} from './city-audio.js';
+
 // ============================================================
 // CAMERA MOVEMENT VALIDATION (Zone-based like pedestrians)
 // ============================================================
@@ -266,6 +275,149 @@ function exportSceneToGLB(scene) {
 // 전역으로 내보내기 함수 노출 (개발용)
 window.exportSceneToGLB = null; // initCity에서 설정
 
+// ============================================================
+// WINDOW EQUALIZER SYSTEM (Audio-reactive window brightness)
+// ============================================================
+
+// 창문 색상 팔레트 (city-building.js와 동일)
+const WINDOW_COLORS = [
+  0xff69b4, 0xff1493, 0xffc0cb, 0xffb6c1, // 분홍색 계열
+  0x40e0d0, 0x00ced1, 0x48d1cc, 0x7fffd4, // 청록색 계열
+  0xffa500, 0xff8c00, 0xffd700, 0xffff00  // 주황/노란색 계열
+];
+
+// 창문 메시 저장소 (독립 material로 변환된)
+const windowMeshes = [];
+
+/**
+ * GLB에서 창문 메시 발견 및 등록
+ * PlaneGeometry + 창문 색상 조합으로 식별
+ */
+function discoverWindowsFromGLB(scene) {
+  const colorTolerance = 0.1;
+  let windowCount = 0;
+
+  scene.traverse((obj) => {
+    if (!obj.isMesh) return;
+    if (!obj.geometry) return;
+
+    // PlaneGeometry 또는 작은 BoxGeometry인지 확인
+    const isSmallPlane = obj.geometry.type === 'PlaneGeometry' ||
+                         (obj.geometry.type === 'BoxGeometry' &&
+                          obj.geometry.parameters &&
+                          obj.geometry.parameters.depth < 0.5);
+
+    if (!isSmallPlane) return;
+
+    // Material 색상 확인
+    const material = obj.material;
+    if (!material || !material.color) return;
+
+    const meshColor = material.color.getHex();
+
+    // 창문 색상과 일치하는지 확인
+    let isWindowColor = false;
+    for (const wc of WINDOW_COLORS) {
+      if (meshColor === wc) {
+        isWindowColor = true;
+        break;
+      }
+    }
+
+    if (!isWindowColor) return;
+
+    // 창문으로 등록
+    // 개별 material로 변환 (공유 material에서 독립)
+    if (Array.isArray(obj.material)) {
+      obj.material = obj.material.map(m => m.clone());
+    } else {
+      obj.material = obj.material.clone();
+    }
+
+    // 원본 색상 저장
+    obj.userData.originalColor = material.color.clone();
+    obj.userData.isWindow = true;
+
+    // worldX 좌표 저장 (나중에 주파수 대역 결정용)
+    const worldPos = new THREE.Vector3();
+    obj.getWorldPosition(worldPos);
+    obj.userData.worldX = worldPos.x;
+
+    windowMeshes.push(obj);
+    windowCount++;
+  });
+
+  console.log(`Discovered ${windowCount} window meshes for equalizer effect`);
+}
+
+/**
+ * 주파수 데이터에 따라 창문 밝기 업데이트
+ */
+function updateWindowBrightness() {
+  if (!isAudioPlaying()) return;
+
+  for (const mesh of windowMeshes) {
+    if (!mesh.userData.originalColor) continue;
+
+    const worldX = mesh.userData.worldX || 0;
+    const intensity = getIntensityForPosition(worldX);
+
+    // 밝기 조절 (1.0 ~ 2.5배)
+    const brightness = 1.0 + intensity * 1.5;
+
+    const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+    if (material && material.color) {
+      // 원본 색상에 밝기 적용
+      material.color.copy(mesh.userData.originalColor);
+      material.color.multiplyScalar(brightness);
+    }
+  }
+}
+
+/**
+ * 오디오 토글 버튼 생성
+ */
+function createAudioButton() {
+  const button = document.createElement('button');
+  button.id = 'audio-toggle-btn';
+  button.innerHTML = '🎵 Music';
+  button.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-family: monospace;
+    background: rgba(255, 102, 170, 0.8);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 1000;
+    transition: all 0.2s ease;
+  `;
+
+  button.addEventListener('mouseenter', () => {
+    button.style.background = 'rgba(255, 102, 170, 1)';
+    button.style.transform = 'scale(1.05)';
+  });
+
+  button.addEventListener('mouseleave', () => {
+    button.style.background = isAudioPlaying() ?
+      'rgba(64, 224, 208, 0.8)' : 'rgba(255, 102, 170, 0.8)';
+    button.style.transform = 'scale(1)';
+  });
+
+  button.addEventListener('click', () => {
+    const playing = toggleAudio();
+    button.innerHTML = playing ? '🎵 Playing' : '🎵 Music';
+    button.style.background = playing ?
+      'rgba(64, 224, 208, 0.8)' : 'rgba(255, 102, 170, 0.8)';
+  });
+
+  document.body.appendChild(button);
+}
+
 /**
  * GLB 파일에서 Scene 로드
  */
@@ -364,6 +516,8 @@ export async function initCity() {
     try {
       await loadSceneFromGLB(scene);
       console.log('GLB loaded!');
+      // GLB에서 창문 발견 및 이퀄라이저 시스템 준비
+      discoverWindowsFromGLB(scene);
     } catch (e) {
       console.error('GLB load failed, falling back to dynamic generation:', e);
       // 실패 시 동적 생성으로 폴백
@@ -398,6 +552,10 @@ export async function initCity() {
   if (!USE_GLB) {
     console.log('GLB 내보내기: 콘솔에서 exportSceneToGLB() 호출');
   }
+
+  // 오디오 시스템 초기화 및 버튼 생성
+  initAudio();
+  createAudioButton();
 
   // 동적 객체 추가 (GLB에는 포함되지 않음)
   initVehicles(scene);
@@ -894,6 +1052,11 @@ export async function initCity() {
     updateCameraControls(deltaTime);
     updateVehicles(scene, deltaTime);
     updatePedestrians(deltaTime, currentTime / 1000);
+
+    // 오디오 분석 및 창문 이퀄라이저 업데이트
+    updateAudioAnalysis();
+    updateWindowBrightness();
+
     renderer.render(scene, camera);
   }
 
