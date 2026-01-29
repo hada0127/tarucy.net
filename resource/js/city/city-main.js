@@ -457,20 +457,21 @@ function updateWindowBrightness() {
     const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
     if (!material) continue;
 
-    // 창문이 threshold 아래에 있으면 하얀색 (이퀄라이저 활성)
+    // 창문이 threshold 아래에 있으면 밝게 (이퀄라이저 활성)
     if (normalizedY <= threshold) {
-      // 활성화: 하얀색 창문
+      // 활성화: 원래 색상의 2배 밝기
       const fadeIn = 1.0 - (normalizedY / Math.max(threshold, 0.01));
-      const brightness = 0.9 + fadeIn * 0.3; // 0.9 ~ 1.2
+      const brightness = 1.8 + fadeIn * 0.4; // 1.8 ~ 2.2배
 
       if (material.color) {
-        material.color.setRGB(brightness, brightness, brightness);
+        material.color.copy(mesh.userData.originalColor);
+        material.color.multiplyScalar(brightness);
       }
 
       // MeshStandardMaterial인 경우 emissive로 glow 효과
       if (material.isMeshStandardMaterial) {
-        material.emissive.setRGB(1, 1, 1);
-        material.emissiveIntensity = fadeIn * 0.3;
+        material.emissive.copy(mesh.userData.originalColor);
+        material.emissiveIntensity = fadeIn * 0.5;
       }
     } else {
       // 비활성화: 원래 창문 색상 (기본)
