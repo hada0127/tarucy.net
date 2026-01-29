@@ -604,7 +604,7 @@ function createAllBuildings(scene) {
   buildings.push(...createCenterBuildings(scene));
   buildings.push(...createSouthBuildings(scene));
   buildings = removeOverlappingBuildings(scene, buildings);
-  buildings.push(...createShoppingDistrict(scene));
+  // createShoppingDistrict - 동적 생성으로 이동 (캔버스 텍스처)
 
   createForest(scene);
   createHotelBackForestAndMountains(scene);
@@ -694,6 +694,9 @@ export async function initCity() {
   createAudioButton();
 
   // 동적 객체 추가 (GLB에는 포함되지 않음)
+  // 상점가 (캔버스 텍스처 때문에 동적 생성)
+  createShoppingDistrict(scene);
+
   // 자판기와 공중전화 (캔버스 텍스처 때문에 동적 생성)
   createVendingMachine(scene, 10, -12, 0, 0, 'drink');
   createVendingMachine(scene, 11, -12, 0, 0, 'snack');
