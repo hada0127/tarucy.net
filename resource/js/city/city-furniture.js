@@ -61,18 +61,18 @@ function createVendingFrontTexture(width, height) {
   const lineHeight = fontSize * 1.2;
   const startY = canvas.height / 2 - lineHeight / 2;
 
-  // Draw each line in black with white stroke
+  // Draw each line in white with black stroke
   vendingMachineSideTexts.forEach((text, i) => {
     const y = startY + i * lineHeight;
 
-    // White stroke
-    ctx.strokeStyle = '#ffffff';
+    // Black stroke
+    ctx.strokeStyle = '#000000';
     ctx.lineWidth = fontSize * 0.15;
     ctx.lineJoin = 'round';
     ctx.strokeText(text, canvas.width / 2, y);
 
-    // Black fill
-    ctx.fillStyle = '#000000';
+    // White fill
+    ctx.fillStyle = '#ffffff';
     ctx.fillText(text, canvas.width / 2, y);
   });
 
