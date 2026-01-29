@@ -55,7 +55,7 @@ const bandRanges = {
 };
 
 // 설정
-const SMOOTHING = 0.25;    // 출력 스무딩 (낮을수록 빠른 반응)
+const SMOOTHING = 0.6;     // 출력 스무딩 (높을수록 부드러움)
 const OUTPUT_SCALE = 0.95; // 출력 스케일
 
 /**
@@ -68,7 +68,7 @@ export function initAudio() {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     analyser = audioContext.createAnalyser();
     analyser.fftSize = 2048;
-    analyser.smoothingTimeConstant = 0.3;
+    analyser.smoothingTimeConstant = 0.7; // FFT 스무딩 (높을수록 부드러움)
 
     frequencyData = new Uint8Array(analyser.frequencyBinCount);
 
