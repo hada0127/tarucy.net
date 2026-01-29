@@ -534,7 +534,9 @@ export function addHotelSignText(scene) {
   const posY = groundY + archHeight + 6.5;   // 16.5
   const posZ = mainZ;                         // 1
   textPlane.position.set(posX, posY, posZ);
-  textPlane.rotation.y = -Math.PI / 2; // 서쪽(-X)을 바라봄
+  // PlaneGeometry 기본: +Z 방향 바라봄
+  // rotation.y = Math.PI/2: -X 방향(서쪽) 바라봄 (호텔 입구 방향)
+  textPlane.rotation.y = Math.PI / 2;
   scene.add(textPlane);
   console.log('Hotel sign text added at:', posX, posY, posZ);
 }
