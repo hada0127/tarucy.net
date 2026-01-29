@@ -457,37 +457,32 @@ function updateWindowBrightness() {
     const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
     if (!material) continue;
 
-    // 창문이 threshold 아래에 있으면 원래 색상으로 밝게
+    // 창문이 threshold 아래에 있으면 하얀색 (이퀄라이저 활성)
     if (normalizedY <= threshold) {
-      // 활성화: 원래 창문 색상 사용 (약간의 glow 효과)
+      // 활성화: 하얀색 창문
       const fadeIn = 1.0 - (normalizedY / Math.max(threshold, 0.01));
-      const brightness = 1.0 + fadeIn * 0.5; // 1.0 ~ 1.5배 (원래 색상 기준)
+      const brightness = 0.9 + fadeIn * 0.3; // 0.9 ~ 1.2
 
       if (material.color) {
-        material.color.copy(mesh.userData.originalColor);
-        material.color.multiplyScalar(brightness);
+        material.color.setRGB(brightness, brightness, brightness);
       }
 
       // MeshStandardMaterial인 경우 emissive로 glow 효과
       if (material.isMeshStandardMaterial) {
-        material.emissive.copy(mesh.userData.originalColor);
-        material.emissive.multiplyScalar(0.3);
-        material.emissiveIntensity = fadeIn * 0.5;
+        material.emissive.setRGB(1, 1, 1);
+        material.emissiveIntensity = fadeIn * 0.3;
       }
     } else {
-      // 비활성화: 어두운 창문
-      const dimBrightness = 0.4;
-
+      // 비활성화: 원래 창문 색상 (기본)
       if (material.color) {
         material.color.copy(mesh.userData.originalColor);
-        material.color.multiplyScalar(dimBrightness);
       }
 
       // emissive 약하게
       if (material.isMeshStandardMaterial) {
         material.emissive.copy(mesh.userData.originalColor);
-        material.emissive.multiplyScalar(0.1);
-        material.emissiveIntensity = 0.2;
+        material.emissive.multiplyScalar(0.15);
+        material.emissiveIntensity = 0.3;
       }
     }
   }
