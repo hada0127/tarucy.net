@@ -18,6 +18,58 @@
 import * as THREE from 'three';
 import { colors } from './city-colors.js';
 
+// Vending machine side texts
+const vendingMachineSideTexts = [
+  'github.com/hada0127',
+  'tarucy@gmail.com'
+];
+
+/**
+ * Create a canvas texture with text and black stroke for vending machine sides
+ */
+function createVendingSideTexture(text, width, height) {
+  const canvas = document.createElement('canvas');
+  const scale = 4;
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+
+  const ctx = canvas.getContext('2d');
+
+  // Transparent background
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Text settings
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Calculate optimal font size
+  let fontSize = canvas.height * 0.15;
+  ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
+
+  // Measure and adjust
+  let textWidth = ctx.measureText(text).width;
+  const maxWidth = canvas.width * 0.9;
+
+  if (textWidth > maxWidth) {
+    fontSize = fontSize * (maxWidth / textWidth);
+    ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
+  }
+
+  // Draw black stroke
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = fontSize * 0.15;
+  ctx.lineJoin = 'round';
+  ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
+
+  // Draw white fill
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // Street Bench
 // ════════════════════════════════════════════════════════════════════════════
@@ -291,6 +343,28 @@ function createVendingMachine(scene, x, z, groundY, rotation = 0, type = 'drink'
   const coinArea = new THREE.Mesh(coinAreaGeom, new THREE.MeshBasicMaterial({ color: 0x888888 }));
   coinArea.position.set(0.3, 1.0, 0.33);
   group.add(coinArea);
+
+  // Side text panels
+  const sideHeight = 1.8;
+  const sideDepth = 0.7;
+
+  // Left side (github)
+  const leftTexture = createVendingSideTexture(vendingMachineSideTexts[0], sideDepth * 100, sideHeight * 100);
+  const leftPanelGeom = new THREE.PlaneGeometry(sideDepth, sideHeight);
+  const leftPanelMat = new THREE.MeshBasicMaterial({ map: leftTexture, transparent: true });
+  const leftPanel = new THREE.Mesh(leftPanelGeom, leftPanelMat);
+  leftPanel.position.set(-0.451, 0.9, 0);
+  leftPanel.rotation.y = -Math.PI / 2;
+  group.add(leftPanel);
+
+  // Right side (email)
+  const rightTexture = createVendingSideTexture(vendingMachineSideTexts[1], sideDepth * 100, sideHeight * 100);
+  const rightPanelGeom = new THREE.PlaneGeometry(sideDepth, sideHeight);
+  const rightPanelMat = new THREE.MeshBasicMaterial({ map: rightTexture, transparent: true });
+  const rightPanel = new THREE.Mesh(rightPanelGeom, rightPanelMat);
+  rightPanel.position.set(0.451, 0.9, 0);
+  rightPanel.rotation.y = Math.PI / 2;
+  group.add(rightPanel);
 
   group.position.set(x, groundY, z);
   group.rotation.y = rotation;
