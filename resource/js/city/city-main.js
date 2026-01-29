@@ -550,8 +550,6 @@ export async function initCity() {
     try {
       await loadSceneFromGLB(scene);
       console.log('GLB loaded!');
-      // GLB에서 창문 발견 및 이퀄라이저 시스템 준비
-      discoverWindowsFromGLB(scene);
     } catch (e) {
       console.error('GLB load failed, falling back to dynamic generation:', e);
       // 실패 시 동적 생성으로 폴백
@@ -580,6 +578,9 @@ export async function initCity() {
   let meshCount = 0;
   scene.traverse(obj => { if (obj.isMesh) meshCount++; });
   console.log(`Total meshes: ${meshCount}`);
+
+  // 창문 발견 및 이퀄라이저 시스템 준비 (GLB/동적 생성 모두 지원)
+  discoverWindowsFromGLB(scene);
 
   // GLB 내보내기 함수를 전역으로 노출 (개발용)
   window.exportSceneToGLB = () => exportSceneToGLB(scene);
