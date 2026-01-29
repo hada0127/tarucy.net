@@ -475,8 +475,8 @@ function updateWindowBrightness() {
         material.emissiveIntensity = fadeIn * 0.5;
       }
     } else {
-      // 비활성화: 절반 밝기 (어두운 창문)
-      const dimBrightness = 0.5; // 밝을 때의 절반
+      // 비활성화: 어두운 창문
+      const dimBrightness = 0.3;
 
       if (material.color) {
         material.color.copy(mesh.userData.originalColor);
