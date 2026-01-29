@@ -1,0 +1,2 @@
+# Cloudflare R2에서 로드하므로 배포 제외
+resource/models/
