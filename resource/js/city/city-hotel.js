@@ -529,9 +529,9 @@ export function addHotelSignText(scene) {
     side: THREE.DoubleSide
   });
   const textPlane = new THREE.Mesh(textPlaneGeom, textPlaneMat);
-  // 텍스트를 간판보다 훨씬 앞으로 (서쪽으로) 이동하여 테스트
-  const posX = mainX - mainWidth / 2 - 3; // 56 (더 앞으로)
-  const posY = groundY + archHeight + 6.5;   // 16.5
+  // 텍스트를 간판보다 앞으로 (서쪽으로) 배치
+  const posX = mainX - mainWidth / 2 - 3; // 56
+  const posY = groundY + archHeight + 5.5;   // 15.5 (조금 낮춤)
   const posZ = mainZ;                         // 1
   textPlane.position.set(posX, posY, posZ);
   // 원본 코드: rotation.y = -Math.PI / 2;
