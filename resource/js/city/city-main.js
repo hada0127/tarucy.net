@@ -471,8 +471,8 @@ function updateWindowBrightness() {
         material.emissiveIntensity = fadeIn * 0.5;
       }
     } else {
-      // 비활성화: 매우 어두운 색상 (기본 창문)
-      const dimBrightness = 0.08; // 원래 색상의 8%만 표시 (훨씬 어둡게)
+      // 비활성화: 어두운 색상 (기본 창문)
+      const dimBrightness = 0.2; // 원래 색상의 20% 표시
 
       if (material.color) {
         material.color.copy(mesh.userData.originalColor);
