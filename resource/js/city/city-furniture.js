@@ -18,16 +18,16 @@
 import * as THREE from 'three';
 import { colors } from './city-colors.js';
 
-// Vending machine side texts
+// Vending machine side texts (two lines)
 const vendingMachineSideTexts = [
   'github.com/hada0127',
   'tarucy@gmail.com'
 ];
 
 /**
- * Create a canvas texture with text and black stroke for vending machine sides
+ * Create a canvas texture with two-line text and black stroke for vending machine sides
  */
-function createVendingSideTexture(text, width, height) {
+function createVendingSideTexture(width, height) {
   const canvas = document.createElement('canvas');
   const scale = 4;
   canvas.width = width * scale;
@@ -42,28 +42,39 @@ function createVendingSideTexture(text, width, height) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Calculate optimal font size
-  let fontSize = canvas.height * 0.15;
+  // Calculate optimal font size for two lines
+  let fontSize = canvas.height * 0.1;
   ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
 
-  // Measure and adjust
-  let textWidth = ctx.measureText(text).width;
+  // Measure longest text and adjust
+  const maxTextWidth = Math.max(
+    ctx.measureText(vendingMachineSideTexts[0]).width,
+    ctx.measureText(vendingMachineSideTexts[1]).width
+  );
   const maxWidth = canvas.width * 0.9;
 
-  if (textWidth > maxWidth) {
-    fontSize = fontSize * (maxWidth / textWidth);
+  if (maxTextWidth > maxWidth) {
+    fontSize = fontSize * (maxWidth / maxTextWidth);
     ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
   }
 
-  // Draw black stroke
-  ctx.strokeStyle = '#000000';
-  ctx.lineWidth = fontSize * 0.15;
-  ctx.lineJoin = 'round';
-  ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
+  const lineHeight = fontSize * 1.3;
+  const startY = canvas.height / 2 - lineHeight / 2;
 
-  // Draw white fill
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+  // Draw each line
+  vendingMachineSideTexts.forEach((text, i) => {
+    const y = startY + i * lineHeight;
+
+    // Draw black stroke
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = fontSize * 0.15;
+    ctx.lineJoin = 'round';
+    ctx.strokeText(text, canvas.width / 2, y);
+
+    // Draw white fill
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(text, canvas.width / 2, y);
+  });
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.needsUpdate = true;
@@ -344,24 +355,22 @@ function createVendingMachine(scene, x, z, groundY, rotation = 0, type = 'drink'
   coinArea.position.set(0.3, 1.0, 0.33);
   group.add(coinArea);
 
-  // Side text panels
+  // Side text panels (same two-line text on both sides)
   const sideHeight = 1.8;
   const sideDepth = 0.7;
+  const sideTexture = createVendingSideTexture(sideDepth * 100, sideHeight * 100);
+  const sidePanelGeom = new THREE.PlaneGeometry(sideDepth, sideHeight);
 
-  // Left side (github)
-  const leftTexture = createVendingSideTexture(vendingMachineSideTexts[0], sideDepth * 100, sideHeight * 100);
-  const leftPanelGeom = new THREE.PlaneGeometry(sideDepth, sideHeight);
-  const leftPanelMat = new THREE.MeshBasicMaterial({ map: leftTexture, transparent: true });
-  const leftPanel = new THREE.Mesh(leftPanelGeom, leftPanelMat);
+  // Left side
+  const leftPanelMat = new THREE.MeshBasicMaterial({ map: sideTexture, transparent: true });
+  const leftPanel = new THREE.Mesh(sidePanelGeom, leftPanelMat);
   leftPanel.position.set(-0.451, 0.9, 0);
   leftPanel.rotation.y = -Math.PI / 2;
   group.add(leftPanel);
 
-  // Right side (email)
-  const rightTexture = createVendingSideTexture(vendingMachineSideTexts[1], sideDepth * 100, sideHeight * 100);
-  const rightPanelGeom = new THREE.PlaneGeometry(sideDepth, sideHeight);
-  const rightPanelMat = new THREE.MeshBasicMaterial({ map: rightTexture, transparent: true });
-  const rightPanel = new THREE.Mesh(rightPanelGeom, rightPanelMat);
+  // Right side
+  const rightPanelMat = new THREE.MeshBasicMaterial({ map: sideTexture.clone(), transparent: true });
+  const rightPanel = new THREE.Mesh(sidePanelGeom, rightPanelMat);
   rightPanel.position.set(0.451, 0.9, 0);
   rightPanel.rotation.y = Math.PI / 2;
   group.add(rightPanel);
