@@ -892,10 +892,8 @@ export async function initCity() {
     lastTime = currentTime;
 
     updateCameraControls(deltaTime);
-    if (!isIOSorMobile) {
-      updateVehicles(scene, deltaTime);
-      updatePedestrians(deltaTime, currentTime / 1000);
-    }
+    updateVehicles(scene, deltaTime);
+    updatePedestrians(deltaTime, currentTime / 1000);
     renderer.render(scene, camera);
   }
 
