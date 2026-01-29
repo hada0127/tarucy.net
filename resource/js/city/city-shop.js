@@ -32,8 +32,11 @@ function createShopSignTexture(text, width, height, bgColor) {
 
   const ctx = canvas.getContext('2d');
 
-  // Background
-  ctx.fillStyle = `#${bgColor.toString(16).padStart(6, '0')}`;
+  // Darken background color for better text visibility
+  const r = Math.floor(((bgColor >> 16) & 0xff) * 0.25);
+  const g = Math.floor(((bgColor >> 8) & 0xff) * 0.25);
+  const b = Math.floor((bgColor & 0xff) * 0.25);
+  ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Text settings
