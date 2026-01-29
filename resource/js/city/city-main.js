@@ -422,6 +422,8 @@ function calculateWindowYRange() {
  * 주파수 데이터에 따라 창문 밝기 업데이트 (이퀄라이저 효과)
  * - X 구역: 주파수 대역 결정 (서쪽=저음, 동쪽=고음)
  * - Y 좌표: 각 구역별 intensity에 따라 아래에서 위로 차오르는 효과
+ * - 기본 상태: 매우 어두운 창문
+ * - 활성화 시: 원래 밝은 창문 색상
  */
 function updateWindowBrightness() {
   if (!isAudioPlaying()) return;
@@ -448,36 +450,40 @@ function updateWindowBrightness() {
     // 이퀄라이저 효과: intensity가 높을수록 더 높은 Y까지 밝아짐
     const threshold = intensity;
 
-    // 창문이 threshold 아래에 있으면 밝게
-    let brightness = 1.0;
-    if (normalizedY <= threshold) {
-      // 아래쪽 창문은 더 밝게
-      const fadeIn = 1.0 - (normalizedY / Math.max(threshold, 0.01));
-      brightness = 1.5 + fadeIn * 2.0; // 1.5 ~ 3.5배
-    } else {
-      // 위쪽 창문은 기본 밝기 (어둡게)
-      brightness = 0.5;
-    }
-
     const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
     if (!material) continue;
 
-    // MeshStandardMaterial인 경우 emissive 사용
-    if (material.isMeshStandardMaterial) {
-      if (normalizedY <= threshold) {
+    // 창문이 threshold 아래에 있으면 원래 색상으로 밝게
+    if (normalizedY <= threshold) {
+      // 활성화: 원래 창문 색상 사용 (약간의 glow 효과)
+      const fadeIn = 1.0 - (normalizedY / Math.max(threshold, 0.01));
+      const brightness = 1.0 + fadeIn * 0.5; // 1.0 ~ 1.5배 (원래 색상 기준)
+
+      if (material.color) {
+        material.color.copy(mesh.userData.originalColor);
+        material.color.multiplyScalar(brightness);
+      }
+
+      // MeshStandardMaterial인 경우 emissive로 glow 효과
+      if (material.isMeshStandardMaterial) {
         material.emissive.copy(mesh.userData.originalColor);
         material.emissive.multiplyScalar(0.3);
-        material.emissiveIntensity = brightness - 1.0;
-      } else {
+        material.emissiveIntensity = fadeIn * 0.5;
+      }
+    } else {
+      // 비활성화: 매우 어두운 색상 (기본 창문)
+      const dimBrightness = 0.08; // 원래 색상의 8%만 표시 (훨씬 어둡게)
+
+      if (material.color) {
+        material.color.copy(mesh.userData.originalColor);
+        material.color.multiplyScalar(dimBrightness);
+      }
+
+      // emissive 끄기
+      if (material.isMeshStandardMaterial) {
         material.emissive.setHex(0x000000);
         material.emissiveIntensity = 0;
       }
-    }
-
-    // color 조절
-    if (material.color) {
-      material.color.copy(mesh.userData.originalColor);
-      material.color.multiplyScalar(brightness);
     }
   }
 }
