@@ -474,10 +474,10 @@ function updateWindowBrightness() {
         material.emissiveIntensity = fadeIn * 0.5;
       }
     } else {
-      // 비활성화: 원래 창문 색상의 0.5 밝기
+      // 비활성화: 원래 창문 색상의 0.4 밝기
       if (material.color) {
         material.color.copy(mesh.userData.originalColor);
-        material.color.multiplyScalar(0.5);
+        material.color.multiplyScalar(0.4);
       }
 
       // emissive 약하게
