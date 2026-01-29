@@ -475,18 +475,19 @@ function updateWindowBrightness() {
         material.emissiveIntensity = fadeIn * 0.5;
       }
     } else {
-      // 비활성화: 검은색 (꺼진 창문)
-      const dimBrightness = 0; // 완전히 검은색
+      // 비활성화: 절반 밝기 (어두운 창문)
+      const dimBrightness = 0.5; // 밝을 때의 절반
 
       if (material.color) {
         material.color.copy(mesh.userData.originalColor);
         material.color.multiplyScalar(dimBrightness);
       }
 
-      // emissive 끄기
+      // emissive 약하게
       if (material.isMeshStandardMaterial) {
-        material.emissive.setHex(0x000000);
-        material.emissiveIntensity = 0;
+        material.emissive.copy(mesh.userData.originalColor);
+        material.emissive.multiplyScalar(0.1);
+        material.emissiveIntensity = 0.2;
       }
     }
   }
