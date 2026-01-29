@@ -13,6 +13,55 @@
 import * as THREE from 'three';
 import { colors, randomColor } from './city-colors.js';
 
+// Sign texts for shops (18 items total)
+const shopSignTexts = [
+  // Upper row (9 shops)
+  'Javascript', 'Typescript', 'PHP', 'Go', 'Python', 'JAVA', 'React', 'Vue', 'Svelte',
+  // Lower row (9 shops)
+  'Hono', 'Nest.js', 'React Native', 'Electron', 'PostgreSQL', 'MySQL', 'MariaDB', 'Cloudflare', 'AWS'
+];
+
+/**
+ * Create a canvas texture with text for shop signs
+ */
+function createShopSignTexture(text, width, height, bgColor) {
+  const canvas = document.createElement('canvas');
+  const scale = 4; // Higher resolution
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  ctx.fillStyle = `#${bgColor.toString(16).padStart(6, '0')}`;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Text settings
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Calculate optimal font size
+  let fontSize = canvas.height * 0.7;
+  ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
+
+  // Measure text and adjust if needed
+  let textWidth = ctx.measureText(text).width;
+  const maxWidth = canvas.width * 0.9;
+
+  if (textWidth > maxWidth) {
+    fontSize = fontSize * (maxWidth / textWidth);
+    ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
+  }
+
+  // Draw text
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+
 // ============================================
 // Shop Buildings
 // ============================================
@@ -78,8 +127,19 @@ export function createShopBuilding(scene, x, z, groundY, config = {}) {
   signBg.position.set(0, 4.0, -depth/2 - 0.6);
   group.add(signBg);
 
-  const signPanelGeom = new THREE.BoxGeometry(width * 0.8, 0.8, 0.18);
-  const signPanelMat = new THREE.MeshBasicMaterial({ color: neonColor });
+  const signWidth = width * 0.8;
+  const signHeight = 0.8;
+  const signPanelGeom = new THREE.BoxGeometry(signWidth, signHeight, 0.18);
+
+  // Create sign with text if signText is provided
+  let signPanelMat;
+  if (config.signText) {
+    const texture = createShopSignTexture(config.signText, signWidth * 100, signHeight * 100, neonColor);
+    signPanelMat = new THREE.MeshBasicMaterial({ map: texture });
+  } else {
+    signPanelMat = new THREE.MeshBasicMaterial({ color: neonColor });
+  }
+
   const signPanel = new THREE.Mesh(signPanelGeom, signPanelMat);
   signPanel.position.set(0, 4.0, -depth/2 - 0.62);
   group.add(signPanel);
@@ -153,26 +213,28 @@ export function createShoppingDistrict(scene) {
     colors.neon.magenta, colors.neon.blue, colors.neon.green
   ];
 
-  // Upper row shops (8 shops at z=13, closer to stairs)
+  // Upper row shops (9 shops at z=13, closer to stairs)
   const upperStartX = -19;
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 9; i++) {
     const shop = createShopBuilding(scene, upperStartX + i * 5.2, 13, groundY, {
       width: 4.8,
       depth: 4,
       height: 5 + Math.random() * 2,
-      neonColor: neonPalette[i % neonPalette.length]
+      neonColor: neonPalette[i % neonPalette.length],
+      signText: shopSignTexts[i]
     });
     shops.push(shop);
   }
 
-  // Lower row shops (8 shops at z=0)
+  // Lower row shops (9 shops at z=0)
   const lowerStartX = -19;
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 9; i++) {
     const shop = createShopBuilding(scene, lowerStartX + i * 5.2, 0, groundY, {
       width: 4.8,
       depth: 3.5,
       height: 4 + Math.random() * 2,
-      neonColor: neonPalette[(i + 3) % neonPalette.length]
+      neonColor: neonPalette[(i + 3) % neonPalette.length],
+      signText: shopSignTexts[9 + i]
     });
     shops.push(shop);
   }
