@@ -35,9 +35,8 @@ function createVendingFrontTexture(width, height) {
 
   const ctx = canvas.getContext('2d');
 
-  // Dark background for visibility
-  ctx.fillStyle = '#1a1a2a';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Transparent background
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Text settings
   ctx.textAlign = 'center';
@@ -62,18 +61,11 @@ function createVendingFrontTexture(width, height) {
   const lineHeight = fontSize * 1.2;
   const startY = canvas.height / 2 - lineHeight / 2;
 
-  // Draw each line
+  // Draw each line in black
   vendingMachineSideTexts.forEach((text, i) => {
     const y = startY + i * lineHeight;
 
-    // Draw black stroke
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = fontSize * 0.2;
-    ctx.lineJoin = 'round';
-    ctx.strokeText(text, canvas.width / 2, y);
-
-    // Draw white fill
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#000000';
     ctx.fillText(text, canvas.width / 2, y);
   });
 
@@ -361,7 +353,7 @@ function createVendingMachine(scene, x, z, groundY, rotation = 0, type = 'drink'
   const frontTextHeight = 0.25;
   const frontTexture = createVendingFrontTexture(frontTextWidth * 100, frontTextHeight * 100);
   const frontPanelGeom = new THREE.PlaneGeometry(frontTextWidth, frontTextHeight);
-  const frontPanelMat = new THREE.MeshBasicMaterial({ map: frontTexture });
+  const frontPanelMat = new THREE.MeshBasicMaterial({ map: frontTexture, transparent: true });
   const frontPanel = new THREE.Mesh(frontPanelGeom, frontPanelMat);
   // Display window front is at z=0.355, place text in front of it
   frontPanel.position.set(0, 1.45, 0.36);
