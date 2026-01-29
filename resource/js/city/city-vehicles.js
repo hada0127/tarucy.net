@@ -272,13 +272,13 @@ function createSedanCar(color) {
 
   // Left side (outside body)
   const adLeft = new THREE.Mesh(adGeom, adMat);
-  adLeft.position.set(-1.12, 0.65, 0);
+  adLeft.position.set(-1.12, 0.45, 0);
   adLeft.rotation.y = -Math.PI / 2;
   group.add(adLeft);
 
   // Right side (outside body)
   const adRight = new THREE.Mesh(adGeom, adMat);
-  adRight.position.set(1.12, 0.65, 0);
+  adRight.position.set(1.12, 0.45, 0);
   adRight.rotation.y = Math.PI / 2;
   group.add(adRight);
 
@@ -358,13 +358,13 @@ function createSUVCar(color) {
 
   // Left side (outside body)
   const adLeft = new THREE.Mesh(adGeom, adMat);
-  adLeft.position.set(-1.22, 1.0, -0.5);
+  adLeft.position.set(-1.22, 0.7, -0.5);
   adLeft.rotation.y = -Math.PI / 2;
   group.add(adLeft);
 
   // Right side (outside body)
   const adRight = new THREE.Mesh(adGeom, adMat);
-  adRight.position.set(1.22, 1.0, -0.5);
+  adRight.position.set(1.22, 0.7, -0.5);
   adRight.rotation.y = Math.PI / 2;
   group.add(adRight);
 
