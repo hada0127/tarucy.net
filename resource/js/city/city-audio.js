@@ -60,11 +60,15 @@ const bandRanges = {
 };
 
 // AGC 설정
-const AGC_ATTACK = 0.1;    // 피크 상승 속도 (빠르게)
-const AGC_DECAY = 0.0005;  // 피크 하강 속도 (더 천천히)
-const MIN_PEAK = 0.4;      // 최소 피크값 (높여서 덜 차오르게)
-const SMOOTHING = 0.6;     // 출력 스무딩
-const OUTPUT_SCALE = 0.7;  // 출력 스케일 (전체적으로 낮추기)
+const AGC_ATTACK = 0.15;   // 피크 상승 속도 (빠르게)
+const AGC_DECAY = 0.002;   // 피크 하강 속도
+const MIN_PEAK = 0.25;     // 최소 피크값
+const SMOOTHING = 0.5;     // 출력 스무딩
+const OUTPUT_SCALE = 0.75; // 출력 스케일
+
+// 글로벌 에너지 (전체 대역 합산)
+let globalEnergy = 0;
+let globalPeak = 0.3;
 
 /**
  * 오디오 시스템 초기화
@@ -180,6 +184,21 @@ export function updateAudioAnalysis() {
   normalizedBands.mid = normalizeValue('mid', rawMid);
   normalizedBands.highMid = normalizeValue('highMid', rawHighMid);
   normalizedBands.treble = normalizeValue('treble', rawTreble);
+
+  // 글로벌 에너지 계산 (모든 대역의 평균)
+  const rawGlobal = (rawBass + rawLowMid + rawMid + rawHighMid + rawTreble) / 5;
+
+  // 글로벌 피크 업데이트
+  if (rawGlobal > globalPeak) {
+    globalPeak += (rawGlobal - globalPeak) * AGC_ATTACK;
+  } else {
+    globalPeak -= AGC_DECAY;
+  }
+  globalPeak = Math.max(MIN_PEAK, globalPeak);
+
+  // 글로벌 에너지 정규화
+  const normalizedGlobal = Math.min(1, rawGlobal / globalPeak) * OUTPUT_SCALE;
+  globalEnergy = globalEnergy * SMOOTHING + normalizedGlobal * (1 - SMOOTHING);
 }
 
 /**
@@ -216,9 +235,8 @@ function normalizeValue(band, value) {
 
 /**
  * X 좌표에 따른 intensity 반환
- * - X < 0 (서쪽): 저음(bass, lowMid) 반응
- * - X > 0 (동쪽): 고음(highMid, treble) 반응
- * - 중앙 부근: mid 반응
+ * - 글로벌 에너지 기반 + 대역별 약간의 변화
+ * - 전체가 함께 움직이면서 위치별로 미세한 차이
  *
  * @param {number} x - 월드 X 좌표
  * @returns {number} 0~1 범위의 intensity
@@ -227,33 +245,28 @@ export function getIntensityForPosition(x) {
   if (!isPlaying) return 0;
 
   // X 좌표를 -100 ~ +100 범위로 가정
-  // 왼쪽(-) = 저음, 오른쪽(+) = 고음
   const normalizedX = Math.max(-1, Math.min(1, x / 100));
 
-  // 5개 구역으로 나누어 각 대역에 매핑
+  // 위치별 대역 선택 (약간의 변화를 주기 위해)
+  let bandValue;
   if (normalizedX < -0.6) {
-    // 가장 서쪽: bass
-    return normalizedBands.bass;
+    bandValue = normalizedBands.bass;
   } else if (normalizedX < -0.2) {
-    // 서쪽: bass + lowMid 블렌드
     const t = (normalizedX + 0.6) / 0.4;
-    return normalizedBands.bass * (1 - t) + normalizedBands.lowMid * t;
+    bandValue = normalizedBands.bass * (1 - t) + normalizedBands.lowMid * t;
   } else if (normalizedX < 0.2) {
-    // 중앙: lowMid + mid + highMid 블렌드
     const t = (normalizedX + 0.2) / 0.4;
-    if (t < 0.5) {
-      return normalizedBands.lowMid * (1 - t * 2) + normalizedBands.mid * (t * 2);
-    } else {
-      return normalizedBands.mid * (1 - (t - 0.5) * 2) + normalizedBands.highMid * ((t - 0.5) * 2);
-    }
+    bandValue = normalizedBands.lowMid * (1 - t) + normalizedBands.highMid * t;
   } else if (normalizedX < 0.6) {
-    // 동쪽: highMid + treble 블렌드
     const t = (normalizedX - 0.2) / 0.4;
-    return normalizedBands.highMid * (1 - t) + normalizedBands.treble * t;
+    bandValue = normalizedBands.highMid * (1 - t) + normalizedBands.treble * t;
   } else {
-    // 가장 동쪽: treble
-    return normalizedBands.treble;
+    bandValue = normalizedBands.treble;
   }
+
+  // 글로벌 에너지 70% + 대역별 값 30% 블렌드
+  // 전체가 함께 움직이면서 약간의 위치별 변화
+  return globalEnergy * 0.7 + bandValue * 0.3;
 }
 
 /**
