@@ -25,11 +25,11 @@ const vendingMachineSideTexts = [
 ];
 
 /**
- * Create a canvas texture with two-line text and black stroke for vending machine sides
+ * Create a canvas texture with two-line text and black stroke for vending machine front
  */
-function createVendingSideTexture(width, height) {
+function createVendingFrontTexture(width, height) {
   const canvas = document.createElement('canvas');
-  const scale = 4;
+  const scale = 8; // Higher resolution for readability
   canvas.width = width * scale;
   canvas.height = height * scale;
 
@@ -42,23 +42,23 @@ function createVendingSideTexture(width, height) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Calculate optimal font size for two lines
-  let fontSize = canvas.height * 0.1;
+  // Calculate optimal font size for two lines (30% of height for each line)
+  let fontSize = canvas.height * 0.35;
   ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
 
-  // Measure longest text and adjust
+  // Measure longest text and adjust to fit width
   const maxTextWidth = Math.max(
     ctx.measureText(vendingMachineSideTexts[0]).width,
     ctx.measureText(vendingMachineSideTexts[1]).width
   );
-  const maxWidth = canvas.width * 0.9;
+  const maxWidth = canvas.width * 0.95;
 
   if (maxTextWidth > maxWidth) {
     fontSize = fontSize * (maxWidth / maxTextWidth);
     ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
   }
 
-  const lineHeight = fontSize * 1.3;
+  const lineHeight = fontSize * 1.2;
   const startY = canvas.height / 2 - lineHeight / 2;
 
   // Draw each line
@@ -67,7 +67,7 @@ function createVendingSideTexture(width, height) {
 
     // Draw black stroke
     ctx.strokeStyle = '#000000';
-    ctx.lineWidth = fontSize * 0.15;
+    ctx.lineWidth = fontSize * 0.2;
     ctx.lineJoin = 'round';
     ctx.strokeText(text, canvas.width / 2, y);
 
@@ -356,14 +356,14 @@ function createVendingMachine(scene, x, z, groundY, rotation = 0, type = 'drink'
   group.add(coinArea);
 
   // Front text panel (inside display window, 1/3 from top)
-  const frontTextWidth = 0.6;
-  const frontTextHeight = 0.2;
-  const frontTexture = createVendingSideTexture(frontTextWidth * 100, frontTextHeight * 100);
+  const frontTextWidth = 0.65;
+  const frontTextHeight = 0.25;
+  const frontTexture = createVendingFrontTexture(frontTextWidth * 100, frontTextHeight * 100);
   const frontPanelGeom = new THREE.PlaneGeometry(frontTextWidth, frontTextHeight);
   const frontPanelMat = new THREE.MeshBasicMaterial({ map: frontTexture, transparent: true });
   const frontPanel = new THREE.Mesh(frontPanelGeom, frontPanelMat);
   // Display window is at y=1.15, height 0.9, so top is at 1.6, 1/3 from top is ~1.45
-  frontPanel.position.set(0, 1.45, 0.32);
+  frontPanel.position.set(0, 1.45, 0.34);
   group.add(frontPanel);
 
   group.position.set(x, groundY, z);
