@@ -400,11 +400,9 @@ export async function initCity() {
   }
 
   // 동적 객체 추가 (GLB에는 포함되지 않음)
-  if (!isIOSorMobile) {
-    initVehicles(scene);
-    setPedestrianStopChecker(shouldVehicleStop);
-    initPedestrians(scene);
-  }
+  initVehicles(scene);
+  setPedestrianStopChecker(shouldVehicleStop);
+  initPedestrians(scene);
 
   // Visualize walkable zones (debug) - disabled
   // visualizeWalkableZones(scene);
