@@ -279,11 +279,11 @@ window.exportSceneToGLB = null; // initCity에서 설정
 // WINDOW EQUALIZER SYSTEM (Audio-reactive window brightness)
 // ============================================================
 
-// 창문 색상 팔레트 (city-building.js와 동일)
+// 창문 색상 팔레트 (city-colors.js와 동일)
 const WINDOW_COLORS = [
-  0xff69b4, 0xff1493, 0xffc0cb, 0xffb6c1, // 분홍색 계열
-  0x40e0d0, 0x00ced1, 0x48d1cc, 0x7fffd4, // 청록색 계열
-  0xffa500, 0xff8c00, 0xffd700, 0xffff00  // 주황/노란색 계열
+  0xff6090, 0xff5080, 0xe06088,  // 핑크/마젠타 계열
+  0xff7098, 0xf05078, 0xe85090,
+  0x50d0e0, 0x60c8d8, 0x70e0f0   // 시안 계열
 ];
 
 // 창문 메시 저장소 (독립 material로 변환된)
@@ -291,51 +291,48 @@ const windowMeshes = [];
 
 /**
  * GLB에서 창문 메시 발견 및 등록
- * PlaneGeometry + 창문 색상 조합으로 식별
+ * 색상 기반으로 식별 (핑크/시안 계열 밝은 색상)
  */
 function discoverWindowsFromGLB(scene) {
-  const colorTolerance = 0.1;
   let windowCount = 0;
+  let checkedMeshes = 0;
+  const foundColors = new Map(); // color -> count
 
   scene.traverse((obj) => {
     if (!obj.isMesh) return;
-    if (!obj.geometry) return;
-
-    // PlaneGeometry 또는 작은 BoxGeometry인지 확인
-    const isSmallPlane = obj.geometry.type === 'PlaneGeometry' ||
-                         (obj.geometry.type === 'BoxGeometry' &&
-                          obj.geometry.parameters &&
-                          obj.geometry.parameters.depth < 0.5);
-
-    if (!isSmallPlane) return;
+    checkedMeshes++;
 
     // Material 색상 확인
     const material = obj.material;
     if (!material || !material.color) return;
 
-    const meshColor = material.color.getHex();
+    // 색상을 sRGB로 변환하여 확인 (Three.js 색상 관리 대응)
+    const color = material.color;
+    const r = Math.round(color.r * 255);
+    const g = Math.round(color.g * 255);
+    const b = Math.round(color.b * 255);
 
-    // 창문 색상과 일치하는지 확인
-    let isWindowColor = false;
-    for (const wc of WINDOW_COLORS) {
-      if (meshColor === wc) {
-        isWindowColor = true;
-        break;
-      }
-    }
+    // 디버그: 발견된 색상 기록
+    const hexStr = ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+    foundColors.set(hexStr, (foundColors.get(hexStr) || 0) + 1);
+
+    // 창문 색상 패턴 확인 (핑크/마젠타 또는 시안)
+    const isWindowColor = isWindowLikeColor(r, g, b);
 
     if (!isWindowColor) return;
 
     // 창문으로 등록
     // 개별 material로 변환 (공유 material에서 독립)
+    const originalColor = material.color.clone();
+
     if (Array.isArray(obj.material)) {
       obj.material = obj.material.map(m => m.clone());
     } else {
       obj.material = obj.material.clone();
     }
 
-    // 원본 색상 저장
-    obj.userData.originalColor = material.color.clone();
+    // 원본 색상 저장 (clone된 material에서)
+    obj.userData.originalColor = originalColor;
     obj.userData.isWindow = true;
 
     // worldX 좌표 저장 (나중에 주파수 대역 결정용)
@@ -347,8 +344,32 @@ function discoverWindowsFromGLB(scene) {
     windowCount++;
   });
 
-  console.log(`Discovered ${windowCount} window meshes for equalizer effect`);
+  console.log(`Discovered ${windowCount} window meshes from ${checkedMeshes} total meshes`);
+  // 상위 20개 색상 출력
+  const topColors = [...foundColors.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 20)
+    .map(([c, n]) => `#${c}(${n})`);
+  console.log('Top colors found:', topColors.join(', '));
 }
+
+/**
+ * 창문과 유사한 색상인지 확인
+ * - 핑크/마젠타 계열: R이 높고 B가 중간~높음, G는 낮음
+ * - 시안 계열: G와 B가 높고 R이 낮음
+ */
+function isWindowLikeColor(r, g, b) {
+  // 핑크/마젠타 계열 (0xff6090, 0xff5080, 0xe06088 등)
+  // R > 200, G < 150, B > 100
+  const isPink = r > 200 && g < 150 && g > 50 && b > 80 && b < 180;
+
+  // 시안 계열 (0x50d0e0, 0x60c8d8, 0x70e0f0)
+  // R < 150, G > 180, B > 200
+  const isCyan = r < 150 && r > 50 && g > 180 && b > 200;
+
+  return isPink || isCyan;
+}
+
 
 /**
  * 주파수 데이터에 따라 창문 밝기 업데이트
@@ -362,12 +383,25 @@ function updateWindowBrightness() {
     const worldX = mesh.userData.worldX || 0;
     const intensity = getIntensityForPosition(worldX);
 
-    // 밝기 조절 (1.0 ~ 2.5배)
-    const brightness = 1.0 + intensity * 1.5;
+    // 밝기 조절 (1.0 ~ 3.0배)
+    const brightness = 1.0 + intensity * 2.0;
 
     const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-    if (material && material.color) {
-      // 원본 색상에 밝기 적용
+    if (!material) continue;
+
+    // MeshStandardMaterial인 경우 emissive 사용
+    if (material.isMeshStandardMaterial) {
+      if (!mesh.userData.originalEmissive) {
+        mesh.userData.originalEmissive = material.emissive.clone();
+      }
+      // emissive를 원본 색상 기반으로 설정
+      material.emissive.copy(mesh.userData.originalColor);
+      material.emissive.multiplyScalar(intensity * 0.5);
+      material.emissiveIntensity = intensity * 2;
+    }
+
+    // color도 함께 조절 (모든 material 타입)
+    if (material.color) {
       material.color.copy(mesh.userData.originalColor);
       material.color.multiplyScalar(brightness);
     }
