@@ -1,2 +1,3 @@
 resource/models/city*.glb
 .wrangler/
+node_modules/
