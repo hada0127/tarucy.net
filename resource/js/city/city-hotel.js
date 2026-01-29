@@ -529,13 +529,13 @@ export function addHotelSignText(scene) {
     side: THREE.DoubleSide
   });
   const textPlane = new THREE.Mesh(textPlaneGeom, textPlaneMat);
-  // 원본 코드와 동일한 위치/회전 (기존 createPinkHotel 참조)
-  const posX = mainX - mainWidth / 2 - 1.72; // 57.28
+  // 텍스트를 간판보다 훨씬 앞으로 (서쪽으로) 이동하여 테스트
+  const posX = mainX - mainWidth / 2 - 3; // 56 (더 앞으로)
   const posY = groundY + archHeight + 6.5;   // 16.5
   const posZ = mainZ;                         // 1
   textPlane.position.set(posX, posY, posZ);
   // 원본 코드: rotation.y = -Math.PI / 2;
   textPlane.rotation.y = -Math.PI / 2;
   scene.add(textPlane);
-  console.log('Hotel sign text added at:', posX, posY, posZ);
+  console.log('Hotel sign text added at:', posX, posY, posZ, 'rotation:', textPlane.rotation.y);
 }
