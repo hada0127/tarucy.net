@@ -13,6 +13,74 @@ import * as THREE from 'three';
 // Callback for pedestrian stop check (set by city-main.js to avoid circular dependency)
 let pedestrianStopChecker = null;
 
+// Vehicle advertisement texts (solutions + skills)
+const vehicleTexts = [
+  // Solutions
+  'Platform', 'Reservation', 'Font Cloud', 'Marketing System',
+  'Media Art', 'IOT', 'Shopping Mall', 'Community',
+  'CRM', 'LMS', 'ERP', 'Web Agency',
+  'EMS', 'CMS', 'Kiosk', 'Cloud Service',
+  'AI Lab', 'Mobile App', 'Windows App', 'MacOS App',
+  '3D Web', 'Web MIDI',
+  // Skills
+  'Javascript', 'Typescript', 'PHP', 'Go', 'Python', 'JAVA',
+  'React', 'Vue', 'Svelte', 'Hono', 'Nest.js', 'React Native',
+  'Electron', 'PostgreSQL', 'MySQL', 'MariaDB', 'Cloudflare', 'AWS'
+];
+
+let vehicleTextIndex = 0;
+
+/**
+ * Get next vehicle text
+ */
+function getNextVehicleText() {
+  const text = vehicleTexts[vehicleTextIndex];
+  vehicleTextIndex = (vehicleTextIndex + 1) % vehicleTexts.length;
+  return text;
+}
+
+/**
+ * Create vehicle text texture (white bold text with black stroke)
+ */
+function createVehicleTextTexture(text, width, height) {
+  const canvas = document.createElement('canvas');
+  const scale = 4;
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  let fontSize = canvas.height * 0.7;
+  ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
+
+  // Measure and adjust
+  let textWidth = ctx.measureText(text).width;
+  const maxWidth = canvas.width * 0.95;
+
+  if (textWidth > maxWidth) {
+    fontSize = fontSize * (maxWidth / textWidth);
+    ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
+  }
+
+  // Black stroke
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = fontSize * 0.15;
+  ctx.lineJoin = 'round';
+  ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
+
+  // White fill
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+
 /**
  * Set the pedestrian stop checker callback
  * Called from city-main.js after both modules are loaded
@@ -193,6 +261,27 @@ function createSedanCar(color) {
   group.add(taillightR);
 
   addWheels(group, 0.35, 0.9, 1.3);
+
+  // Add text below windows on both sides
+  const adText = getNextVehicleText();
+  const textWidth = 2.0;
+  const textHeight = 0.25;
+  const adTexture = createVehicleTextTexture(adText, textWidth * 100, textHeight * 100);
+  const adGeom = new THREE.PlaneGeometry(textWidth, textHeight);
+  const adMat = new THREE.MeshBasicMaterial({ map: adTexture, transparent: true });
+
+  // Left side
+  const adLeft = new THREE.Mesh(adGeom, adMat);
+  adLeft.position.set(-1.11, 0.7, 0);
+  adLeft.rotation.y = Math.PI / 2;
+  group.add(adLeft);
+
+  // Right side
+  const adRight = new THREE.Mesh(adGeom, adMat);
+  adRight.position.set(1.11, 0.7, 0);
+  adRight.rotation.y = -Math.PI / 2;
+  group.add(adRight);
+
   return group;
 }
 
@@ -258,6 +347,27 @@ function createSUVCar(color) {
   group.add(taillightR);
 
   addWheels(group, 0.45, 1.0, 1.6);
+
+  // Add text below windows on both sides
+  const adText = getNextVehicleText();
+  const textWidth = 2.4;
+  const textHeight = 0.3;
+  const adTexture = createVehicleTextTexture(adText, textWidth * 100, textHeight * 100);
+  const adGeom = new THREE.PlaneGeometry(textWidth, textHeight);
+  const adMat = new THREE.MeshBasicMaterial({ map: adTexture, transparent: true });
+
+  // Left side
+  const adLeft = new THREE.Mesh(adGeom, adMat);
+  adLeft.position.set(-1.21, 1.0, -0.5);
+  adLeft.rotation.y = Math.PI / 2;
+  group.add(adLeft);
+
+  // Right side
+  const adRight = new THREE.Mesh(adGeom, adMat);
+  adRight.position.set(1.21, 1.0, -0.5);
+  adRight.rotation.y = -Math.PI / 2;
+  group.add(adRight);
+
   return group;
 }
 
@@ -317,6 +427,27 @@ function createBus(color) {
   group.add(taillightR);
 
   addWheels(group, 0.55, 1.2, 3.5);
+
+  // Add text below windows on both sides
+  const adText = getNextVehicleText();
+  const textWidth = 8.0;
+  const textHeight = 0.6;
+  const adTexture = createVehicleTextTexture(adText, textWidth * 100, textHeight * 100);
+  const adGeom = new THREE.PlaneGeometry(textWidth, textHeight);
+  const adMat = new THREE.MeshBasicMaterial({ map: adTexture, transparent: true });
+
+  // Left side
+  const adLeft = new THREE.Mesh(adGeom, adMat);
+  adLeft.position.set(-1.41, 1.2, 0);
+  adLeft.rotation.y = Math.PI / 2;
+  group.add(adLeft);
+
+  // Right side
+  const adRight = new THREE.Mesh(adGeom, adMat);
+  adRight.position.set(1.41, 1.2, 0);
+  adRight.rotation.y = -Math.PI / 2;
+  group.add(adRight);
+
   return group;
 }
 
@@ -397,6 +528,26 @@ function createTruck(color) {
   rearWheelR.position.set(1.1, 0.5, -1.5);
   group.add(rearWheelR);
 
+  // Add text on cargo container sides
+  const adText = getNextVehicleText();
+  const textWidth = 5.0;
+  const textHeight = 1.2;
+  const adTexture = createVehicleTextTexture(adText, textWidth * 100, textHeight * 100);
+  const adGeom = new THREE.PlaneGeometry(textWidth, textHeight);
+  const adMat = new THREE.MeshBasicMaterial({ map: adTexture, transparent: true });
+
+  // Left side of cargo
+  const adLeft = new THREE.Mesh(adGeom, adMat);
+  adLeft.position.set(-1.31, 2.0, -1.0);
+  adLeft.rotation.y = Math.PI / 2;
+  group.add(adLeft);
+
+  // Right side of cargo
+  const adRight = new THREE.Mesh(adGeom, adMat);
+  adRight.position.set(1.31, 2.0, -1.0);
+  adRight.rotation.y = -Math.PI / 2;
+  group.add(adRight);
+
   return group;
 }
 
@@ -459,6 +610,27 @@ function createDeliveryVan(color) {
   group.add(taillightR);
 
   addWheels(group, 0.4, 0.95, 1.8);
+
+  // Add text on cargo area sides
+  const adText = getNextVehicleText();
+  const textWidth = 3.5;
+  const textHeight = 0.6;
+  const adTexture = createVehicleTextTexture(adText, textWidth * 100, textHeight * 100);
+  const adGeom = new THREE.PlaneGeometry(textWidth, textHeight);
+  const adMat = new THREE.MeshBasicMaterial({ map: adTexture, transparent: true });
+
+  // Left side
+  const adLeft = new THREE.Mesh(adGeom, adMat);
+  adLeft.position.set(-1.11, 1.0, -0.5);
+  adLeft.rotation.y = Math.PI / 2;
+  group.add(adLeft);
+
+  // Right side
+  const adRight = new THREE.Mesh(adGeom, adMat);
+  adRight.position.set(1.11, 1.0, -0.5);
+  adRight.rotation.y = -Math.PI / 2;
+  group.add(adRight);
+
   return group;
 }
 
