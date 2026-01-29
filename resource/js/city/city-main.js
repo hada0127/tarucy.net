@@ -418,11 +418,14 @@ function calculateWindowYRange() {
   console.log(`X range: ${globalXMin.toFixed(1)} ~ ${globalXMax.toFixed(1)}, ${NUM_X_ZONES} zones`);
 }
 
+// 기본으로 켜져있는 아래층 비율 (0~1)
+const BASE_THRESHOLD = 0.15;
+
 /**
  * 주파수 데이터에 따라 창문 밝기 업데이트 (이퀄라이저 효과)
  * - X 구역: 주파수 대역 결정 (서쪽=저음, 동쪽=고음)
  * - Y 좌표: 각 구역별 intensity에 따라 아래에서 위로 차오르는 효과
- * - 기본 상태: 매우 어두운 창문
+ * - 기본 상태: 아래층 15%는 항상 켜짐
  * - 활성화 시: 원래 밝은 창문 색상
  */
 function updateWindowBrightness() {
@@ -447,8 +450,9 @@ function updateWindowBrightness() {
     // X 좌표로 주파수 대역별 intensity 계산
     const intensity = getIntensityForPosition(worldX);
 
-    // 이퀄라이저 효과: intensity가 높을수록 더 높은 Y까지 밝아짐
-    const threshold = intensity;
+    // 이퀄라이저 효과: 기본 threshold + intensity에 따라 추가
+    // 아래층 15%는 항상 켜져 있음
+    const threshold = BASE_THRESHOLD + intensity * (1 - BASE_THRESHOLD);
 
     const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
     if (!material) continue;
