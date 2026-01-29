@@ -81,6 +81,56 @@ function createVendingFrontTexture(width, height) {
   return texture;
 }
 
+/**
+ * Create a white flyer texture with black text for phone booth
+ */
+function createPhoneBoothFlyerTexture(width, height) {
+  const canvas = document.createElement('canvas');
+  const scale = 8;
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+
+  const ctx = canvas.getContext('2d');
+
+  // White background
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Text settings
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Calculate optimal font size for two lines
+  let fontSize = canvas.height * 0.3;
+  ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
+
+  // Measure longest text and adjust to fit width
+  const maxTextWidth = Math.max(
+    ctx.measureText(vendingMachineSideTexts[0]).width,
+    ctx.measureText(vendingMachineSideTexts[1]).width
+  );
+  const maxWidth = canvas.width * 0.9;
+
+  if (maxTextWidth > maxWidth) {
+    fontSize = fontSize * (maxWidth / maxTextWidth);
+    ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
+  }
+
+  const lineHeight = fontSize * 1.3;
+  const startY = canvas.height / 2 - lineHeight / 2;
+
+  // Draw each line in black
+  vendingMachineSideTexts.forEach((text, i) => {
+    const y = startY + i * lineHeight;
+    ctx.fillStyle = '#000000';
+    ctx.fillText(text, canvas.width / 2, y);
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // Street Bench
 // ════════════════════════════════════════════════════════════════════════════
@@ -442,6 +492,17 @@ function createPhoneBooth(scene, x, z, groundY, rotation = 0) {
   const light = new THREE.Mesh(lightGeom, lightMat);
   light.position.set(0, 2.18, 0);
   group.add(light);
+
+  // White flyer above the phone
+  const flyerWidth = 0.35;
+  const flyerHeight = 0.2;
+  const flyerTexture = createPhoneBoothFlyerTexture(flyerWidth * 100, flyerHeight * 100);
+  const flyerGeom = new THREE.PlaneGeometry(flyerWidth, flyerHeight);
+  const flyerMat = new THREE.MeshBasicMaterial({ map: flyerTexture });
+  const flyer = new THREE.Mesh(flyerGeom, flyerMat);
+  // Phone is at y=1.3, z=-0.35, place flyer above it
+  flyer.position.set(0, 1.65, -0.34);
+  group.add(flyer);
 
   group.position.set(x, groundY, z);
   group.rotation.y = rotation;
