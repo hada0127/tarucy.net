@@ -244,7 +244,7 @@ const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 // GLB 파일 사용 여부 (true면 GLB 로드, false면 동적 생성)
 // false로 접속 후 콘솔에서 exportSceneToGLB() → meshopt 압축 → true로 변경
-const USE_GLB = true;
+const USE_GLB = false;
 const GLB_PATH = 'https://pub-0c79382ed5a947839fede2eac510554d.r2.dev/city.glb';
 
 /**
@@ -800,8 +800,8 @@ function createAllBuildings(scene, forGLB = false) {
   if (isIOSorMobile) {
     // iOS/모바일: 경량 모드 - 점진적 추가 테스트
     buildings.push(...createResidentialDistrict(scene));
-    buildings.push(...createCenterBuildings(scene));
-    createPinkHotel(scene, 0);
+    buildings.push(...createCenterBuildings(scene, forGLB));
+    createPinkHotel(scene, 0, forGLB);
     // 창문 InstancedMesh 생성
     const windowInstancedMesh = createWindowInstances(scene);
     return { buildings, windowInstancedMesh };
@@ -810,10 +810,10 @@ function createAllBuildings(scene, forGLB = false) {
   // 데스크톱: 전체
   buildings.push(...createResidentialDistrict(scene));
   buildings.push(...createSlopedResidentialArea(scene));
-  buildings.push(...createLeftBuildings(scene));
-  buildings.push(...createRightBuildings(scene));
-  buildings.push(...createCenterBuildings(scene));
-  buildings.push(...createSouthBuildings(scene));
+  buildings.push(...createLeftBuildings(scene, forGLB));
+  buildings.push(...createRightBuildings(scene, forGLB));
+  buildings.push(...createCenterBuildings(scene, forGLB));
+  buildings.push(...createSouthBuildings(scene, forGLB));
   // removeOverlappingBuildings 제거 - 애초에 겹치지 않게 배치
 
   // 상점가 - GLB용은 텍스트 없이, 그 외는 텍스트 포함
