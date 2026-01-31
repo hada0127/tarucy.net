@@ -13,13 +13,16 @@
 
 import * as THREE from 'three';
 
+// iOS 감지
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
 /**
  * Vaporwave/Cyberpunk night sky texture for sky sphere
  */
 function createNightSkyTexture() {
   const canvas = document.createElement('canvas');
-  canvas.width = 2048;
-  canvas.height = 1024;
+  canvas.width = isIOS ? 1024 : 2048;
+  canvas.height = isIOS ? 512 : 1024;
   const ctx = canvas.getContext('2d');
 
   // Gradient sky - darker at top, reddish/warm glow at horizon (0.5 = horizon)
@@ -240,7 +243,7 @@ export function createScene() {
  */
 export function createRenderer(container) {
   const renderer = new THREE.WebGLRenderer({
-    antialias: true,
+    antialias: !isIOS,
     alpha: false,
     powerPreference: 'high-performance'
   });
