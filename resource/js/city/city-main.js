@@ -953,15 +953,18 @@ export async function initCity() {
       // GLB에는 창문과 빌딩 간판이 없으므로 동적 생성
       // 먼저 dummyScene에 빌딩을 생성해서 창문 데이터와 빌딩 정보를 수집
       clearWindowData();
+      console.log(`[GLB] Before createAllBuildings: windowDataList.length = ${getWindowDataList().length}`);
+      console.log(`[GLB] isIOSorMobile = ${isIOSorMobile}`);
       const dummyScene = new THREE.Scene();
       createAllBuildings(dummyScene, true); // 더미 scene에 건물 생성, 창문 데이터 수집
+      console.log(`[GLB] After createAllBuildings: windowDataList.length = ${getWindowDataList().length}`);
 
       // dummyScene의 빌딩 정보를 사용해서 실제 scene에 빌딩 간판 추가
       addBuildingSignTexts(dummyScene, scene);
 
       // 창문 InstancedMesh를 실제 scene에 추가
       windowInstancedMesh = createWindowInstances(scene);
-      console.log(`Dynamic elements added - Windows: ${windowInstancedMesh ? getWindowDataList().length : 0}`);
+      console.log(`[GLB] After createWindowInstances: windowInstancedMesh = ${windowInstancedMesh ? 'created' : 'null'}, count = ${getWindowDataList().length}`);
 
       glbLoaded = true;
       checkAndShowExplore();
