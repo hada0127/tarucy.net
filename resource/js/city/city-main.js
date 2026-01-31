@@ -242,15 +242,14 @@ const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 // false로 접속 후 콘솔에서 exportSceneToGLB() → meshopt 압축 → true로 변경
 const USE_GLB = true;
 const GLB_PATH = 'https://pub-0c79382ed5a947839fede2eac510554d.r2.dev/city.glb';
-const GLB_PATH_LITE = 'https://pub-0c79382ed5a947839fede2eac510554d.r2.dev/city-lite.glb'; // iOS용 경량 버전
 
 /**
  * Scene을 GLB 파일로 내보내기 (개발용)
- * 브라우저 콘솔에서 exportSceneToGLB() 또는 exportSceneToGLB(true) 호출
- * @param {boolean} lite - true면 iOS용 경량 버전 (남쪽 빌딩 제외)
+ * 브라우저 콘솔에서 exportSceneToGLB() 호출
+ * 남쪽 빌딩 제외 (카메라 동선에 없음, 메모리 최적화)
  */
-function exportSceneToGLB(lite = false) {
-  console.log(`Creating GLB export scene (${lite ? 'LITE' : 'FULL'} version)...`);
+function exportSceneToGLB() {
+  console.log('Creating GLB export scene (without south buildings)...');
 
   // GLB 내보내기용 새 scene 생성 (캔버스 텍스처 제외)
   const exportScene = new THREE.Scene();
@@ -261,19 +260,14 @@ function exportSceneToGLB(lite = false) {
   createCrosswalks(exportScene);
 
   // 건물과 가구 생성 (텍스트 없이)
+  // 남쪽 빌딩(createSouthBuildings) 제외 - 카메라 동선에 없음
   let buildings = [];
   buildings.push(...createResidentialDistrict(exportScene));
   buildings.push(...createSlopedResidentialArea(exportScene));
   buildings.push(...createLeftBuildings(exportScene));
   buildings.push(...createRightBuildings(exportScene));
   buildings.push(...createCenterBuildings(exportScene));
-
-  // lite 버전에서는 남쪽 빌딩 제외 (카메라 동선에 없음)
-  if (!lite) {
-    buildings.push(...createSouthBuildings(exportScene));
-  } else {
-    console.log('LITE mode: Skipping south buildings');
-  }
+  // createSouthBuildings 제외됨
   buildings = removeOverlappingBuildings(exportScene, buildings);
 
   // 상점가 (텍스트 없이)
@@ -306,8 +300,7 @@ function exportSceneToGLB(lite = false) {
 
   // GLB 내보내기
   const exporter = new GLTFExporter();
-  const filename = lite ? 'city-lite.glb' : 'city.glb';
-  console.log(`Exporting ${filename}...`);
+  console.log('Exporting city.glb...');
 
   exporter.parse(
     exportScene,
@@ -316,11 +309,11 @@ function exportSceneToGLB(lite = false) {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = filename;
+      link.download = 'city.glb';
       link.click();
       URL.revokeObjectURL(url);
-      console.log(`${filename} exported successfully!`);
-      console.log(`다음 단계: gltf-transform optimize ${filename} ${filename.replace('.glb', '-opt.glb')} --compress meshopt`);
+      console.log('city.glb exported successfully!');
+      console.log('다음 단계: gltf-transform optimize city.glb city-opt.glb --compress meshopt');
     },
     (error) => {
       console.error('GLB export failed:', error);
@@ -647,20 +640,16 @@ function hideLoadingOverlay() {
 
 /**
  * GLB 파일에서 Scene 로드
- * iOS에서는 경량 버전(city-lite.glb) 사용
  */
 function loadSceneFromGLB(scene) {
   return new Promise((resolve, reject) => {
     const loader = new GLTFLoader();
     // meshopt 압축 지원
     loader.setMeshoptDecoder(MeshoptDecoder);
-
-    // iOS에서는 경량 GLB 사용 (남쪽 빌딩 제외)
-    const glbPath = isIOS ? GLB_PATH_LITE : GLB_PATH;
-    console.log(`Loading GLB: ${glbPath}`);
+    console.log(`Loading GLB: ${GLB_PATH}`);
 
     loader.load(
-      glbPath,
+      GLB_PATH,
       (gltf) => {
         // scene 전체를 추가 (부모-자식 transform 보존)
         scene.add(gltf.scene);
