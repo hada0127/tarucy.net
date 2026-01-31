@@ -387,6 +387,12 @@ function discoverWindowsFromGLB(scene) {
     // world 좌표 저장 (X: 주파수 대역, Y: 이퀄라이저 높이)
     const worldPos = new THREE.Vector3();
     obj.getWorldPosition(worldPos);
+
+    // iOS에서는 남쪽 빌딩 창문 제외 (z < -40, 카메라 동선에 없음)
+    if (isIOS && worldPos.z < -40) {
+      return; // 남쪽 창문은 이퀄라이저 대상에서 제외
+    }
+
     obj.userData.worldX = worldPos.x;
     obj.userData.worldY = worldPos.y;
 

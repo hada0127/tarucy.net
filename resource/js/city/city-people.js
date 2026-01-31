@@ -13,6 +13,9 @@
 import * as THREE from 'three';
 import { getVehicles } from './city-vehicles.js';
 
+// iOS 감지
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
 // Person colors (neon citypop style)
 const personColors = [
   0xff80a0, 0x80d0e0, 0xe080c0, 0x90e0e0, 0xd090e0,
@@ -604,7 +607,46 @@ const stairPaths = [
 // ============================================================
 // ZONE POPULATION TARGETS
 // ============================================================
-const zonePopulationTargets = {
+// iOS에서는 남쪽 건물 사이 인원 제거 (카메라 동선에 없음)
+const zonePopulationTargets = isIOS ? {
+  // iOS: 메인도로, 남쪽도로 주변만 유지
+  mainNorthSidewalk: { min: 1, max: 2 },
+  mainSouthSidewalk: { min: 2, max: 3 },
+  hotelFrontSidewalkNorth: { min: 1, max: 1 },
+  hotelFrontSidewalkSouth: { min: 1, max: 1 },
+  mainNorthEastSidewalk: { min: 1, max: 2 },
+  mainSouthEastSidewalk: { min: 1, max: 2 },
+  southEastSidewalk: { min: 1, max: 2 },
+  southWestSidewalk: { min: 1, max: 2 },
+  southRoadJunctionWest: { min: 1, max: 1 },
+  southRoadJunctionEast: { min: 1, max: 1 },
+  stairsBottomArea: { min: 1, max: 2 },
+  hotelEntranceArea: { min: 1, max: 2 },
+  belowRightPark: { min: 0, max: 1 },
+  leftPark: { min: 1, max: 2 },
+  shopAlley: { min: 2, max: 4 },
+  rightPark: { min: 1, max: 2 },
+  leftParkToShop: { min: 0, max: 1 },
+  rightParkToShop: { min: 0, max: 1 },
+  shopFrontArea: { min: 1, max: 2 },
+  shopBackArea: { min: 0, max: 1 },
+  rightParkToHotel: { min: 0, max: 1 },
+  // 남쪽 건물 사이 인원 완전 제거
+  southAreaRight: { min: 0, max: 0 },
+  southAreaCenter: { min: 0, max: 0 },
+  southAreaLeft: { min: 0, max: 0 },
+  farSouthRight: { min: 0, max: 0 },
+  farSouthCenter: { min: 0, max: 0 },
+  farSouthLeft: { min: 0, max: 0 },
+  hotelEastArea: { min: 0, max: 0 },
+  hotelEastAreaNorth: { min: 0, max: 0 },
+  // 주거지역도 축소
+  stairsTopPlatform: { min: 0, max: 1 },
+  residentialPath: { min: 2, max: 4 },
+  slopedPath: { min: 1, max: 2 },
+  flatTopPath: { min: 1, max: 2 },
+} : {
+  // Desktop: 원본 설정
   // Y=0 Ground level - sidewalks (reduced)
   mainNorthSidewalk: { min: 2, max: 4 },
   mainSouthSidewalk: { min: 3, max: 6 },
@@ -647,7 +689,7 @@ const zonePopulationTargets = {
   flatTopPath: { min: 2, max: 4 },
 };
 
-const MAX_POPULATION = 350;
+const MAX_POPULATION = isIOS ? 50 : 350;
 
 // ============================================================
 // STATE
