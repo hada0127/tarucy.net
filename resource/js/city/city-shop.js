@@ -324,7 +324,7 @@ function addSignTextPanel(scene, x, z, groundY, width, depth, neonColor, signTex
   });
   const signPanel = new THREE.Mesh(signPanelGeom, signPanelMat);
   signPanel.renderOrder = 10;
-  signPanel.position.set(x, groundY + 4.0, z - depth/2 - 0.78);
+  signPanel.position.set(x, groundY + 4.0, z - depth/2 - 0.75);
   // 상점이 -Z 방향을 바라보므로 플레인도 -Z 방향으로 회전
   signPanel.rotation.y = Math.PI;
   scene.add(signPanel);
