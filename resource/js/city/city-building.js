@@ -507,9 +507,30 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
   const backEntranceHeight = 3.5;
 
   // Entrance sign dimensions for collision check
+  const frontSignWidth = Math.max(entranceWidth * 1.5, 5);
   const backSignWidth = Math.max(backEntranceWidth * 1.5, 5);
 
-  // Front windows (북쪽 면, -z) - 제거됨: 카메라 동선에 없어서 최적화
+  // Front windows (북쪽 면, -z) - Walking Mode에서 보이므로 복원
+  for (let row = 0; row < numRows; row++) {
+    for (let col = 0; col < numCols; col++) {
+      const winX = -width/2 + winMargin + col * winSpacingX;
+      const winY = 2 + row * winSpacingY;
+      // Skip if overlapping with front entrance or entrance sign area
+      if (Math.abs(winX) < frontSignWidth/2 + 1 && winY < entranceHeight + 4) {
+        continue;
+      }
+      const colorIdx = (row + col) % towerWinColors.length;
+      addWindowData(
+        x + winX,
+        groundY + winY,
+        z + (-depth/2 - 0.01),
+        Math.PI,
+        towerWinColors[colorIdx],
+        1.4, 2,
+        x, z  // 건물 좌표 (필터링용)
+      );
+    }
+  }
 
   // Left side windows - fixed grid (데이터 수집)
   for (let row = 0; row < numRows; row++) {
@@ -657,9 +678,30 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
   const backDoorHeight = 2.8;
 
   // Entrance sign dimensions for collision check
+  const frontDoorSignWidth = Math.max(doorWidth * 1.5, 5);
   const backDoorSignWidth = Math.max(backDoorWidth * 1.5, 5);
 
-  // Front Windows (북쪽 면, -z) - 제거됨: 카메라 동선에 없어서 최적화
+  // Front Windows (북쪽 면, -z) - Walking Mode에서 보이므로 복원
+  for (let row = 0; row < numRows; row++) {
+    for (let col = 0; col < numCols; col++) {
+      const winX = -width/2 + winMargin + col * winSpacingX;
+      const winY = 2 + row * winSpacingY;
+      // Skip if overlapping with front door or entrance sign area
+      if (Math.abs(winX) < frontDoorSignWidth/2 + 1 && winY < doorHeight + 4) {
+        continue;
+      }
+      const colorIdx = (row + col) % smallWinColors.length;
+      addWindowData(
+        x + winX,
+        groundY + winY,
+        z + (-depth/2 - 0.01),
+        Math.PI,
+        smallWinColors[colorIdx],
+        1.2, 1.8,
+        x, z  // 건물 좌표 (필터링용)
+      );
+    }
+  }
 
   // Left Side Windows - fixed grid (데이터 수집)
   for (let row = 0; row < numRows; row++) {
