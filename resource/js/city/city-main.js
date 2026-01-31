@@ -851,7 +851,27 @@ export async function initCity() {
   const keys = {
     w: false, s: false, a: false, d: false,
     ArrowUp: false, ArrowDown: false,
-    ArrowLeft: false, ArrowRight: false
+    ArrowLeft: false, ArrowRight: false,
+    u: false, j: false
+  };
+
+  // 걷기 모드 (zone 제한 적용 여부)
+  let walkingMode = true;
+
+  // 걷기 모드 토글 함수 (전역으로 노출)
+  window.toggleWalkingMode = () => {
+    walkingMode = !walkingMode;
+    console.log(`Walking Mode: ${walkingMode ? 'ON (zone restricted)' : 'OFF (free movement)'}`);
+    return walkingMode;
+  };
+
+  // 현재 카메라 상태 출력 함수 (전역으로 노출)
+  window.logCameraState = () => {
+    const pos = camera.position;
+    const yaw = cameraState.yaw;
+    const pitch = cameraState.pitch;
+    console.log(`Position: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})`);
+    console.log(`Yaw: ${(yaw * 180 / Math.PI).toFixed(1)}°, Pitch: ${(pitch * 180 / Math.PI).toFixed(1)}°`);
   };
 
   // Joystick analog values (0 to 1 for proportional control)
@@ -876,22 +896,32 @@ export async function initCity() {
 
   // Key event handlers
   window.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
+
+    // G키: 걷기 모드 토글
+    if (key === 'g') {
+      window.toggleWalkingMode();
+      e.preventDefault();
+      return;
+    }
+
     if (keys.hasOwnProperty(e.key)) {
       keys[e.key] = true;
       e.preventDefault();
     }
     // Also handle lowercase
-    if (keys.hasOwnProperty(e.key.toLowerCase())) {
-      keys[e.key.toLowerCase()] = true;
+    if (keys.hasOwnProperty(key)) {
+      keys[key] = true;
     }
   });
 
   window.addEventListener('keyup', (e) => {
+    const key = e.key.toLowerCase();
     if (keys.hasOwnProperty(e.key)) {
       keys[e.key] = false;
     }
-    if (keys.hasOwnProperty(e.key.toLowerCase())) {
-      keys[e.key.toLowerCase()] = false;
+    if (keys.hasOwnProperty(key)) {
+      keys[key] = false;
     }
   });
 
@@ -916,6 +946,8 @@ export async function initCity() {
         <div>W/S - Forward / Backward</div>
         <div>A/D, ←/→ - Rotate</div>
         <div>↑/↓ - Look Up / Down</div>
+        <div>U/J - Height Up / Down</div>
+        <div>G - Toggle Walking Mode</div>
       </div>
     `;
     document.body.appendChild(instructions);
@@ -1203,12 +1235,17 @@ export async function initCity() {
   // Animation state
   let lastTime = 0;
 
+  // 마지막 로그 출력 시간 (너무 잦은 출력 방지)
+  let lastLogTime = 0;
+  const LOG_INTERVAL = 500; // 0.5초마다 출력
+
   /**
    * Update camera based on keyboard/joystick input (zone-restricted like pedestrians)
    */
   function updateCameraControls(deltaTime) {
     const baseSpeed = cameraState.speed * deltaTime * 60;
     const rotSpeed = cameraState.rotSpeed;
+    const heightSpeed = baseSpeed * 0.5; // 높이 조절 속도
 
     // Calculate forward vector based on yaw (horizontal movement only)
     const forward = new THREE.Vector3(
@@ -1246,33 +1283,68 @@ export async function initCity() {
       newZ += forward.z * speed * dir;
     }
 
+    // 높이 조절 (U/J 키)
+    let heightChanged = false;
+    if (keys.u) {
+      camera.position.y += heightSpeed;
+      heightChanged = true;
+    }
+    if (keys.j) {
+      camera.position.y -= heightSpeed;
+      heightChanged = true;
+    }
+
+    // 위치 이동 여부 추적
+    let positionChanged = false;
+
     // Validate and apply movement
     if (newX !== camera.position.x || newZ !== camera.position.z) {
-      const validPos = validateCameraPosition(newX, camera.position.y, newZ, camera.position.y);
-      if (validPos) {
-        camera.position.x = validPos.x;
-        camera.position.z = validPos.z;
-        // Smoothly interpolate Y for slopes/stairs
-        const yDiff = validPos.y - camera.position.y;
-        if (Math.abs(yDiff) > 0.01) {
-          camera.position.y += yDiff * 0.3; // Smooth transition
+      if (walkingMode) {
+        // 걷기 모드: zone 제한 적용
+        const validPos = validateCameraPosition(newX, camera.position.y, newZ, camera.position.y);
+        if (validPos) {
+          camera.position.x = validPos.x;
+          camera.position.z = validPos.z;
+          positionChanged = true;
+          // Smoothly interpolate Y for slopes/stairs
+          const yDiff = validPos.y - camera.position.y;
+          if (Math.abs(yDiff) > 0.01) {
+            camera.position.y += yDiff * 0.3; // Smooth transition
+          } else {
+            camera.position.y = validPos.y;
+          }
         } else {
-          camera.position.y = validPos.y;
+          // Try moving only in X or Z direction
+          const validX = validateCameraPosition(newX, camera.position.y, camera.position.z, camera.position.y);
+          const validZ = validateCameraPosition(camera.position.x, camera.position.y, newZ, camera.position.y);
+
+          if (validX) {
+            camera.position.x = validX.x;
+            camera.position.y += (validX.y - camera.position.y) * 0.3;
+            positionChanged = true;
+          }
+          if (validZ) {
+            camera.position.z = validZ.z;
+            camera.position.y += (validZ.y - camera.position.y) * 0.3;
+            positionChanged = true;
+          }
         }
       } else {
-        // Try moving only in X or Z direction
-        const validX = validateCameraPosition(newX, camera.position.y, camera.position.z, camera.position.y);
-        const validZ = validateCameraPosition(camera.position.x, camera.position.y, newZ, camera.position.y);
-
-        if (validX) {
-          camera.position.x = validX.x;
-          camera.position.y += (validX.y - camera.position.y) * 0.3;
-        }
-        if (validZ) {
-          camera.position.z = validZ.z;
-          camera.position.y += (validZ.y - camera.position.y) * 0.3;
-        }
+        // 자유 이동 모드: zone 제한 없음
+        camera.position.x = newX;
+        camera.position.z = newZ;
+        positionChanged = true;
       }
+    }
+
+    // 콘솔에 위치/방향 출력 (이동 또는 높이 변경 시)
+    const now = performance.now();
+    if ((positionChanged || heightChanged) && now - lastLogTime > LOG_INTERVAL) {
+      const pos = camera.position;
+      const yawDeg = (cameraState.yaw * 180 / Math.PI).toFixed(1);
+      const pitchDeg = (cameraState.pitch * 180 / Math.PI).toFixed(1);
+      console.log(`Pos: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)}) | Yaw: ${yawDeg}° Pitch: ${pitchDeg}°`);
+      lastLogTime = now;
     }
 
     // Apply rotation from left joystick/keyboard A/D
