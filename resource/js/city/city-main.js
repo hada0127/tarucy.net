@@ -266,14 +266,12 @@ function exportSceneToGLB() {
   createCrosswalks(exportScene);
 
   // 건물과 가구 생성 (텍스트 없이)
-  let buildings = [];
-  buildings.push(...createResidentialDistrict(exportScene));
-  buildings.push(...createSlopedResidentialArea(exportScene));
-  buildings.push(...createLeftBuildings(exportScene));
-  buildings.push(...createRightBuildings(exportScene));
-  buildings.push(...createCenterBuildings(exportScene));
-  buildings.push(...createSouthBuildings(exportScene));
-  buildings = removeOverlappingBuildings(exportScene, buildings);
+  createResidentialDistrict(exportScene);
+  createSlopedResidentialArea(exportScene);
+  createLeftBuildings(exportScene);
+  createRightBuildings(exportScene);
+  createCenterBuildings(exportScene);
+  createSouthBuildings(exportScene);
 
   // 상점가 (텍스트 없이)
   createShoppingDistrictBase(exportScene);
@@ -814,7 +812,7 @@ function createAllBuildings(scene, forGLB = false) {
   buildings.push(...createRightBuildings(scene));
   buildings.push(...createCenterBuildings(scene));
   buildings.push(...createSouthBuildings(scene));
-  buildings = removeOverlappingBuildings(scene, buildings);
+  // removeOverlappingBuildings 제거 - 애초에 겹치지 않게 배치
 
   // 상점가 - GLB용은 텍스트 없이, 그 외는 텍스트 포함
   if (forGLB) {
