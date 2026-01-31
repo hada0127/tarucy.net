@@ -739,10 +739,19 @@ export async function initCity() {
   // ============================================================
   // CAMERA MODE SYSTEM
   // ============================================================
-  const CameraMode = { SCROLL: 'scroll', WALKING: 'walking' };
+  const CameraMode = { SCROLL: 'scroll', WALKING: 'walking', TRANSITIONING: 'transitioning' };
   let currentMode = CameraMode.SCROLL;
   let scrollProgress = 0;
   let lastScrollProgress = 0;
+
+  // Transition state for smooth camera movement when exiting walking mode
+  const transitionState = {
+    startPos: new THREE.Vector3(),
+    startYaw: 0,
+    startPitch: 0,
+    progress: 0,
+    duration: 1.0 // seconds
+  };
 
   // Camera state for yaw/pitch
   const cameraState = {
@@ -993,6 +1002,9 @@ export async function initCity() {
     if (controlHints) controlHints.classList.add('visible');
     if (progressBar) progressBar.style.opacity = '0';
 
+    // Block scrolling in walking mode
+    document.body.style.overflow = 'hidden';
+
     // Show mobile joysticks (if on mobile)
     if (window.virtualControllerElement) {
       window.virtualControllerElement.classList.add('visible');
@@ -1002,12 +1014,19 @@ export async function initCity() {
   }
 
   /**
-   * Exit Walking Mode, return to last scroll position
+   * Exit Walking Mode, smoothly transition to scroll position
    */
   function exitWalkingMode() {
     if (currentMode !== CameraMode.WALKING) return;
 
-    currentMode = CameraMode.SCROLL;
+    // Start transition mode
+    currentMode = CameraMode.TRANSITIONING;
+
+    // Store current camera state as transition start
+    transitionState.startPos.copy(camera.position);
+    transitionState.startYaw = cameraState.yaw;
+    transitionState.startPitch = cameraState.pitch;
+    transitionState.progress = 0;
 
     // Reset all keys
     Object.keys(keys).forEach(k => keys[k] = false);
@@ -1021,15 +1040,17 @@ export async function initCity() {
     if (controlHints) controlHints.classList.remove('visible');
     if (progressBar) progressBar.style.opacity = '1';
 
+    // Keep scrolling blocked during transition (will be restored when transition completes)
+
     // Hide mobile joysticks
     if (window.virtualControllerElement) {
       window.virtualControllerElement.classList.remove('visible');
     }
 
-    // Return camera to last scroll position
+    // Return camera to last scroll position (will be animated)
     scrollProgress = lastScrollProgress;
 
-    console.log('Exited Walking Mode');
+    console.log('Transitioning back to Scroll Mode...');
   }
 
   // Button event listeners
@@ -1573,6 +1594,48 @@ export async function initCity() {
     if (currentMode === CameraMode.SCROLL) {
       // Scroll mode: update camera from scroll progress
       updateCameraFromScroll(camera, cameraState, scrollProgress);
+    } else if (currentMode === CameraMode.TRANSITIONING) {
+      // Transitioning mode: smoothly interpolate from walking position to scroll position
+      transitionState.progress += deltaTime / transitionState.duration;
+
+      if (transitionState.progress >= 1.0) {
+        // Transition complete
+        transitionState.progress = 1.0;
+        currentMode = CameraMode.SCROLL;
+        updateCameraFromScroll(camera, cameraState, scrollProgress);
+
+        // Restore scrolling after transition
+        document.body.style.overflow = '';
+        console.log('Transition complete, now in Scroll Mode');
+      } else {
+        // Get target position from scroll
+        const targetCameraState = { yaw: 0, pitch: 0 };
+        const tempCamera = camera.clone();
+        updateCameraFromScroll(tempCamera, targetCameraState, scrollProgress);
+
+        // Smooth easing (ease-out cubic)
+        const t = 1 - Math.pow(1 - transitionState.progress, 3);
+
+        // Interpolate position
+        camera.position.lerpVectors(transitionState.startPos, tempCamera.position, t);
+
+        // Interpolate yaw and pitch
+        cameraState.yaw = transitionState.startYaw + (targetCameraState.yaw - transitionState.startYaw) * t;
+        cameraState.pitch = transitionState.startPitch + (targetCameraState.pitch - transitionState.startPitch) * t;
+
+        // Update camera look direction
+        const forward = new THREE.Vector3(
+          -Math.sin(cameraState.yaw),
+          0,
+          -Math.cos(cameraState.yaw)
+        );
+        const lookTarget = new THREE.Vector3(
+          camera.position.x + forward.x * 10,
+          camera.position.y + Math.sin(cameraState.pitch) * 10,
+          camera.position.z + forward.z * 10
+        );
+        camera.lookAt(lookTarget);
+      }
     } else {
       // Walking mode: poll gamepad and update camera controls
       pollGamepad();
