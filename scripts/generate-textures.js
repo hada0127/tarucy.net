@@ -44,6 +44,45 @@ const vendingMachineSideTexts = [
   'tarucy@gmail.com'
 ];
 
+// Building sign texts (22 items) - must match city-building.js
+const buildingSignTexts = [
+  'Platform', 'Reservation', 'Font Cloud', 'Marketing System',
+  'Media Art', 'IOT', 'Shopping Mall', 'Community',
+  'CRM', 'LMS', 'ERP', 'Web Agency',
+  'EMS', 'CMS', 'Kiosk', 'Cloud Service',
+  'AI Lab', 'Mobile App', 'Windows App', 'MacOS App',
+  '3D Web', 'Web MIDI'
+];
+
+// Building sign fonts
+const buildingSignFonts = [
+  'Arial',
+  'Georgia',
+  'Impact',
+  'Courier New',
+  'Trebuchet MS',
+  'Verdana',
+  'Times New Roman',
+  'Arial Black'
+];
+
+// Building sign colors
+const buildingSignColors = [
+  '#ff6090', '#60d0ff', '#ffcc00', '#90ff60',
+  '#ff9060', '#c060ff', '#60ffcc', '#ff60c0',
+  '#90c0ff', '#ffff60', '#60ff90', '#ff6060'
+];
+
+// Building sign styles
+const buildingSignStyles = [
+  'textOnly',
+  'textWithStroke',
+  'boxBackground',
+  'borderOnly',
+  'gradientText',
+  'neonGlow'
+];
+
 /**
  * Convert hex color to RGB components
  */
@@ -220,6 +259,148 @@ function generatePhoneBoothFlyerTexture() {
 }
 
 /**
+ * Get contrasting stroke color for building signs
+ */
+function getContrastColor(hexColor) {
+  // Parse hex color
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+
+  // Calculate luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  // Return contrasting color
+  if (luminance > 0.5) {
+    // Bright color - return darker version
+    return `rgb(${Math.floor(r * 0.3)}, ${Math.floor(g * 0.3)}, ${Math.floor(b * 0.3)})`;
+  } else {
+    // Dark color - return lighter version
+    return `rgb(${Math.min(255, Math.floor(r * 1.5 + 100))}, ${Math.min(255, Math.floor(g * 1.5 + 100))}, ${Math.min(255, Math.floor(b * 1.5 + 100))})`;
+  }
+}
+
+/**
+ * Generate building sign texture with various styles
+ */
+function generateBuildingSignTexture(text, index) {
+  // Use fixed aspect ratio 4:1 (will be stretched by GPU as needed)
+  const aspectRatio = 4;
+  const canvasHeight = 512;
+  const canvasWidth = Math.round(canvasHeight * aspectRatio);
+
+  const canvas = createCanvas(canvasWidth, canvasHeight);
+  const ctx = canvas.getContext('2d');
+
+  // Select style based on index (cycling through styles)
+  const fontIdx = (index * 11) % buildingSignFonts.length;
+  const colorIdx = (index * 13) % buildingSignColors.length;
+  const styleIdx = (index * 17) % buildingSignStyles.length;
+
+  const fontFamily = buildingSignFonts[fontIdx];
+  const textColor = buildingSignColors[colorIdx];
+  const style = buildingSignStyles[styleIdx];
+  const strokeColor = getContrastColor(textColor);
+
+  // Calculate optimal font size
+  const maxWidth = canvasWidth * 0.9;
+  const maxHeight = canvasHeight * 0.7;
+
+  let fontSize = Math.min(maxHeight, 400);
+  ctx.font = `bold ${fontSize}px ${fontFamily}`;
+
+  let textWidth = ctx.measureText(text).width;
+  if (textWidth > maxWidth) {
+    fontSize = fontSize * (maxWidth / textWidth);
+    ctx.font = `bold ${fontSize}px ${fontFamily}`;
+  }
+
+  const strokeWidth = Math.max(4, Math.round(fontSize * 0.08));
+  const glowBlur = Math.max(15, Math.round(fontSize * 0.15));
+
+  // Clear canvas
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+  // Apply style
+  switch (style) {
+    case 'textOnly':
+      ctx.font = `bold ${fontSize}px ${fontFamily}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, canvasWidth / 2, canvasHeight / 2);
+      break;
+
+    case 'textWithStroke':
+      ctx.font = `bold ${fontSize}px ${fontFamily}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = strokeWidth;
+      ctx.lineJoin = 'round';
+      ctx.strokeText(text, canvasWidth / 2, canvasHeight / 2);
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, canvasWidth / 2, canvasHeight / 2);
+      break;
+
+    case 'boxBackground':
+      ctx.fillStyle = 'rgba(20, 20, 40, 0.9)';
+      ctx.fillRect(20, 20, canvasWidth - 40, canvasHeight - 40);
+      ctx.font = `bold ${fontSize}px ${fontFamily}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, canvasWidth / 2, canvasHeight / 2);
+      break;
+
+    case 'borderOnly':
+      ctx.strokeStyle = textColor;
+      ctx.lineWidth = Math.max(4, Math.round(fontSize * 0.04));
+      ctx.strokeRect(30, 30, canvasWidth - 60, canvasHeight - 60);
+      ctx.font = `bold ${fontSize}px ${fontFamily}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, canvasWidth / 2, canvasHeight / 2);
+      break;
+
+    case 'gradientText':
+      ctx.font = `bold ${fontSize}px ${fontFamily}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = strokeWidth;
+      ctx.lineJoin = 'round';
+      ctx.strokeText(text, canvasWidth / 2, canvasHeight / 2);
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, canvasWidth / 2, canvasHeight / 2);
+      break;
+
+    case 'neonGlow':
+      ctx.font = `bold ${fontSize}px ${fontFamily}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = textColor;
+      ctx.shadowBlur = glowBlur;
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, canvasWidth / 2, canvasHeight / 2);
+      ctx.shadowBlur = glowBlur / 2;
+      ctx.fillStyle = strokeColor;
+      ctx.fillText(text, canvasWidth / 2, canvasHeight / 2);
+      break;
+  }
+
+  // Save to file
+  const buffer = canvas.toBuffer('image/png');
+  const filename = `building-${String(index).padStart(2, '0')}-${text.toLowerCase().replace(/[^a-z0-9]/g, '-')}.png`;
+  fs.writeFileSync(path.join(OUTPUT_DIR, filename), buffer);
+  console.log(`Generated: ${filename} (style: ${style}, color: ${textColor})`);
+
+  return { filename, style, textColor, fontFamily };
+}
+
+/**
  * Generate hotel sign texture (cursive white text with dark pink stroke)
  */
 function generateHotelSignTexture() {
@@ -285,6 +466,14 @@ generatePhoneBoothFlyerTexture();
 console.log('\n--- Hotel Sign ---');
 generateHotelSignTexture();
 
+// Generate building signs (22)
+console.log('\n--- Building Signs (22) ---');
+const buildingFiles = [];
+for (let i = 0; i < buildingSignTexts.length; i++) {
+  const result = generateBuildingSignTexture(buildingSignTexts[i], i);
+  buildingFiles.push({ text: buildingSignTexts[i], ...result });
+}
+
 console.log('\n=== All textures generated! ===');
 
 // Generate a mapping file for reference
@@ -292,7 +481,8 @@ const mapping = {
   shopSigns: shopFiles,
   vendingFront: 'vending-front.png',
   phoneFlyer: 'phone-flyer.png',
-  hotelSign: 'hotel-sign.png'
+  hotelSign: 'hotel-sign.png',
+  buildingSigns: buildingFiles
 };
 
 fs.writeFileSync(

@@ -93,5 +93,161 @@
   ],
   "vendingFront": "vending-front.png",
   "phoneFlyer": "phone-flyer.png",
-  "hotelSign": "hotel-sign.png"
+  "hotelSign": "hotel-sign.png",
+  "buildingSigns": [
+    {
+      "text": "Platform",
+      "filename": "building-00-platform.png",
+      "style": "textOnly",
+      "textColor": "#ff6090",
+      "fontFamily": "Arial"
+    },
+    {
+      "text": "Reservation",
+      "filename": "building-01-reservation.png",
+      "style": "neonGlow",
+      "textColor": "#60d0ff",
+      "fontFamily": "Courier New"
+    },
+    {
+      "text": "Font Cloud",
+      "filename": "building-02-font-cloud.png",
+      "style": "gradientText",
+      "textColor": "#ffcc00",
+      "fontFamily": "Times New Roman"
+    },
+    {
+      "text": "Marketing System",
+      "filename": "building-03-marketing-system.png",
+      "style": "borderOnly",
+      "textColor": "#90ff60",
+      "fontFamily": "Georgia"
+    },
+    {
+      "text": "Media Art",
+      "filename": "building-04-media-art.png",
+      "style": "boxBackground",
+      "textColor": "#ff9060",
+      "fontFamily": "Trebuchet MS"
+    },
+    {
+      "text": "IOT",
+      "filename": "building-05-iot.png",
+      "style": "textWithStroke",
+      "textColor": "#c060ff",
+      "fontFamily": "Arial Black"
+    },
+    {
+      "text": "Shopping Mall",
+      "filename": "building-06-shopping-mall.png",
+      "style": "textOnly",
+      "textColor": "#60ffcc",
+      "fontFamily": "Impact"
+    },
+    {
+      "text": "Community",
+      "filename": "building-07-community.png",
+      "style": "neonGlow",
+      "textColor": "#ff60c0",
+      "fontFamily": "Verdana"
+    },
+    {
+      "text": "CRM",
+      "filename": "building-08-crm.png",
+      "style": "gradientText",
+      "textColor": "#90c0ff",
+      "fontFamily": "Arial"
+    },
+    {
+      "text": "LMS",
+      "filename": "building-09-lms.png",
+      "style": "borderOnly",
+      "textColor": "#ffff60",
+      "fontFamily": "Courier New"
+    },
+    {
+      "text": "ERP",
+      "filename": "building-10-erp.png",
+      "style": "boxBackground",
+      "textColor": "#60ff90",
+      "fontFamily": "Times New Roman"
+    },
+    {
+      "text": "Web Agency",
+      "filename": "building-11-web-agency.png",
+      "style": "textWithStroke",
+      "textColor": "#ff6060",
+      "fontFamily": "Georgia"
+    },
+    {
+      "text": "EMS",
+      "filename": "building-12-ems.png",
+      "style": "textOnly",
+      "textColor": "#ff6090",
+      "fontFamily": "Trebuchet MS"
+    },
+    {
+      "text": "CMS",
+      "filename": "building-13-cms.png",
+      "style": "neonGlow",
+      "textColor": "#60d0ff",
+      "fontFamily": "Arial Black"
+    },
+    {
+      "text": "Kiosk",
+      "filename": "building-14-kiosk.png",
+      "style": "gradientText",
+      "textColor": "#ffcc00",
+      "fontFamily": "Impact"
+    },
+    {
+      "text": "Cloud Service",
+      "filename": "building-15-cloud-service.png",
+      "style": "borderOnly",
+      "textColor": "#90ff60",
+      "fontFamily": "Verdana"
+    },
+    {
+      "text": "AI Lab",
+      "filename": "building-16-ai-lab.png",
+      "style": "boxBackground",
+      "textColor": "#ff9060",
+      "fontFamily": "Arial"
+    },
+    {
+      "text": "Mobile App",
+      "filename": "building-17-mobile-app.png",
+      "style": "textWithStroke",
+      "textColor": "#c060ff",
+      "fontFamily": "Courier New"
+    },
+    {
+      "text": "Windows App",
+      "filename": "building-18-windows-app.png",
+      "style": "textOnly",
+      "textColor": "#60ffcc",
+      "fontFamily": "Times New Roman"
+    },
+    {
+      "text": "MacOS App",
+      "filename": "building-19-macos-app.png",
+      "style": "neonGlow",
+      "textColor": "#ff60c0",
+      "fontFamily": "Georgia"
+    },
+    {
+      "text": "3D Web",
+      "filename": "building-20-3d-web.png",
+      "style": "gradientText",
+      "textColor": "#90c0ff",
+      "fontFamily": "Trebuchet MS"
+    },
+    {
+      "text": "Web MIDI",
+      "filename": "building-21-web-midi.png",
+      "style": "borderOnly",
+      "textColor": "#ffff60",
+      "fontFamily": "Arial Black"
+    }
+  ]
 }

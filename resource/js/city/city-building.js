@@ -9,6 +9,21 @@
 import * as THREE from 'three';
 import { colors, randomColor } from './city-colors.js';
 
+// Texture loader for pre-generated textures
+const textureLoader = new THREE.TextureLoader();
+
+// Pre-generated building sign texture filenames (must match generate-textures.js output)
+const buildingSignTextureFiles = [
+  'building-00-platform.png', 'building-01-reservation.png', 'building-02-font-cloud.png',
+  'building-03-marketing-system.png', 'building-04-media-art.png', 'building-05-iot.png',
+  'building-06-shopping-mall.png', 'building-07-community.png', 'building-08-crm.png',
+  'building-09-lms.png', 'building-10-erp.png', 'building-11-web-agency.png',
+  'building-12-ems.png', 'building-13-cms.png', 'building-14-kiosk.png',
+  'building-15-cloud-service.png', 'building-16-ai-lab.png', 'building-17-mobile-app.png',
+  'building-18-windows-app.png', 'building-19-macos-app.png', 'building-20-3d-web.png',
+  'building-21-web-midi.png'
+];
+
 // ============================================
 // Window Instancing System
 // ============================================
@@ -114,35 +129,8 @@ export function getWindowDataList() {
 // Building Signs
 // ============================================
 
-const buildingSignTexts = [
-  'Platform', 'Reservation', 'Font Cloud', 'Marketing System',
-  'Media Art', 'IOT', 'Shopping Mall', 'Community',
-  'CRM', 'LMS', 'ERP', 'Web Agency',
-  'EMS', 'CMS', 'Kiosk', 'Cloud Service',
-  'AI Lab', 'Mobile App', 'Windows App', 'MacOS App',
-  '3D Web', 'Web MIDI'
-];
-
-const signFonts = [
-  'Arial, Helvetica, sans-serif',
-  'Georgia, "Times New Roman", serif',
-  'Impact, "Arial Black", sans-serif',
-  '"Courier New", Courier, monospace',
-  '"Trebuchet MS", Arial, sans-serif',
-  'Verdana, Geneva, sans-serif',
-  'Tahoma, Geneva, sans-serif',
-  '"Times New Roman", Times, serif',
-  'Monaco, "Courier New", monospace',
-  '"Marker Felt", "Comic Sans MS", cursive',
-  'Palatino, "Palatino Linotype", serif',
-  'Helvetica, Arial, sans-serif'
-];
-
-const signColors = [
-  '#ff6090', '#60d0ff', '#ffcc00', '#90ff60',
-  '#ff9060', '#c060ff', '#60ffcc', '#ff60c0',
-  '#90c0ff', '#ffff60', '#60ff90', '#ff6060'
-];
+// Building sign text count (must match number of pre-generated textures)
+const buildingSignCount = 22;
 
 let signTextIndex = 0;
 
@@ -162,23 +150,23 @@ function shuffleArray(array) {
 function getNextTextIndex() {
   // Initialize or reshuffle when exhausted
   if (shuffledTextIndices.length === 0 || currentShuffledIndex >= shuffledTextIndices.length) {
-    shuffledTextIndices = shuffleArray([...Array(buildingSignTexts.length).keys()]);
+    shuffledTextIndices = shuffleArray([...Array(buildingSignCount).keys()]);
     currentShuffledIndex = 0;
   }
   return shuffledTextIndices[currentShuffledIndex++];
 }
 
 /**
- * Create a small entrance sign above the door
+ * Create a small entrance sign above the door (using pre-generated PNG texture)
  */
-function createEntranceSign(group, text, entranceWidth, entranceHeight, depth, isFront, font, textColor) {
+function createEntranceSign(group, textIdx, entranceWidth, entranceHeight, depth, isFront) {
   // Sign dimensions - visible but smaller than main signs
   const signWidth = Math.max(entranceWidth * 1.5, 5);
   const signHeight = 2;
-  const aspectRatio = signWidth / signHeight;
 
-  // Create texture
-  const texture = createSignTexture(text, font, textColor, 'textWithStroke', aspectRatio);
+  // Load pre-generated texture
+  const texturePath = `resource/img/signs/${buildingSignTextureFiles[textIdx]}`;
+  const texture = textureLoader.load(texturePath);
 
   // Create sign mesh
   const signGeom = new THREE.PlaneGeometry(signWidth, signHeight);
@@ -200,139 +188,8 @@ function createEntranceSign(group, text, entranceWidth, entranceHeight, depth, i
   group.add(sign);
 }
 
-// Sign style types
-const signStyles = [
-  'textOnly',           // Just text, no background
-  'textWithStroke',     // Text with stroke outline only
-  'boxBackground',      // Dark box background with text
-  'borderOnly',         // Border around text, transparent bg
-  'gradientText',       // Gradient-like text effect
-  'neonGlow'            // Neon glow style
-];
-
 /**
- * Get contrasting stroke color based on text color brightness
- */
-function getContrastColor(hexColor) {
-  // Parse hex color
-  const hex = hexColor.replace('#', '');
-  const r = parseInt(hex.substr(0, 2), 16);
-  const g = parseInt(hex.substr(2, 2), 16);
-  const b = parseInt(hex.substr(4, 2), 16);
-
-  // Calculate brightness (perceived luminance)
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-
-  // Return dark color for light text, light color for dark text
-  return brightness > 128 ? '#000000' : '#ffffff';
-}
-
-/**
- * Create a canvas texture for building sign
- */
-function createSignTexture(text, fontFamily, textColor, style, aspectRatio = 4) {
-  const canvas = document.createElement('canvas');
-  // Match canvas aspect ratio to sign aspect ratio to prevent stretching
-  canvas.height = 512;
-  canvas.width = Math.round(512 * aspectRatio);
-  const ctx = canvas.getContext('2d');
-
-  // Get contrasting stroke color
-  const strokeColor = getContrastColor(textColor);
-
-  // Calculate optimal font size to fit text within canvas
-  const maxWidth = canvas.width * 0.9;  // 90% of canvas width
-  const maxHeight = canvas.height * 0.7; // 70% of canvas height
-
-  // Start with a large font size and reduce until text fits
-  let fontSize = Math.min(maxHeight, 400);
-  let font = `bold ${fontSize}px ${fontFamily}`;
-  ctx.font = font;
-
-  while (ctx.measureText(text).width > maxWidth && fontSize > 40) {
-    fontSize -= 10;
-    font = `bold ${fontSize}px ${fontFamily}`;
-    ctx.font = font;
-  }
-
-  // Proportional stroke width based on font size
-  const strokeWidth = Math.max(8, Math.round(fontSize * 0.15));
-  const glowBlur = Math.max(30, Math.round(fontSize * 0.35));
-
-  // Apply different styles
-  switch (style) {
-    case 'textOnly':
-      ctx.font = font;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = textColor;
-      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-      break;
-
-    case 'textWithStroke':
-      ctx.font = font;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = strokeWidth;
-      ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
-      ctx.fillStyle = textColor;
-      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-      break;
-
-    case 'boxBackground':
-      ctx.fillStyle = 'rgba(20, 20, 40, 0.9)';
-      ctx.fillRect(20, 20, canvas.width - 40, canvas.height - 40);
-      ctx.font = font;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = textColor;
-      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-      break;
-
-    case 'borderOnly':
-      ctx.strokeStyle = textColor;
-      ctx.lineWidth = Math.max(4, Math.round(fontSize * 0.04));
-      ctx.strokeRect(12, 12, canvas.width - 24, canvas.height - 24);
-      ctx.font = font;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = textColor;
-      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-      break;
-
-    case 'gradientText':
-      ctx.font = font;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = strokeWidth;
-      ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
-      ctx.fillStyle = textColor;
-      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-      break;
-
-    case 'neonGlow':
-      ctx.font = font;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.shadowColor = textColor;
-      ctx.shadowBlur = glowBlur;
-      ctx.fillStyle = textColor;
-      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-      ctx.shadowBlur = glowBlur / 2;
-      ctx.fillStyle = strokeColor;
-      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-      break;
-  }
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.needsUpdate = true;
-  return texture;
-}
-
-/**
- * Create building signs on all 4 sides and entrance signs
+ * Create building signs on all 4 sides and entrance signs (using pre-generated PNG textures)
  * @param {THREE.Group} group - Building group
  * @param {number} width - Building width (x-axis)
  * @param {number} height - Building height (y-axis)
@@ -343,21 +200,13 @@ function createSignTexture(text, fontFamily, textColor, style, aspectRatio = 4) 
 function createBuildingSign(group, width, height, depth, isMainTower = false, entranceConfig = null) {
   // Use shuffled array to ensure nearby buildings have different texts
   const textIdx = getNextTextIndex();
-  const fontIdx = (signTextIndex * 11) % signFonts.length;
-  const colorIdx = (signTextIndex * 13) % signColors.length;
-  const styleIdx = (signTextIndex * 17) % signStyles.length;
-
-  const text = buildingSignTexts[textIdx];
-  const font = signFonts[fontIdx];
-  const textColor = signColors[colorIdx];
-  const style = signStyles[styleIdx];
   signTextIndex++;
 
-  // Create entrance signs if config provided (same text as main sign)
+  // Create entrance signs if config provided (same texture as main sign)
   if (entranceConfig) {
     const { frontWidth, frontHeight, backWidth, backHeight } = entranceConfig;
-    createEntranceSign(group, text, frontWidth, frontHeight, depth, true, font, textColor);
-    createEntranceSign(group, text, backWidth, backHeight, depth, false, font, textColor);
+    createEntranceSign(group, textIdx, frontWidth, frontHeight, depth, true);
+    createEntranceSign(group, textIdx, backWidth, backHeight, depth, false);
   }
 
   // Calculate window layout to find top window position
@@ -378,40 +227,33 @@ function createBuildingSign(group, width, height, depth, isMainTower = false, en
   const signHeight = Math.min(Math.max(availableHeight, 2), 6);
   const signCenterY = signStartY + signHeight / 2;
 
-  // Sign configurations for 4 directions with matching aspect ratios
+  // Sign configurations for 4 directions
   const frontBackWidth = width * 0.95;
   const leftRightWidth = depth * 0.95;
 
-  // Create textures with matching aspect ratios to prevent text distortion
-  const frontBackAspect = frontBackWidth / signHeight;
-  const leftRightAspect = leftRightWidth / signHeight;
-
-  const textureFrontBack = createSignTexture(text, font, textColor, style, frontBackAspect);
-  const textureLeftRight = createSignTexture(text, font, textColor, style, leftRightAspect);
+  // Load pre-generated texture (same texture for all sides - GPU handles stretching)
+  const texturePath = `resource/img/signs/${buildingSignTextureFiles[textIdx]}`;
+  const texture = textureLoader.load(texturePath);
 
   // Sign configurations for 4 directions
   const signConfigs = [
     { // Front (facing +z direction)
       signWidth: frontBackWidth,
-      texture: textureFrontBack,
       position: [0, signCenterY, depth / 2 + 0.1],
       rotation: [0, 0, 0]
     },
     { // Back (facing -z direction)
       signWidth: frontBackWidth,
-      texture: textureFrontBack,
       position: [0, signCenterY, -depth / 2 - 0.1],
       rotation: [0, Math.PI, 0]
     },
     { // Left (facing -x direction)
       signWidth: leftRightWidth,
-      texture: textureLeftRight,
       position: [-width / 2 - 0.1, signCenterY, 0],
       rotation: [0, -Math.PI / 2, 0]
     },
     { // Right (facing +x direction)
       signWidth: leftRightWidth,
-      texture: textureLeftRight,
       position: [width / 2 + 0.1, signCenterY, 0],
       rotation: [0, Math.PI / 2, 0]
     }
@@ -421,7 +263,7 @@ function createBuildingSign(group, width, height, depth, isMainTower = false, en
   signConfigs.forEach(config => {
     const signGeom = new THREE.PlaneGeometry(config.signWidth, signHeight);
     const signMat = new THREE.MeshBasicMaterial({
-      map: config.texture,
+      map: texture,
       transparent: true,
       side: THREE.FrontSide
     });
