@@ -1,12 +1,136 @@
 /**
  * city-camera.js
- * Overhead Bird's Eye Camera System
+ * Scroll-Based Camera Animation System
  *
- * Camera orbits around the city from above, always looking at the center.
- * This provides a clear view of the entire layout structure.
+ * Camera follows predefined keyframes based on scroll progress.
+ * Supports smooth interpolation between positions and rotations.
  */
 
 import * as THREE from 'three';
+
+// ============================================================
+// SCROLL KEYFRAMES (19 viewpoints)
+// ============================================================
+
+/**
+ * Scroll keyframe data - positions and rotations for camera animation
+ * yaw/pitch are in radians (converted from degrees in the plan)
+ */
+export const scrollKeyframes = [
+  // 시작시점 (intro)
+  { section: 'intro', pos: {x: 27.81, y: 1.60, z: -3.28}, yaw: -1.650, pitch: 0.440 },
+  // 스킬 시점 (6개)
+  { section: 'skills', pos: {x: 35.21, y: 1.60, z: 0.28}, yaw: 1.980, pitch: -0.040 },
+  { section: 'skills', pos: {x: 29.70, y: 1.60, z: 2.66}, yaw: 1.980, pitch: -0.040 },
+  { section: 'skills', pos: {x: -23.42, y: 1.60, z: 5.13}, yaw: 2.011, pitch: -0.010 },
+  { section: 'skills', pos: {x: -23.42, y: 1.60, z: 5.13}, yaw: 0.510, pitch: 0.051 },
+  { section: 'skills', pos: {x: -23.42, y: 1.60, z: -5.66}, yaw: -2.040, pitch: 0.169 },
+  { section: 'skills', pos: {x: 16.34, y: 1.60, z: -6.99}, yaw: -2.191, pitch: 0.410 },
+  // 솔루션 시점 (6개)
+  { section: 'solution', pos: {x: 27.46, y: 1.60, z: -8.80}, yaw: -0.901, pitch: 0.560 },
+  { section: 'solution', pos: {x: 27.46, y: 1.60, z: -8.80}, yaw: -0.180, pitch: 0.710 },
+  { section: 'solution', pos: {x: 27.46, y: 1.60, z: -8.80}, yaw: 0.571, pitch: 0.470 },
+  { section: 'solution', pos: {x: -48.00, y: 1.60, z: -14.00}, yaw: -0.241, pitch: 0.319 },
+  { section: 'solution', pos: {x: -73.85, y: 37.26, z: 12.14}, yaw: -0.150, pitch: -0.161 },
+  { section: 'solution', pos: {x: -73.85, y: 37.26, z: 12.14}, yaw: -0.960, pitch: -0.161 },
+  // 연락처 시점 (3개)
+  { section: 'contact', pos: {x: -40.62, y: 1.34, z: -8.28}, yaw: -1.231, pitch: -0.161 },
+  { section: 'contact', pos: {x: 42.78, y: 1.60, z: -8.80}, yaw: -0.059, pitch: 0.080 },
+  { section: 'contact', pos: {x: 42.92, y: 1.60, z: -11.05}, yaw: -0.059, pitch: -0.040 },
+  // 마지막 시점 (3개)
+  { section: 'final', pos: {x: 31.03, y: 1.60, z: 16.33}, yaw: -4.529, pitch: 0.019 },
+  { section: 'final', pos: {x: 3.36, y: 10.72, z: 16.85}, yaw: -4.649, pitch: 0.201 },
+  { section: 'final', pos: {x: -1.90, y: 11.58, z: 23.99}, yaw: -1.140, pitch: 0.290 }
+];
+
+/**
+ * Lerp angle with shortest path (handles wrap-around)
+ */
+export function lerpAngle(a, b, t) {
+  // Normalize angles to -PI to PI range
+  while (a > Math.PI) a -= Math.PI * 2;
+  while (a < -Math.PI) a += Math.PI * 2;
+  while (b > Math.PI) b -= Math.PI * 2;
+  while (b < -Math.PI) b += Math.PI * 2;
+
+  let diff = b - a;
+
+  // Take shortest path
+  if (diff > Math.PI) diff -= Math.PI * 2;
+  if (diff < -Math.PI) diff += Math.PI * 2;
+
+  return a + diff * t;
+}
+
+/**
+ * Get scroll segment info from progress (0-1)
+ * Returns segment index, local progress within segment, and keyframes
+ */
+export function getScrollSegment(progress) {
+  const numSegments = scrollKeyframes.length - 1;
+  const scaledProgress = Math.max(0, Math.min(1, progress)) * numSegments;
+  const segment = Math.min(Math.floor(scaledProgress), numSegments - 1);
+  const localProgress = scaledProgress - segment;
+
+  return {
+    segment,
+    localProgress,
+    from: scrollKeyframes[segment],
+    to: scrollKeyframes[Math.min(segment + 1, scrollKeyframes.length - 1)]
+  };
+}
+
+/**
+ * Update camera position and rotation based on scroll progress
+ * @param {THREE.Camera} camera - The camera to update
+ * @param {Object} cameraState - Camera state object with yaw/pitch
+ * @param {number} progress - Scroll progress (0-1)
+ */
+export function updateCameraFromScroll(camera, cameraState, progress) {
+  const { localProgress, from, to } = getScrollSegment(progress);
+
+  // Smooth easing function
+  const eased = smootherStep(localProgress);
+
+  // Interpolate position
+  const x = from.pos.x + (to.pos.x - from.pos.x) * eased;
+  const y = from.pos.y + (to.pos.y - from.pos.y) * eased;
+  const z = from.pos.z + (to.pos.z - from.pos.z) * eased;
+
+  camera.position.set(x, y, z);
+
+  // Interpolate rotation (yaw/pitch)
+  cameraState.yaw = lerpAngle(from.yaw, to.yaw, eased);
+  cameraState.pitch = from.pitch + (to.pitch - from.pitch) * eased;
+
+  // Apply rotation to camera
+  const forward = new THREE.Vector3(
+    -Math.sin(cameraState.yaw),
+    0,
+    -Math.cos(cameraState.yaw)
+  );
+
+  const lookTarget = new THREE.Vector3(
+    camera.position.x + forward.x * 10,
+    camera.position.y + Math.sin(cameraState.pitch) * 10,
+    camera.position.z + forward.z * 10
+  );
+
+  camera.lookAt(lookTarget);
+
+  return {
+    section: from.section,
+    progress
+  };
+}
+
+/**
+ * Get current section from scroll progress
+ */
+export function getSectionFromScroll(progress) {
+  const { from } = getScrollSegment(progress);
+  return from.section;
+}
 
 /**
  * Smooth easing function

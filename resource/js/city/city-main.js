@@ -18,6 +18,9 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 // Scene, sky, camera, renderer
 import { createScene, createRenderer, createCamera, createLighting, handleResize } from './city-sky.js';
 
+// Camera scroll animation
+import { scrollKeyframes, updateCameraFromScroll, getSectionFromScroll } from './city-camera.js';
+
 // Ground and roads
 import { createGround } from './city-ground.js';
 import { createRoads, createCrosswalks } from './city-road.js';
@@ -733,9 +736,37 @@ export async function initCity() {
   const renderer = createRenderer(container);
   const camera = createCamera();
 
-  // Initial camera position (stairs top, human eye level ~1.6m above ground)
-  camera.position.set(0, 11.6, 18);
-  camera.lookAt(0, 5, -20);
+  // ============================================================
+  // CAMERA MODE SYSTEM
+  // ============================================================
+  const CameraMode = { SCROLL: 'scroll', WALKING: 'walking' };
+  let currentMode = CameraMode.SCROLL;
+  let scrollProgress = 0;
+  let lastScrollProgress = 0;
+
+  // Camera state for yaw/pitch
+  const cameraState = {
+    yaw: scrollKeyframes[0].yaw,
+    pitch: scrollKeyframes[0].pitch,
+    speed: 0.375,
+    rotSpeed: 0.03
+  };
+
+  // Initial camera position from first keyframe
+  const firstKeyframe = scrollKeyframes[0];
+  camera.position.set(firstKeyframe.pos.x, firstKeyframe.pos.y, firstKeyframe.pos.z);
+
+  // Apply initial rotation
+  const initialForward = new THREE.Vector3(
+    -Math.sin(cameraState.yaw),
+    0,
+    -Math.cos(cameraState.yaw)
+  );
+  camera.lookAt(
+    camera.position.x + initialForward.x * 10,
+    camera.position.y + Math.sin(cameraState.pitch) * 10,
+    camera.position.z + initialForward.z * 10
+  );
 
   // Add lighting
   createLighting(scene);
@@ -851,19 +882,11 @@ export async function initCity() {
   const keys = {
     w: false, s: false, a: false, d: false,
     ArrowUp: false, ArrowDown: false,
-    ArrowLeft: false, ArrowRight: false,
-    u: false, j: false
+    ArrowLeft: false, ArrowRight: false
   };
 
-  // 걷기 모드 (zone 제한 적용 여부)
-  let walkingMode = true;
-
-  // 걷기 모드 토글 함수 (전역으로 노출)
-  window.toggleWalkingMode = () => {
-    walkingMode = !walkingMode;
-    console.log(`Walking Mode: ${walkingMode ? 'ON (zone restricted)' : 'OFF (free movement)'}`);
-    return walkingMode;
-  };
+  // 걷기 모드 zone 제한 (Walking 모드에서만 적용)
+  let walkingModeZoneRestricted = true;
 
   // 현재 카메라 상태 출력 함수 (전역으로 노출)
   window.logCameraState = () => {
@@ -871,7 +894,7 @@ export async function initCity() {
     const yaw = cameraState.yaw;
     const pitch = cameraState.pitch;
     console.log(`Position: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})`);
-    console.log(`Yaw: ${(yaw * 180 / Math.PI).toFixed(1)}°, Pitch: ${(pitch * 180 / Math.PI).toFixed(1)}°`);
+    console.log(`Yaw: ${(yaw * 180 / Math.PI).toFixed(3)}, Pitch: ${(pitch * 180 / Math.PI).toFixed(3)}`);
   };
 
   // Joystick analog values (0 to 1 for proportional control)
@@ -886,24 +909,12 @@ export async function initCity() {
     lookX: 0   // -1 (rotate left) to 1 (rotate right)
   };
 
-  // Camera movement state
-  const cameraState = {
-    yaw: 0,      // Horizontal rotation (radians)
-    pitch: 0.2,  // Vertical angle (looking slightly up)
-    speed: 0.375, // Movement speed (slow walking pace)
-    rotSpeed: 0.03 // Rotation speed
-  };
-
-  // Key event handlers
+  // Key event handlers (only active in Walking mode)
   window.addEventListener('keydown', (e) => {
-    const key = e.key.toLowerCase();
+    // 키보드 컨트롤은 Walking 모드에서만 동작
+    if (currentMode !== CameraMode.WALKING) return;
 
-    // G키: 걷기 모드 토글
-    if (key === 'g') {
-      window.toggleWalkingMode();
-      e.preventDefault();
-      return;
-    }
+    const key = e.key.toLowerCase();
 
     if (keys.hasOwnProperty(e.key)) {
       keys[e.key] = true;
@@ -931,32 +942,183 @@ export async function initCity() {
     scrollHint.style.display = 'none';
   }
 
+  // ============================================================
+  // SCROLL EVENT HANDLER
+  // ============================================================
+  const progressBar = document.getElementById('progress');
+  const walkingModeBtn = document.getElementById('walking-mode-btn');
+  const exitWalkingBtn = document.getElementById('exit-walking-btn');
+  const controlHints = document.getElementById('control-hints');
+
+  function updateScrollProgress() {
+    if (currentMode !== CameraMode.SCROLL) return;
+
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    const targetProgress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+
+    // Smooth interpolation
+    scrollProgress += (targetProgress - scrollProgress) * 0.15;
+
+    // Update progress bar
+    if (progressBar) {
+      progressBar.style.width = (scrollProgress * 100) + '%';
+    }
+
+    // Show Walking Mode button when near the end (>= 98%)
+    if (scrollProgress >= 0.98 && walkingModeBtn) {
+      walkingModeBtn.classList.add('visible');
+    } else if (walkingModeBtn) {
+      walkingModeBtn.classList.remove('visible');
+    }
+  }
+
+  window.addEventListener('scroll', updateScrollProgress, { passive: true });
+
+  // ============================================================
+  // MODE TRANSITION FUNCTIONS
+  // ============================================================
+
+  /**
+   * Enter Walking Mode from last scroll position
+   */
+  function enterWalkingMode() {
+    if (currentMode === CameraMode.WALKING) return;
+
+    currentMode = CameraMode.WALKING;
+    lastScrollProgress = scrollProgress;
+
+    // Hide Walking Mode button, show Exit button and control hints
+    if (walkingModeBtn) walkingModeBtn.classList.remove('visible');
+    if (exitWalkingBtn) exitWalkingBtn.classList.add('visible');
+    if (controlHints) controlHints.classList.add('visible');
+    if (progressBar) progressBar.style.opacity = '0';
+
+    // Show mobile joysticks (if on mobile)
+    if (window.virtualControllerElement) {
+      window.virtualControllerElement.classList.add('visible');
+    }
+
+    console.log('Entered Walking Mode');
+  }
+
+  /**
+   * Exit Walking Mode, return to last scroll position
+   */
+  function exitWalkingMode() {
+    if (currentMode !== CameraMode.WALKING) return;
+
+    currentMode = CameraMode.SCROLL;
+
+    // Reset all keys
+    Object.keys(keys).forEach(k => keys[k] = false);
+    joystickState.moveX = 0;
+    joystickState.moveY = 0;
+    rightJoystickState.lookX = 0;
+    rightJoystickState.lookY = 0;
+
+    // Hide Exit button, control hints, and mobile joysticks
+    if (exitWalkingBtn) exitWalkingBtn.classList.remove('visible');
+    if (controlHints) controlHints.classList.remove('visible');
+    if (progressBar) progressBar.style.opacity = '1';
+
+    // Hide mobile joysticks
+    if (window.virtualControllerElement) {
+      window.virtualControllerElement.classList.remove('visible');
+    }
+
+    // Return camera to last scroll position
+    scrollProgress = lastScrollProgress;
+
+    console.log('Exited Walking Mode');
+  }
+
+  // Button event listeners
+  if (walkingModeBtn) {
+    walkingModeBtn.addEventListener('click', enterWalkingMode);
+  }
+  if (exitWalkingBtn) {
+    exitWalkingBtn.addEventListener('click', exitWalkingMode);
+  }
+
+  // ============================================================
+  // GAMEPAD SUPPORT
+  // ============================================================
+  let gamepadIndex = null;
+  let gamepadPollingId = null;
+
+  function startGamepadPolling() {
+    if (gamepadPollingId !== null) return;
+    gamepadPollingId = setInterval(pollGamepad, 16); // ~60fps
+  }
+
+  function stopGamepadPolling() {
+    if (gamepadPollingId !== null) {
+      clearInterval(gamepadPollingId);
+      gamepadPollingId = null;
+    }
+  }
+
+  function pollGamepad() {
+    // Only active in Walking mode
+    if (currentMode !== CameraMode.WALKING) return;
+
+    const gamepads = navigator.getGamepads();
+    if (!gamepads || gamepadIndex === null) return;
+
+    const gp = gamepads[gamepadIndex];
+    if (!gp) return;
+
+    const deadzone = 0.15;
+
+    // Left stick: Move/Rotate
+    const leftX = Math.abs(gp.axes[0]) > deadzone ? gp.axes[0] : 0;
+    const leftY = Math.abs(gp.axes[1]) > deadzone ? gp.axes[1] : 0;
+
+    joystickState.moveX = leftX;
+    joystickState.moveY = leftY;
+
+    // Right stick: Look
+    const rightX = Math.abs(gp.axes[2]) > deadzone ? gp.axes[2] : 0;
+    const rightY = Math.abs(gp.axes[3]) > deadzone ? gp.axes[3] : 0;
+
+    rightJoystickState.lookX = rightX;
+    rightJoystickState.lookY = rightY;
+  }
+
+  window.addEventListener('gamepadconnected', (e) => {
+    console.log('Gamepad connected:', e.gamepad.id);
+    gamepadIndex = e.gamepad.index;
+    startGamepadPolling();
+  });
+
+  window.addEventListener('gamepaddisconnected', (e) => {
+    console.log('Gamepad disconnected:', e.gamepad.id);
+    if (e.gamepad.index === gamepadIndex) {
+      gamepadIndex = null;
+      stopGamepadPolling();
+    }
+  });
+
   // Check if mobile device
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
                    ('ontouchstart' in window) ||
                    (window.innerWidth <= 768);
 
-  if (!isMobile) {
-    // Add control instructions for desktop
-    const instructions = document.createElement('div');
-    instructions.id = 'camera-instructions';
-    instructions.innerHTML = `
-      <div style="position: fixed; bottom: 20px; left: 20px; color: white; font-family: monospace; font-size: 14px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; z-index: 1000;">
-        <div style="margin-bottom: 8px; font-weight: bold; color: #ff66aa;">Camera Controls</div>
-        <div>W/S - Forward / Backward</div>
-        <div>A/D, ←/→ - Rotate</div>
-        <div>↑/↓ - Look Up / Down</div>
-        <div>U/J - Height Up / Down</div>
-        <div>G - Toggle Walking Mode</div>
-      </div>
-    `;
-    document.body.appendChild(instructions);
-  } else {
-    // Add virtual controller for mobile
+  if (isMobile) {
+    // Add virtual controller for mobile (hidden by default, shown in Walking mode)
     const virtualController = document.createElement('div');
     virtualController.id = 'virtual-controller';
     virtualController.innerHTML = `
       <style>
+        #virtual-controller {
+          display: none;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+        #virtual-controller.visible {
+          display: block;
+          opacity: 1;
+        }
         .vc-joystick {
           position: fixed;
           bottom: 40px;
@@ -1015,6 +1177,9 @@ export async function initCity() {
       </div>
     `;
     document.body.appendChild(virtualController);
+
+    // Store reference for mode switching
+    window.virtualControllerElement = virtualController;
 
     // Joystick state
     const joystick = document.getElementById('vc-joystick');
@@ -1076,8 +1241,9 @@ export async function initCity() {
       joystick.classList.remove('active');
     }
 
-    // Touch events for left joystick
+    // Touch events for left joystick (only in Walking mode)
     joystick.addEventListener('touchstart', (e) => {
+      if (currentMode !== CameraMode.WALKING) return;
       e.preventDefault();
       if (joystickTouchId === null) {
         joystickActive = true;
@@ -1144,8 +1310,9 @@ export async function initCity() {
       joystickRight.classList.remove('active');
     }
 
-    // Touch events for right joystick
+    // Touch events for right joystick (only in Walking mode)
     joystickRight.addEventListener('touchstart', (e) => {
+      if (currentMode !== CameraMode.WALKING) return;
       e.preventDefault();
       if (rightJoystickTouchId === null) {
         rightJoystickActive = true;
@@ -1195,10 +1362,11 @@ export async function initCity() {
       }
     });
 
-    // Mouse events for both joysticks (for desktop testing)
+    // Mouse events for both joysticks (for desktop testing, only in Walking mode)
     let activeMouseJoystick = null;
 
     joystick.addEventListener('mousedown', (e) => {
+      if (currentMode !== CameraMode.WALKING) return;
       e.preventDefault();
       joystickActive = true;
       activeMouseJoystick = 'left';
@@ -1207,6 +1375,7 @@ export async function initCity() {
     });
 
     joystickRight.addEventListener('mousedown', (e) => {
+      if (currentMode !== CameraMode.WALKING) return;
       e.preventDefault();
       rightJoystickActive = true;
       activeMouseJoystick = 'right';
@@ -1241,11 +1410,14 @@ export async function initCity() {
 
   /**
    * Update camera based on keyboard/joystick input (zone-restricted like pedestrians)
+   * Only active in Walking mode
    */
   function updateCameraControls(deltaTime) {
+    // Only process controls in Walking mode
+    if (currentMode !== CameraMode.WALKING) return;
+
     const baseSpeed = cameraState.speed * deltaTime * 60;
     const rotSpeed = cameraState.rotSpeed;
-    const heightSpeed = baseSpeed * 0.5; // 높이 조절 속도
 
     // Calculate forward vector based on yaw (horizontal movement only)
     const forward = new THREE.Vector3(
@@ -1283,24 +1455,13 @@ export async function initCity() {
       newZ += forward.z * speed * dir;
     }
 
-    // 높이 조절 (U/J 키)
-    let heightChanged = false;
-    if (keys.u) {
-      camera.position.y += heightSpeed;
-      heightChanged = true;
-    }
-    if (keys.j) {
-      camera.position.y -= heightSpeed;
-      heightChanged = true;
-    }
-
     // 위치 이동 여부 추적
     let positionChanged = false;
 
     // Validate and apply movement
     if (newX !== camera.position.x || newZ !== camera.position.z) {
-      if (walkingMode) {
-        // 걷기 모드: zone 제한 적용
+      if (walkingModeZoneRestricted) {
+        // Zone 제한 적용
         const validPos = validateCameraPosition(newX, camera.position.y, newZ, camera.position.y);
         if (validPos) {
           camera.position.x = validPos.x;
@@ -1380,13 +1541,13 @@ export async function initCity() {
       rotationChanged = true;
     }
 
-    // 콘솔에 위치/방향 출력 (이동, 높이 변경, 또는 회전 시)
+    // 콘솔에 위치/방향 출력 (이동 또는 회전 시)
     const now = performance.now();
-    if ((positionChanged || heightChanged || rotationChanged) && now - lastLogTime > LOG_INTERVAL) {
+    if ((positionChanged || rotationChanged) && now - lastLogTime > LOG_INTERVAL) {
       const pos = camera.position;
-      const yawDeg = (cameraState.yaw * 180 / Math.PI).toFixed(1);
-      const pitchDeg = (cameraState.pitch * 180 / Math.PI).toFixed(1);
-      console.log(`Pos: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)}) | Yaw: ${yawDeg}° Pitch: ${pitchDeg}°`);
+      const yawRad = cameraState.yaw.toFixed(3);
+      const pitchRad = cameraState.pitch.toFixed(3);
+      console.log(`Pos: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)}) | Yaw: ${yawRad} Pitch: ${pitchRad}`);
       lastLogTime = now;
     }
 
@@ -1408,7 +1569,16 @@ export async function initCity() {
     const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.1);
     lastTime = currentTime;
 
-    updateCameraControls(deltaTime);
+    // Camera update based on mode
+    if (currentMode === CameraMode.SCROLL) {
+      // Scroll mode: update camera from scroll progress
+      updateCameraFromScroll(camera, cameraState, scrollProgress);
+    } else {
+      // Walking mode: poll gamepad and update camera controls
+      pollGamepad();
+      updateCameraControls(deltaTime);
+    }
+
     updateVehicles(scene, deltaTime);
     updatePedestrians(deltaTime, currentTime / 1000);
 
