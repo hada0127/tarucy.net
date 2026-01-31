@@ -21,49 +21,18 @@ const shopSignTexts = [
   'Hono', 'Nest.js', 'React Native', 'Electron', 'PostgreSQL', 'MySQL', 'MariaDB', 'Cloudflare', 'AWS'
 ];
 
-/**
- * Create a canvas texture with text for shop signs
- */
-function createShopSignTexture(text, width, height, bgColor) {
-  const canvas = document.createElement('canvas');
-  const scale = 4; // Higher resolution
-  canvas.width = width * scale;
-  canvas.height = height * scale;
+// Pre-generated texture filenames (must match generate-textures.js output)
+const shopSignTextureFiles = [
+  'shop-00-javascript.png', 'shop-01-typescript.png', 'shop-02-php.png',
+  'shop-03-go.png', 'shop-04-python.png', 'shop-05-java.png',
+  'shop-06-react.png', 'shop-07-vue.png', 'shop-08-svelte.png',
+  'shop-09-hono.png', 'shop-10-nest-js.png', 'shop-11-react-native.png',
+  'shop-12-electron.png', 'shop-13-postgresql.png', 'shop-14-mysql.png',
+  'shop-15-mariadb.png', 'shop-16-cloudflare.png', 'shop-17-aws.png'
+];
 
-  const ctx = canvas.getContext('2d');
-
-  // Darken background color for better text visibility
-  const r = Math.floor(((bgColor >> 16) & 0xff) * 0.25);
-  const g = Math.floor(((bgColor >> 8) & 0xff) * 0.25);
-  const b = Math.floor((bgColor & 0xff) * 0.25);
-  ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Text settings
-  ctx.fillStyle = '#ffffff';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  // Calculate optimal font size
-  let fontSize = canvas.height * 0.7;
-  ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
-
-  // Measure text and adjust if needed
-  let textWidth = ctx.measureText(text).width;
-  const maxWidth = canvas.width * 0.9;
-
-  if (textWidth > maxWidth) {
-    fontSize = fontSize * (maxWidth / textWidth);
-    ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
-  }
-
-  // Draw text
-  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.needsUpdate = true;
-  return texture;
-}
+// Texture loader for pre-generated textures
+const textureLoader = new THREE.TextureLoader();
 
 // ============================================
 // Shop Buildings
@@ -136,10 +105,17 @@ export function createShopBuilding(scene, x, z, groundY, config = {}) {
 
   // Create sign panel - with or without text based on skipText flag
   if (!config.skipText && config.signText) {
-    // Dynamic creation with canvas texture
+    // Dynamic creation with pre-generated PNG texture
     const signPanelGeom = new THREE.BoxGeometry(signWidth, signHeight, 0.18);
-    const texture = createShopSignTexture(config.signText, signWidth * 100, signHeight * 100, neonColor);
-    const signPanelMat = new THREE.MeshBasicMaterial({ map: texture });
+    // Find texture index from signText
+    const textureIndex = shopSignTexts.indexOf(config.signText);
+    const texturePath = textureIndex >= 0
+      ? `resource/img/signs/${shopSignTextureFiles[textureIndex]}`
+      : null;
+    const texture = texturePath ? textureLoader.load(texturePath) : null;
+    const signPanelMat = texture
+      ? new THREE.MeshBasicMaterial({ map: texture })
+      : new THREE.MeshBasicMaterial({ color: neonColor });
     const signPanel = new THREE.Mesh(signPanelGeom, signPanelMat);
     signPanel.position.set(0, 4.0, -depth/2 - 0.62);
     group.add(signPanel);
@@ -272,13 +248,9 @@ export function createShoppingDistrictBase(scene) {
 
 /**
  * Add shop sign texts dynamically (after GLB load)
+ * Uses pre-generated PNG textures instead of canvas textures
  */
 export function addShopSignTexts(scene) {
-  const neonPalette = [
-    colors.neon.pink, colors.neon.cyan, colors.neon.yellow,
-    colors.neon.magenta, colors.neon.blue, colors.neon.green
-  ];
-
   // Upper row
   const upperStartX = -19;
   for (let i = 0; i < 9; i++) {
@@ -286,9 +258,8 @@ export function addShopSignTexts(scene) {
     const z = 13;
     const width = 4.8;
     const depth = 4;
-    const neonColor = neonPalette[i % neonPalette.length];
 
-    addSignTextPanel(scene, x, z, 0, width, depth, neonColor, shopSignTexts[i]);
+    addSignTextPanel(scene, x, z, 0, width, depth, i);
   }
 
   // Lower row
@@ -298,20 +269,21 @@ export function addShopSignTexts(scene) {
     const z = 0;
     const width = 4.8;
     const depth = 3.5;
-    const neonColor = neonPalette[(i + 3) % neonPalette.length];
 
-    addSignTextPanel(scene, x, z, 0, width, depth, neonColor, shopSignTexts[9 + i]);
+    addSignTextPanel(scene, x, z, 0, width, depth, 9 + i);
   }
 }
 
 /**
- * Add a single sign text panel
+ * Add a single sign text panel using pre-generated PNG texture
  */
-function addSignTextPanel(scene, x, z, groundY, width, depth, neonColor, signText) {
+function addSignTextPanel(scene, x, z, groundY, width, depth, textureIndex) {
   const signWidth = width * 0.8;
   const signHeight = 0.8;
 
-  const texture = createShopSignTexture(signText, signWidth * 100, signHeight * 100, neonColor);
+  const texturePath = `resource/img/signs/${shopSignTextureFiles[textureIndex]}`;
+  const texture = textureLoader.load(texturePath);
+
   const signPanelGeom = new THREE.PlaneGeometry(signWidth, signHeight);
   const signPanelMat = new THREE.MeshBasicMaterial({
     map: texture,

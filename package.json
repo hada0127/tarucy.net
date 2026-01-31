@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "audio-decode": "^2.2.3"
+  },
+  "devDependencies": {
+    "canvas": "^3.2.1"
   }
 }

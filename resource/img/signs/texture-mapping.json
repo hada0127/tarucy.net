@@ -1,0 +1,97 @@
+{
+  "shopSigns": [
+    {
+      "text": "Javascript",
+      "filename": "shop-00-javascript.png",
+      "colorIndex": 0
+    },
+    {
+      "text": "Typescript",
+      "filename": "shop-01-typescript.png",
+      "colorIndex": 1
+    },
+    {
+      "text": "PHP",
+      "filename": "shop-02-php.png",
+      "colorIndex": 2
+    },
+    {
+      "text": "Go",
+      "filename": "shop-03-go.png",
+      "colorIndex": 3
+    },
+    {
+      "text": "Python",
+      "filename": "shop-04-python.png",
+      "colorIndex": 4
+    },
+    {
+      "text": "JAVA",
+      "filename": "shop-05-java.png",
+      "colorIndex": 5
+    },
+    {
+      "text": "React",
+      "filename": "shop-06-react.png",
+      "colorIndex": 0
+    },
+    {
+      "text": "Vue",
+      "filename": "shop-07-vue.png",
+      "colorIndex": 1
+    },
+    {
+      "text": "Svelte",
+      "filename": "shop-08-svelte.png",
+      "colorIndex": 2
+    },
+    {
+      "text": "Hono",
+      "filename": "shop-09-hono.png",
+      "colorIndex": 3
+    },
+    {
+      "text": "Nest.js",
+      "filename": "shop-10-nest-js.png",
+      "colorIndex": 4
+    },
+    {
+      "text": "React Native",
+      "filename": "shop-11-react-native.png",
+      "colorIndex": 5
+    },
+    {
+      "text": "Electron",
+      "filename": "shop-12-electron.png",
+      "colorIndex": 0
+    },
+    {
+      "text": "PostgreSQL",
+      "filename": "shop-13-postgresql.png",
+      "colorIndex": 1
+    },
+    {
+      "text": "MySQL",
+      "filename": "shop-14-mysql.png",
+      "colorIndex": 2
+    },
+    {
+      "text": "MariaDB",
+      "filename": "shop-15-mariadb.png",
+      "colorIndex": 3
+    },
+    {
+      "text": "Cloudflare",
+      "filename": "shop-16-cloudflare.png",
+      "colorIndex": 4
+    },
+    {
+      "text": "AWS",
+      "filename": "shop-17-aws.png",
+      "colorIndex": 5
+    }
+  ],
+  "vendingFront": "vending-front.png",
+  "phoneFlyer": "phone-flyer.png",
+  "hotelSign": "hotel-sign.png"
+}

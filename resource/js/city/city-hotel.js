@@ -1,5 +1,11 @@
 import * as THREE from 'three';
 
+// Texture loader for pre-generated textures
+const textureLoader = new THREE.TextureLoader();
+
+// Pre-generated texture path
+const hotelSignTexturePath = 'resource/img/signs/hotel-sign.png';
+
 /**
  * Create pink hotel
  * @param {boolean} skipText - If true, skip text panel (for GLB export)
@@ -485,6 +491,7 @@ export function createPinkHotel(scene, groundY, skipText = false) {
 
 /**
  * Add hotel sign text dynamically (after GLB load)
+ * Uses pre-generated PNG texture instead of canvas texture
  */
 export function addHotelSignText(scene) {
   // Hotel position constants (must match createPinkHotel)
@@ -494,32 +501,8 @@ export function addHotelSignText(scene) {
   const archHeight = 10;
   const groundY = 0;
 
-  // Create canvas for text texture
-  const textCanvas = document.createElement('canvas');
-  textCanvas.width = 512;
-  textCanvas.height = 128;
-  const ctx = textCanvas.getContext('2d');
-
-  // Clear canvas (transparent)
-  ctx.clearRect(0, 0, textCanvas.width, textCanvas.height);
-
-  // Text settings - cursive font
-  ctx.font = 'italic 72px "Brush Script MT", "Segoe Script", cursive';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  // Draw text stroke (border) in darker pink color
-  ctx.strokeStyle = '#9b4055';
-  ctx.lineWidth = 12;
-  ctx.strokeText('Hada0127', textCanvas.width / 2, textCanvas.height / 2);
-
-  // Draw text fill in white
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText('Hada0127', textCanvas.width / 2, textCanvas.height / 2);
-
-  // Create texture from canvas
-  const textTexture = new THREE.CanvasTexture(textCanvas);
-  textTexture.needsUpdate = true;
+  // Load pre-generated texture
+  const textTexture = textureLoader.load(hotelSignTexturePath);
 
   // Create text plane
   const textPlaneGeom = new THREE.PlaneGeometry(10, 2.5);

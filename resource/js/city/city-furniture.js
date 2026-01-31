@@ -18,118 +18,12 @@
 import * as THREE from 'three';
 import { colors } from './city-colors.js';
 
-// Vending machine side texts (two lines)
-const vendingMachineSideTexts = [
-  'github.com/hada0127',
-  'tarucy@gmail.com'
-];
+// Texture loader for pre-generated textures
+const textureLoader = new THREE.TextureLoader();
 
-/**
- * Create a canvas texture with two-line text and black stroke for vending machine front
- */
-function createVendingFrontTexture(width, height) {
-  const canvas = document.createElement('canvas');
-  const scale = 8;
-  canvas.width = width * scale;
-  canvas.height = height * scale;
-
-  const ctx = canvas.getContext('2d');
-
-  // Transparent background
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Text settings
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  // Calculate optimal font size for two lines
-  let fontSize = canvas.height * 0.35;
-  ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
-
-  // Measure longest text and adjust to fit width
-  const maxTextWidth = Math.max(
-    ctx.measureText(vendingMachineSideTexts[0]).width,
-    ctx.measureText(vendingMachineSideTexts[1]).width
-  );
-  const maxWidth = canvas.width * 0.9;
-
-  if (maxTextWidth > maxWidth) {
-    fontSize = fontSize * (maxWidth / maxTextWidth);
-    ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
-  }
-
-  const lineHeight = fontSize * 1.2;
-  const startY = canvas.height / 2 - lineHeight / 2;
-
-  // Draw each line in white with black stroke
-  vendingMachineSideTexts.forEach((text, i) => {
-    const y = startY + i * lineHeight;
-
-    // Black stroke
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = fontSize * 0.15;
-    ctx.lineJoin = 'round';
-    ctx.strokeText(text, canvas.width / 2, y);
-
-    // White fill
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(text, canvas.width / 2, y);
-  });
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.needsUpdate = true;
-  return texture;
-}
-
-/**
- * Create a white flyer texture with black text for phone booth
- */
-function createPhoneBoothFlyerTexture(width, height) {
-  const canvas = document.createElement('canvas');
-  const scale = 8;
-  canvas.width = width * scale;
-  canvas.height = height * scale;
-
-  const ctx = canvas.getContext('2d');
-
-  // White background
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Text settings
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  // Calculate optimal font size for two lines
-  let fontSize = canvas.height * 0.3;
-  ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
-
-  // Measure longest text and adjust to fit width
-  const maxTextWidth = Math.max(
-    ctx.measureText(vendingMachineSideTexts[0]).width,
-    ctx.measureText(vendingMachineSideTexts[1]).width
-  );
-  const maxWidth = canvas.width * 0.9;
-
-  if (maxTextWidth > maxWidth) {
-    fontSize = fontSize * (maxWidth / maxTextWidth);
-    ctx.font = `bold ${fontSize}px "Arial Black", "Helvetica Neue", Arial, sans-serif`;
-  }
-
-  const lineHeight = fontSize * 1.3;
-  const startY = canvas.height / 2 - lineHeight / 2;
-
-  // Draw each line in black
-  vendingMachineSideTexts.forEach((text, i) => {
-    const y = startY + i * lineHeight;
-    ctx.fillStyle = '#000000';
-    ctx.fillText(text, canvas.width / 2, y);
-  });
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.needsUpdate = true;
-  return texture;
-}
+// Pre-generated texture paths
+const vendingFrontTexturePath = 'resource/img/signs/vending-front.png';
+const phoneFlyerTexturePath = 'resource/img/signs/phone-flyer.png';
 
 // ════════════════════════════════════════════════════════════════════════════
 // Street Bench
@@ -406,11 +300,11 @@ function createVendingMachine(scene, x, z, groundY, rotation = 0, type = 'drink'
   coinArea.position.set(0.3, 1.0, 0.33);
   group.add(coinArea);
 
-  // Front text panel (only if not skipping text)
+  // Front text panel (only if not skipping text) - using pre-generated PNG texture
   if (!skipText) {
     const frontTextWidth = 0.65;
     const frontTextHeight = 0.25;
-    const frontTexture = createVendingFrontTexture(frontTextWidth * 100, frontTextHeight * 100);
+    const frontTexture = textureLoader.load(vendingFrontTexturePath);
     const frontPanelGeom = new THREE.PlaneGeometry(frontTextWidth, frontTextHeight);
     const frontPanelMat = new THREE.MeshBasicMaterial({
       map: frontTexture,
@@ -497,11 +391,11 @@ function createPhoneBooth(scene, x, z, groundY, rotation = 0, skipText = false) 
   light.position.set(0, 2.18, 0);
   group.add(light);
 
-  // White flyer above the phone (only if not skipping text)
+  // White flyer above the phone (only if not skipping text) - using pre-generated PNG texture
   if (!skipText) {
     const flyerWidth = 0.35;
     const flyerHeight = 0.2;
-    const flyerTexture = createPhoneBoothFlyerTexture(flyerWidth * 100, flyerHeight * 100);
+    const flyerTexture = textureLoader.load(phoneFlyerTexturePath);
     const flyerGeom = new THREE.PlaneGeometry(flyerWidth, flyerHeight);
     const flyerMat = new THREE.MeshBasicMaterial({ map: flyerTexture });
     const flyer = new THREE.Mesh(flyerGeom, flyerMat);
@@ -852,12 +746,12 @@ export function addFurnitureTexts(scene) {
 }
 
 /**
- * Add vending machine front text panel
+ * Add vending machine front text panel (using pre-generated PNG texture)
  */
 function addVendingMachineText(scene, x, z, groundY, rotation) {
   const frontTextWidth = 0.65;
   const frontTextHeight = 0.25;
-  const frontTexture = createVendingFrontTexture(frontTextWidth * 100, frontTextHeight * 100);
+  const frontTexture = textureLoader.load(vendingFrontTexturePath);
   const frontPanelGeom = new THREE.PlaneGeometry(frontTextWidth, frontTextHeight);
   const frontPanelMat = new THREE.MeshBasicMaterial({
     map: frontTexture,
@@ -883,12 +777,12 @@ function addVendingMachineText(scene, x, z, groundY, rotation) {
 }
 
 /**
- * Add phone booth flyer
+ * Add phone booth flyer (using pre-generated PNG texture)
  */
 function addPhoneBoothFlyer(scene, x, z, groundY, rotation) {
   const flyerWidth = 0.35;
   const flyerHeight = 0.2;
-  const flyerTexture = createPhoneBoothFlyerTexture(flyerWidth * 100, flyerHeight * 100);
+  const flyerTexture = textureLoader.load(phoneFlyerTexturePath);
   const flyerGeom = new THREE.PlaneGeometry(flyerWidth, flyerHeight);
   const flyerMat = new THREE.MeshBasicMaterial({ map: flyerTexture });
   const flyer = new THREE.Mesh(flyerGeom, flyerMat);
