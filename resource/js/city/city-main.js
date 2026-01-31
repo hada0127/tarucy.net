@@ -254,6 +254,9 @@ const GLB_PATH = 'https://pub-0c79382ed5a947839fede2eac510554d.r2.dev/city.glb';
 function exportSceneToGLB() {
   console.log('Creating GLB export scene...');
 
+  // 창문 데이터 초기화 (GLB에는 창문 포함 안 함, InstancedMesh로 동적 생성)
+  clearWindowData();
+
   // GLB 내보내기용 새 scene 생성 (캔버스 텍스처 제외)
   const exportScene = new THREE.Scene();
 
@@ -315,10 +318,13 @@ function exportSceneToGLB() {
       link.click();
       URL.revokeObjectURL(url);
       console.log('city.glb exported successfully!');
-      console.log('다음 단계: gltf-transform optimize city.glb city-opt.glb --compress meshopt');
+      console.log('다음 단계: gltf-transform meshopt city.glb city-opt.glb');
+      // GLB 내보내기 후 창문 데이터 정리 (메인 scene에 영향 없도록)
+      clearWindowData();
     },
     (error) => {
       console.error('GLB export failed:', error);
+      clearWindowData();
     },
     { binary: true }
   );
