@@ -939,6 +939,14 @@ export async function initCity() {
       addFurnitureTexts(scene);
       addHotelSignText(scene);
       console.log('Dynamic texts added!');
+
+      // GLB에는 창문이 없으므로 InstancedMesh로 창문 생성
+      clearWindowData();
+      const dummyScene = new THREE.Scene();
+      createAllBuildings(dummyScene, true); // 더미 scene에 건물 생성, 창문 데이터 수집
+      windowInstancedMesh = createWindowInstances(scene); // 실제 scene에 창문 InstancedMesh 추가
+      console.log(`Windows added via InstancedMesh: ${windowInstancedMesh ? getWindowDataList().length : 0}`);
+
       glbLoaded = true;
       checkAndShowExplore();
     } catch (e) {
@@ -976,9 +984,15 @@ export async function initCity() {
   scene.traverse(obj => { if (obj.isMesh) meshCount++; });
   console.log(`Total meshes: ${meshCount}`);
 
-  // 창문 발견 및 이퀄라이저 시스템 준비 (GLB/동적 생성 모두 지원)
-  discoverWindowsFromGLB(scene);
-  calculateWindowYRange();
+  // 이퀄라이저 시스템 준비
+  if (windowInstancedMesh) {
+    // InstancedMesh 사용 시: 창문 데이터에서 Y 범위 계산
+    calculateWindowYRange();
+  } else {
+    // 구 GLB 사용 시 (창문이 GLB에 포함된 경우): GLB에서 창문 발견
+    discoverWindowsFromGLB(scene);
+    calculateWindowYRange();
+  }
 
   // GLB 내보내기 함수를 전역으로 노출 (개발용)
   window.exportSceneToGLB = exportSceneToGLB;
