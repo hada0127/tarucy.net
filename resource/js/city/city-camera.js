@@ -43,6 +43,100 @@ export const scrollKeyframes = [
   { section: 'final', pos: {x: -1.90, y: 11.58, z: 23.99}, yaw: -1.140, pitch: 0.290 }
 ];
 
+// ============================================================
+// DISTANCE-BASED SCROLL WEIGHTING
+// ============================================================
+
+/**
+ * Calculate angle difference (shortest path)
+ */
+function angleDiff(a, b) {
+  let diff = b - a;
+  while (diff > Math.PI) diff -= Math.PI * 2;
+  while (diff < -Math.PI) diff += Math.PI * 2;
+  return Math.abs(diff);
+}
+
+/**
+ * Calculate segment distance (position + rotation)
+ */
+function calculateSegmentDistance(from, to) {
+  // Position distance
+  const dx = to.pos.x - from.pos.x;
+  const dy = to.pos.y - from.pos.y;
+  const dz = to.pos.z - from.pos.z;
+  const posDistance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+  // Rotation distance (scaled to be comparable to position)
+  const yawDiff = angleDiff(from.yaw, to.yaw);
+  const pitchDiff = Math.abs(to.pitch - from.pitch);
+  const rotDistance = (yawDiff + pitchDiff) * 10; // Scale rotation to ~meters
+
+  // Combined distance with minimum threshold
+  return Math.max(posDistance + rotDistance, 5); // Minimum 5 units to avoid too fast transitions
+}
+
+/**
+ * Build cumulative progress array based on distances
+ * Returns array where cumulativeProgress[i] = progress at keyframe i (0 to 1)
+ */
+function buildCumulativeProgress() {
+  const distances = [];
+  let totalDistance = 0;
+
+  // Calculate distances between consecutive keyframes
+  for (let i = 0; i < scrollKeyframes.length - 1; i++) {
+    const dist = calculateSegmentDistance(scrollKeyframes[i], scrollKeyframes[i + 1]);
+    distances.push(dist);
+    totalDistance += dist;
+  }
+
+  // Build cumulative progress array
+  const cumulative = [0]; // First keyframe at progress 0
+  let accumulated = 0;
+
+  for (let i = 0; i < distances.length; i++) {
+    accumulated += distances[i];
+    cumulative.push(accumulated / totalDistance);
+  }
+
+  return cumulative;
+}
+
+// Pre-calculate cumulative progress
+const cumulativeProgress = buildCumulativeProgress();
+
+/**
+ * Convert linear scroll progress (0-1) to weighted progress based on distances
+ * Uses binary search to find the correct segment
+ */
+export function getWeightedProgress(linearProgress) {
+  const p = Math.max(0, Math.min(1, linearProgress));
+
+  // Find which segment we're in
+  let segmentIndex = 0;
+  for (let i = 0; i < cumulativeProgress.length - 1; i++) {
+    if (p >= cumulativeProgress[i] && p <= cumulativeProgress[i + 1]) {
+      segmentIndex = i;
+      break;
+    }
+  }
+
+  // Calculate local progress within segment
+  const segmentStart = cumulativeProgress[segmentIndex];
+  const segmentEnd = cumulativeProgress[segmentIndex + 1];
+  const segmentLength = segmentEnd - segmentStart;
+
+  const localProgress = segmentLength > 0 ? (p - segmentStart) / segmentLength : 0;
+
+  return {
+    segment: segmentIndex,
+    localProgress: Math.max(0, Math.min(1, localProgress)),
+    from: scrollKeyframes[segmentIndex],
+    to: scrollKeyframes[Math.min(segmentIndex + 1, scrollKeyframes.length - 1)]
+  };
+}
+
 /**
  * Lerp angle with shortest path (handles wrap-around)
  */
@@ -87,7 +181,8 @@ export function getScrollSegment(progress) {
  * @param {number} progress - Scroll progress (0-1)
  */
 export function updateCameraFromScroll(camera, cameraState, progress) {
-  const { localProgress, from, to } = getScrollSegment(progress);
+  // Use distance-weighted progress for natural scroll speed
+  const { localProgress, from, to } = getWeightedProgress(progress);
 
   // Smooth easing function
   const eased = smootherStep(localProgress);
