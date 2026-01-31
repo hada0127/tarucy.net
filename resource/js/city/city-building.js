@@ -10,6 +10,90 @@ import * as THREE from 'three';
 import { colors, randomColor } from './city-colors.js';
 
 // ============================================
+// Window Instancing System
+// ============================================
+// 창문 데이터 수집 배열 (나중에 InstancedMesh로 변환)
+const windowDataList = [];
+
+/**
+ * 창문 데이터 추가 (개별 메시 대신 데이터만 수집)
+ */
+function addWindowData(x, y, z, rotationY, color, width, height) {
+  windowDataList.push({ x, y, z, rotationY, color, width, height });
+}
+
+/**
+ * 수집된 창문 데이터로 InstancedMesh 생성
+ * @returns {THREE.InstancedMesh} 창문 InstancedMesh
+ */
+export function createWindowInstances(scene) {
+  if (windowDataList.length === 0) return null;
+
+  console.log(`Creating InstancedMesh for ${windowDataList.length} windows`);
+
+  // 창문 지오메트리 (가장 일반적인 크기 사용)
+  const geometry = new THREE.PlaneGeometry(1.4, 2);
+
+  // InstancedMesh용 재질 (instanceColor 사용)
+  // 기본 색상을 흰색으로 설정해야 instanceColor가 그대로 적용됨
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    side: THREE.DoubleSide
+  });
+
+  const instancedMesh = new THREE.InstancedMesh(geometry, material, windowDataList.length);
+  instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+  // instanceColor 배열 생성
+  const colorArray = new Float32Array(windowDataList.length * 3);
+  const dummy = new THREE.Object3D();
+  const tempColor = new THREE.Color();
+
+  for (let i = 0; i < windowDataList.length; i++) {
+    const win = windowDataList[i];
+
+    // Transform 설정
+    dummy.position.set(win.x, win.y, win.z);
+    dummy.rotation.set(0, win.rotationY, 0);
+    dummy.scale.set(win.width / 1.4, win.height / 2, 1); // 기본 크기 대비 스케일
+    dummy.updateMatrix();
+    instancedMesh.setMatrixAt(i, dummy.matrix);
+
+    // 색상 설정
+    tempColor.setHex(win.color);
+    colorArray[i * 3] = tempColor.r;
+    colorArray[i * 3 + 1] = tempColor.g;
+    colorArray[i * 3 + 2] = tempColor.b;
+  }
+
+  // instanceColor 설정
+  instancedMesh.instanceColor = new THREE.InstancedBufferAttribute(colorArray, 3);
+  instancedMesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
+
+  instancedMesh.userData.isWindowInstanced = true;
+  instancedMesh.userData.windowDataList = windowDataList.slice(); // 복사본 저장
+
+  scene.add(instancedMesh);
+
+  console.log(`InstancedMesh created: ${windowDataList.length} instances`);
+  return instancedMesh;
+}
+
+/**
+ * 창문 데이터 배열 초기화
+ */
+export function clearWindowData() {
+  windowDataList.length = 0;
+}
+
+/**
+ * 창문 데이터 배열 반환
+ */
+export function getWindowDataList() {
+  return windowDataList;
+}
+
+// ============================================
 // Building Signs
 // ============================================
 
@@ -427,7 +511,7 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
 
   // ===== Fixed Window Grid Pattern for Main Tower =====
   // 북쪽 면(Front, -z) 창문은 제거됨 - 카메라 동선에 없음
-  const winGeom = new THREE.PlaneGeometry(1.4, 2);
+  // InstancedMesh용 데이터 수집 (개별 메시 생성 안 함)
   const winSpacingX = 2.5;  // Horizontal spacing
   const winSpacingY = 3;    // Vertical spacing
   const winMargin = 1.5;    // Margin from edge
@@ -454,37 +538,37 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
 
   // Front windows (북쪽 면, -z) - 제거됨: 카메라 동선에 없어서 최적화
 
-  // Left side windows - fixed grid
+  // Left side windows - fixed grid (데이터 수집)
   for (let row = 0; row < numRows; row++) {
     for (let col = 0; col < numSideCols; col++) {
       const colorIdx = (row + col + 2) % towerWinColors.length;
-      const win = new THREE.Mesh(winGeom, new THREE.MeshBasicMaterial({ color: towerWinColors[colorIdx], side: THREE.DoubleSide }));
-      win.rotation.y = Math.PI / 2;
-      win.position.set(
-        -width/2 - 0.01,
-        2 + row * winSpacingY,
-        -depth/2 + winMargin + col * winSpacingX
+      addWindowData(
+        x + (-width/2 - 0.01),
+        groundY + 2 + row * winSpacingY,
+        z + (-depth/2 + winMargin + col * winSpacingX),
+        Math.PI / 2,
+        towerWinColors[colorIdx],
+        1.4, 2
       );
-      group.add(win);
     }
   }
 
-  // Right side windows - fixed grid
+  // Right side windows - fixed grid (데이터 수집)
   for (let row = 0; row < numRows; row++) {
     for (let col = 0; col < numSideCols; col++) {
       const colorIdx = (row + col + 4) % towerWinColors.length;
-      const win = new THREE.Mesh(winGeom, new THREE.MeshBasicMaterial({ color: towerWinColors[colorIdx], side: THREE.DoubleSide }));
-      win.rotation.y = -Math.PI / 2;
-      win.position.set(
-        width/2 + 0.01,
-        2 + row * winSpacingY,
-        -depth/2 + winMargin + col * winSpacingX
+      addWindowData(
+        x + (width/2 + 0.01),
+        groundY + 2 + row * winSpacingY,
+        z + (-depth/2 + winMargin + col * winSpacingX),
+        -Math.PI / 2,
+        towerWinColors[colorIdx],
+        1.4, 2
       );
-      group.add(win);
     }
   }
 
-  // Back windows (남쪽 면, +z) - 메인도로에서 보이는 면
+  // Back windows (남쪽 면, +z) - 메인도로에서 보이는 면 (데이터 수집)
   for (let row = 0; row < numRows; row++) {
     for (let col = 0; col < numCols; col++) {
       const winX = -width/2 + winMargin + col * winSpacingX;
@@ -494,9 +578,14 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
         continue;
       }
       const colorIdx = (row + col + 6) % towerWinColors.length;
-      const win = new THREE.Mesh(winGeom, new THREE.MeshBasicMaterial({ color: towerWinColors[colorIdx], side: THREE.DoubleSide }));
-      win.position.set(winX, winY, depth/2 + 0.01);
-      group.add(win);
+      addWindowData(
+        x + winX,
+        groundY + winY,
+        z + (depth/2 + 0.01),
+        0,
+        towerWinColors[colorIdx],
+        1.4, 2
+      );
     }
   }
 
@@ -563,8 +652,7 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
 
   // ===== Fixed Window Grid Pattern for Small Building =====
   // 북쪽 면(Front, -z) 창문은 제거됨 - 카메라 동선에 없음
-  const winGeom = new THREE.PlaneGeometry(1.2, 1.8);
-  const sideWinGeom = new THREE.PlaneGeometry(1.0, 1.5);
+  // InstancedMesh용 데이터 수집 (개별 메시 생성 안 함)
   const winSpacingX = 2.5;
   const winSpacingY = 3.5;
   const winMargin = 1.2;
@@ -591,37 +679,37 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
 
   // Front Windows (북쪽 면, -z) - 제거됨: 카메라 동선에 없어서 최적화
 
-  // Left Side Windows - fixed grid
+  // Left Side Windows - fixed grid (데이터 수집)
   for (let row = 0; row < numRows; row++) {
     for (let col = 0; col < numSideCols; col++) {
       const colorIdx = (row + col + 2) % smallWinColors.length;
-      const win = new THREE.Mesh(sideWinGeom, new THREE.MeshBasicMaterial({ color: smallWinColors[colorIdx], side: THREE.DoubleSide }));
-      win.rotation.y = Math.PI / 2;
-      win.position.set(
-        -width/2 - 0.01,
-        2 + row * winSpacingY,
-        -depth/2 + winMargin + col * winSpacingX
+      addWindowData(
+        x + (-width/2 - 0.01),
+        groundY + 2 + row * winSpacingY,
+        z + (-depth/2 + winMargin + col * winSpacingX),
+        Math.PI / 2,
+        smallWinColors[colorIdx],
+        1.0, 1.5
       );
-      group.add(win);
     }
   }
 
-  // Right Side Windows - fixed grid
+  // Right Side Windows - fixed grid (데이터 수집)
   for (let row = 0; row < numRows; row++) {
     for (let col = 0; col < numSideCols; col++) {
       const colorIdx = (row + col + 4) % smallWinColors.length;
-      const win = new THREE.Mesh(sideWinGeom, new THREE.MeshBasicMaterial({ color: smallWinColors[colorIdx], side: THREE.DoubleSide }));
-      win.rotation.y = -Math.PI / 2;
-      win.position.set(
-        width/2 + 0.01,
-        2 + row * winSpacingY,
-        -depth/2 + winMargin + col * winSpacingX
+      addWindowData(
+        x + (width/2 + 0.01),
+        groundY + 2 + row * winSpacingY,
+        z + (-depth/2 + winMargin + col * winSpacingX),
+        -Math.PI / 2,
+        smallWinColors[colorIdx],
+        1.0, 1.5
       );
-      group.add(win);
     }
   }
 
-  // Back Windows (남쪽 면, +z) - 메인도로에서 보이는 면
+  // Back Windows (남쪽 면, +z) - 메인도로에서 보이는 면 (데이터 수집)
   for (let row = 0; row < numRows; row++) {
     for (let col = 0; col < numCols; col++) {
       const winX = -width/2 + winMargin + col * winSpacingX;
@@ -631,9 +719,14 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
         continue;
       }
       const colorIdx = (row + col + 6) % smallWinColors.length;
-      const win = new THREE.Mesh(sideWinGeom, new THREE.MeshBasicMaterial({ color: smallWinColors[colorIdx], side: THREE.DoubleSide }));
-      win.position.set(winX, winY, depth/2 + 0.01);
-      group.add(win);
+      addWindowData(
+        x + winX,
+        groundY + winY,
+        z + (depth/2 + 0.01),
+        0,
+        smallWinColors[colorIdx],
+        1.2, 1.8
+      );
     }
   }
 

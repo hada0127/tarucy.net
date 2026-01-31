@@ -40,7 +40,10 @@ import {
   createRightBuildings,
   createCenterBuildings,
   createSouthBuildings,
-  removeOverlappingBuildings
+  removeOverlappingBuildings,
+  createWindowInstances,
+  clearWindowData,
+  getWindowDataList
 } from './city-building.js';
 
 // Houses
@@ -338,6 +341,9 @@ const WINDOW_COLORS = [
 // 창문 메시 저장소 (독립 material로 변환된)
 const windowMeshes = [];
 
+// InstancedMesh 창문 참조 (동적 생성 시 사용)
+let windowInstancedMesh = null;
+
 /**
  * GLB에서 창문 메시 발견 및 등록
  * 색상 기반으로 식별 (핑크/시안 계열 밝은 색상)
@@ -444,6 +450,44 @@ let globalXMax = -Infinity;
  * X 구역별 Y 범위 계산 (각 건물 열별 독립 이퀄라이저)
  */
 function calculateWindowYRange() {
+  // InstancedMesh 사용 시 (동적 생성 모드)
+  if (windowInstancedMesh && windowInstancedMesh.userData.windowDataList) {
+    const windowDataList = windowInstancedMesh.userData.windowDataList;
+
+    // 먼저 전체 X 범위 계산
+    for (const win of windowDataList) {
+      const x = win.x;
+      if (x < globalXMin) globalXMin = x;
+      if (x > globalXMax) globalXMax = x;
+    }
+
+    const xRange = globalXMax - globalXMin;
+    const zoneWidth = xRange / NUM_X_ZONES;
+
+    // 각 구역 초기화
+    for (let i = 0; i < NUM_X_ZONES; i++) {
+      xZoneYRanges[i] = { yMin: Infinity, yMax: -Infinity };
+    }
+
+    // 각 창문을 구역에 할당하고 Y 범위 계산
+    for (const win of windowDataList) {
+      const x = win.x;
+      const y = win.y;
+
+      // X 좌표로 구역 결정
+      let zoneIndex = Math.floor((x - globalXMin) / zoneWidth);
+      zoneIndex = Math.max(0, Math.min(NUM_X_ZONES - 1, zoneIndex));
+
+      // 구역별 Y 범위 업데이트
+      if (y < xZoneYRanges[zoneIndex].yMin) xZoneYRanges[zoneIndex].yMin = y;
+      if (y > xZoneYRanges[zoneIndex].yMax) xZoneYRanges[zoneIndex].yMax = y;
+    }
+
+    console.log(`InstancedMesh windows - X range: ${globalXMin.toFixed(1)} ~ ${globalXMax.toFixed(1)}, ${NUM_X_ZONES} zones`);
+    return;
+  }
+
+  // GLB 로드 모드: windowMeshes 사용
   // 먼저 전체 X 범위 계산
   for (const mesh of windowMeshes) {
     const x = mesh.userData.worldX || 0;
@@ -476,11 +520,69 @@ function calculateWindowYRange() {
     if (y > xZoneYRanges[zoneIndex].yMax) xZoneYRanges[zoneIndex].yMax = y;
   }
 
-  console.log(`X range: ${globalXMin.toFixed(1)} ~ ${globalXMax.toFixed(1)}, ${NUM_X_ZONES} zones`);
+  console.log(`GLB windows - X range: ${globalXMin.toFixed(1)} ~ ${globalXMax.toFixed(1)}, ${NUM_X_ZONES} zones`);
 }
 
 // 기본으로 켜져있는 아래층 비율 (0~1)
 const BASE_THRESHOLD = 0.15;
+
+/**
+ * InstancedMesh 창문의 밝기 업데이트 (이퀄라이저 효과)
+ */
+function updateInstancedWindowBrightness() {
+  if (!windowInstancedMesh || !windowInstancedMesh.userData.windowDataList) return;
+  if (!isAudioPlaying()) return;
+
+  const windowDataList = windowInstancedMesh.userData.windowDataList;
+  const colorArray = windowInstancedMesh.instanceColor.array;
+  const tempColor = new THREE.Color();
+
+  for (let i = 0; i < windowDataList.length; i++) {
+    const win = windowDataList[i];
+    const worldX = win.x;
+    const worldY = win.y;
+
+    // X 좌표로 구역 결정
+    const xRange = globalXMax - globalXMin;
+    const zoneWidth = xRange / NUM_X_ZONES;
+    let zoneIndex = Math.floor((worldX - globalXMin) / zoneWidth);
+    zoneIndex = Math.max(0, Math.min(NUM_X_ZONES - 1, zoneIndex));
+
+    // 해당 구역의 Y 범위
+    const zoneYRange = xZoneYRanges[zoneIndex];
+    if (!zoneYRange || zoneYRange.yMax <= zoneYRange.yMin) continue;
+
+    const yRange = zoneYRange.yMax - zoneYRange.yMin;
+    const normalizedY = (worldY - zoneYRange.yMin) / yRange;
+
+    // X 좌표로 주파수 대역별 intensity 계산
+    const intensity = getIntensityForPosition(worldX);
+
+    // 이퀄라이저 효과: 기본 threshold + intensity에 따라 추가
+    const threshold = BASE_THRESHOLD + intensity * (1 - BASE_THRESHOLD);
+
+    // 원본 색상
+    tempColor.setHex(win.color);
+
+    if (normalizedY <= threshold) {
+      // 활성화: 원래 색상의 1.5배 밝기
+      const fadeIn = 1.0 - (normalizedY / Math.max(threshold, 0.01));
+      const brightness = 1.3 + fadeIn * 0.4;
+      tempColor.multiplyScalar(brightness);
+    } else {
+      // 비활성화: 0.4 밝기
+      tempColor.multiplyScalar(0.4);
+    }
+
+    // instanceColor 배열 업데이트
+    colorArray[i * 3] = tempColor.r;
+    colorArray[i * 3 + 1] = tempColor.g;
+    colorArray[i * 3 + 2] = tempColor.b;
+  }
+
+  // 변경 사항 GPU에 반영
+  windowInstancedMesh.instanceColor.needsUpdate = true;
+}
 
 /**
  * 주파수 데이터에 따라 창문 밝기 업데이트 (이퀄라이저 효과)
@@ -492,6 +594,13 @@ const BASE_THRESHOLD = 0.15;
 function updateWindowBrightness() {
   if (!isAudioPlaying()) return;
 
+  // InstancedMesh 사용 시 (동적 생성 모드)
+  if (windowInstancedMesh) {
+    updateInstancedWindowBrightness();
+    return;
+  }
+
+  // 개별 메시 사용 시 (GLB 로드 모드)
   for (const mesh of windowMeshes) {
     if (!mesh.userData.originalColor) continue;
 
@@ -674,16 +783,22 @@ function loadSceneFromGLB(scene) {
 /**
  * Create all buildings (for dynamic generation or GLB export)
  * @param {boolean} forGLB - If true, use base versions without canvas textures
+ * @returns {{ buildings: Array, windowInstancedMesh: THREE.InstancedMesh }}
  */
 function createAllBuildings(scene, forGLB = false) {
   let buildings = [];
+
+  // 창문 데이터 초기화
+  clearWindowData();
 
   if (isIOSorMobile) {
     // iOS/모바일: 경량 모드 - 점진적 추가 테스트
     buildings.push(...createResidentialDistrict(scene));
     buildings.push(...createCenterBuildings(scene));
     createPinkHotel(scene, 0);
-    return buildings;
+    // 창문 InstancedMesh 생성
+    const windowInstancedMesh = createWindowInstances(scene);
+    return { buildings, windowInstancedMesh };
   }
 
   // 데스크톱: 전체
@@ -723,7 +838,10 @@ function createAllBuildings(scene, forGLB = false) {
     createAllFurniture(scene);
   }
 
-  return buildings;
+  // 창문 InstancedMesh 생성
+  const windowInstancedMesh = createWindowInstances(scene);
+
+  return { buildings, windowInstancedMesh };
 }
 
 /**
@@ -829,7 +947,8 @@ export async function initCity() {
       createGround(scene);
       createRoads(scene);
       createCrosswalks(scene);
-      createAllBuildings(scene, false);
+      const result = createAllBuildings(scene, false);
+      windowInstancedMesh = result.windowInstancedMesh;
       if (!isIOSorMobile) {
         createAllTrees(scene);
         createAllStreetLamps(scene);
@@ -842,7 +961,8 @@ export async function initCity() {
     createGround(scene);
     createRoads(scene);
     createCrosswalks(scene);
-    createAllBuildings(scene, false);
+    const result = createAllBuildings(scene, false);
+    windowInstancedMesh = result.windowInstancedMesh;
     if (!isIOSorMobile) {
       createAllTrees(scene);
       createAllStreetLamps(scene);
