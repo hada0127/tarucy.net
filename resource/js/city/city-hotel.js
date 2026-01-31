@@ -530,7 +530,7 @@ export function addHotelSignText(scene) {
   });
   const textPlane = new THREE.Mesh(textPlaneGeom, textPlaneMat);
   // 텍스트를 간판보다 앞으로 (서쪽으로) 배치
-  const posX = mainX - mainWidth / 2 - 1; // 58
+  const posX = mainX - mainWidth / 2 - 2; // 57
   const posY = groundY + archHeight + 6.15;  // 16.15
   const posZ = mainZ;                         // 1
   textPlane.position.set(posX, posY, posZ);
