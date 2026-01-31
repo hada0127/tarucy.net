@@ -459,21 +459,21 @@ export function createCurveWestForestAndMountains(scene) {
 
 /**
  * Create large forest and mountains behind the hotel
+ * 최적화: 카메라에서 안 보이는 나무/언덕 대폭 제거
  */
 export function createHotelBackForestAndMountains(scene) {
   const groundY = 0;
 
-  // === Dense Forest Trees ===
+  // === 숲 나무 - 도로 근처만 남김 (x = 85 ~ 130, 밀도 낮춤) ===
   const treeColors = [0x1a3a2a, 0x2a4a3a, 0x1a4a2a, 0x2a3a2a, 0x1a5a3a];
 
-  // Forest area: x = 110 to 200, z = -40 to 40
-  // Skip trees near road (z = -28 to -12)
-  for (let x = 110; x < 200; x += 4 + Math.random() * 3) {
-    for (let z = -35; z < 35; z += 4 + Math.random() * 3) {
-      // Skip road area
+  // 도로 양쪽에만 나무 배치 (z = -35 ~ -28, z = -12 ~ 10)
+  for (let x = 85; x < 130; x += 6 + Math.random() * 4) {
+    for (let z = -35; z < 10; z += 6 + Math.random() * 4) {
+      // 도로 위는 스킵 (z = -28 to -12)
       if (z > -28 && z < -12) continue;
 
-      if (Math.random() > 0.1) {
+      if (Math.random() > 0.3) { // 70%만 생성 (밀도 감소)
         const offsetX = (Math.random() - 0.5) * 3;
         const offsetZ = (Math.random() - 0.5) * 3;
 
@@ -485,7 +485,7 @@ export function createHotelBackForestAndMountains(scene) {
         trunk.position.set(x + offsetX, groundY + trunkHeight / 2, z + offsetZ);
         scene.add(trunk);
 
-        // Tree foliage (multiple layers for dense look)
+        // Tree foliage
         const foliageColor = treeColors[Math.floor(Math.random() * treeColors.length)];
         const foliageMat = new THREE.MeshBasicMaterial({ color: foliageColor });
 
@@ -615,21 +615,9 @@ export function createHotelBackForestAndMountains(scene) {
   createMountain(295, -20, 42, 55);
   createMountain(300, -18, 45, 60);
 
-  // === Fill remaining gap on opposite side of tunnel ===
+  // === 터널 주변 산 (최소화) ===
   createMountain(265, -35, 30, 40);
-  createMountain(270, -45, 35, 45);
-  createMountain(275, -30, 28, 38);
-  createMountain(265, 0, 30, 40);
   createMountain(270, 10, 35, 45);
-  createMountain(275, -5, 28, 38);
-
-  // === Closer to tunnel ===
-  createMountain(235, -40, 25, 30);
-  createMountain(240, -50, 28, 35);
-  createMountain(235, 5, 25, 30);
-  createMountain(240, 15, 28, 35);
-  createMountain(245, -45, 22, 28);
-  createMountain(245, 10, 22, 28);
 
   // === Back mountains (behind hotel, +X direction) ===
   createMountain(250, -55, 50, 60);
@@ -668,81 +656,14 @@ export function createHotelBackForestAndMountains(scene) {
   createMountain(-10, 150, 65, 105);
   createMountain(20, 145, 55, 90);
 
-  // === Left side mountains (-X direction) ===
-  createMountain(-100, 80, 50, 65);
+  // === 왼쪽 산 (최소화) ===
   createMountain(-110, 50, 55, 75);
-  createMountain(-105, 20, 50, 70);
-  createMountain(-115, -10, 55, 80);
-  createMountain(-100, -35, 50, 60);
-
-  // Second row (further left)
   createMountain(-130, 65, 55, 85);
-  createMountain(-140, 35, 60, 95);
-  createMountain(-135, 5, 55, 80);
-  createMountain(-145, -25, 60, 90);
 
-  // === Corner mountains (connecting ranges) ===
-  // Back-right corner (connects back and right ranges)
+  // === 코너 산 (최소화) ===
   createMountain(210, 60, 55, 75);
-  createMountain(220, 85, 60, 85);
-  createMountain(200, 95, 50, 70);
-
-  // Back-left corner
   createMountain(-80, 95, 55, 70);
-  createMountain(-95, 105, 50, 65);
 
-  // === Additional smaller hills in front of mountains ===
-  // Skip tunnel area (x: 180-290, z: -50 to 10)
-  for (let i = 0; i < 25; i++) {
-    const hillX = 180 + Math.random() * 40;
-    const hillZ = -40 + Math.random() * 100;
-
-    // Skip tunnel area (expanded to account for hill sizes)
-    if (hillX > 180 && hillX < 290 && hillZ > -50 && hillZ < 10) {
-      continue;
-    }
-
-    const hillSize = 10 + Math.random() * 15;
-    const hillHeight = 15 + Math.random() * 25;
-
-    const hillGeom = new THREE.ConeGeometry(hillSize, hillHeight, 5);
-    const hillMat = new THREE.MeshBasicMaterial({
-      color: treeColors[Math.floor(Math.random() * treeColors.length)]
-    });
-    const hill = new THREE.Mesh(hillGeom, hillMat);
-    hill.position.set(hillX, groundY + hillHeight / 2, hillZ);
-    scene.add(hill);
-  }
-
-  // Hills on right side (z direction)
-  for (let i = 0; i < 20; i++) {
-    const hillX = 40 + Math.random() * 140;
-    const hillZ = 95 + Math.random() * 20;
-    const hillSize = 10 + Math.random() * 12;
-    const hillHeight = 12 + Math.random() * 20;
-
-    const hillGeom = new THREE.ConeGeometry(hillSize, hillHeight, 5);
-    const hillMat = new THREE.MeshBasicMaterial({
-      color: treeColors[Math.floor(Math.random() * treeColors.length)]
-    });
-    const hill = new THREE.Mesh(hillGeom, hillMat);
-    hill.position.set(hillX, groundY + hillHeight / 2, hillZ);
-    scene.add(hill);
-  }
-
-  // Hills on left side (-x direction)
-  for (let i = 0; i < 15; i++) {
-    const hillX = -85 + Math.random() * 20;
-    const hillZ = -30 + Math.random() * 100;
-    const hillSize = 8 + Math.random() * 12;
-    const hillHeight = 12 + Math.random() * 18;
-
-    const hillGeom = new THREE.ConeGeometry(hillSize, hillHeight, 5);
-    const hillMat = new THREE.MeshBasicMaterial({
-      color: treeColors[Math.floor(Math.random() * treeColors.length)]
-    });
-    const hill = new THREE.Mesh(hillGeom, hillMat);
-    hill.position.set(hillX, groundY + hillHeight / 2, hillZ);
-    scene.add(hill);
-  }
+  // === 작은 언덕들 제거됨 (최적화) ===
+  // 배경 산만 유지, 작은 언덕 루프 제거
 }
