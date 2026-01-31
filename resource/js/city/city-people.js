@@ -609,28 +609,28 @@ const stairPaths = [
 // ============================================================
 // iOS에서는 남쪽 건물 사이 인원 제거 (카메라 동선에 없음)
 const zonePopulationTargets = isIOS ? {
-  // iOS: 메인도로, 남쪽도로 주변만 유지
-  mainNorthSidewalk: { min: 1, max: 2 },
-  mainSouthSidewalk: { min: 2, max: 3 },
-  hotelFrontSidewalkNorth: { min: 1, max: 1 },
-  hotelFrontSidewalkSouth: { min: 1, max: 1 },
-  mainNorthEastSidewalk: { min: 1, max: 2 },
-  mainSouthEastSidewalk: { min: 1, max: 2 },
-  southEastSidewalk: { min: 1, max: 2 },
-  southWestSidewalk: { min: 1, max: 2 },
-  southRoadJunctionWest: { min: 1, max: 1 },
-  southRoadJunctionEast: { min: 1, max: 1 },
-  stairsBottomArea: { min: 1, max: 2 },
-  hotelEntranceArea: { min: 1, max: 2 },
-  belowRightPark: { min: 0, max: 1 },
-  leftPark: { min: 1, max: 2 },
-  shopAlley: { min: 2, max: 4 },
-  rightPark: { min: 1, max: 2 },
-  leftParkToShop: { min: 0, max: 1 },
-  rightParkToShop: { min: 0, max: 1 },
-  shopFrontArea: { min: 1, max: 2 },
-  shopBackArea: { min: 0, max: 1 },
-  rightParkToHotel: { min: 0, max: 1 },
+  // iOS: 절반으로 축소
+  mainNorthSidewalk: { min: 0, max: 1 },
+  mainSouthSidewalk: { min: 1, max: 2 },
+  hotelFrontSidewalkNorth: { min: 0, max: 1 },
+  hotelFrontSidewalkSouth: { min: 0, max: 1 },
+  mainNorthEastSidewalk: { min: 0, max: 1 },
+  mainSouthEastSidewalk: { min: 0, max: 1 },
+  southEastSidewalk: { min: 0, max: 1 },
+  southWestSidewalk: { min: 0, max: 1 },
+  southRoadJunctionWest: { min: 0, max: 1 },
+  southRoadJunctionEast: { min: 0, max: 1 },
+  stairsBottomArea: { min: 0, max: 1 },
+  hotelEntranceArea: { min: 0, max: 1 },
+  belowRightPark: { min: 0, max: 0 },
+  leftPark: { min: 0, max: 1 },
+  shopAlley: { min: 1, max: 2 },
+  rightPark: { min: 0, max: 1 },
+  leftParkToShop: { min: 0, max: 0 },
+  rightParkToShop: { min: 0, max: 0 },
+  shopFrontArea: { min: 0, max: 1 },
+  shopBackArea: { min: 0, max: 0 },
+  rightParkToHotel: { min: 0, max: 0 },
   // 남쪽 건물 사이 인원 완전 제거
   southAreaRight: { min: 0, max: 0 },
   southAreaCenter: { min: 0, max: 0 },
@@ -641,55 +641,55 @@ const zonePopulationTargets = isIOS ? {
   hotelEastArea: { min: 0, max: 0 },
   hotelEastAreaNorth: { min: 0, max: 0 },
   // 주거지역도 축소
+  stairsTopPlatform: { min: 0, max: 0 },
+  residentialPath: { min: 1, max: 2 },
+  slopedPath: { min: 0, max: 1 },
+  flatTopPath: { min: 0, max: 1 },
+} : {
+  // Desktop: 절반으로 감소
+  // Y=0 Ground level - sidewalks
+  mainNorthSidewalk: { min: 1, max: 2 },
+  mainSouthSidewalk: { min: 1, max: 3 },
+  hotelFrontSidewalkNorth: { min: 0, max: 1 },
+  hotelFrontSidewalkSouth: { min: 0, max: 1 },
+  mainNorthEastSidewalk: { min: 1, max: 2 },
+  mainSouthEastSidewalk: { min: 1, max: 2 },
+  southEastSidewalk: { min: 1, max: 2 },
+  southWestSidewalk: { min: 1, max: 2 },
+  southRoadJunctionWest: { min: 0, max: 1 },
+  southRoadJunctionEast: { min: 0, max: 1 },
+  stairsBottomArea: { min: 1, max: 2 },
+  hotelEntranceArea: { min: 1, max: 2 },
+  belowRightPark: { min: 0, max: 1 },
+
+  // Y=0 Shopping district
+  leftPark: { min: 1, max: 2 },
+  shopAlley: { min: 2, max: 4 },
+  rightPark: { min: 1, max: 2 },
+  leftParkToShop: { min: 0, max: 1 },
+  rightParkToShop: { min: 0, max: 1 },
+  shopFrontArea: { min: 1, max: 2 },
+  shopBackArea: { min: 0, max: 1 },
+  rightParkToHotel: { min: 0, max: 1 },
+
+  // Y=0 South building areas (절반으로 감소)
+  southAreaRight: { min: 22, max: 30 },
+  southAreaCenter: { min: 22, max: 30 },
+  southAreaLeft: { min: 20, max: 28 },
+  farSouthRight: { min: 16, max: 21 },
+  farSouthCenter: { min: 16, max: 21 },
+  farSouthLeft: { min: 15, max: 20 },
+  hotelEastArea: { min: 3, max: 5 },
+  hotelEastAreaNorth: { min: 2, max: 4 },
+
+  // Y=10+ Residential
   stairsTopPlatform: { min: 0, max: 1 },
-  residentialPath: { min: 2, max: 4 },
+  residentialPath: { min: 3, max: 5 },
   slopedPath: { min: 1, max: 2 },
   flatTopPath: { min: 1, max: 2 },
-} : {
-  // Desktop: 원본 설정
-  // Y=0 Ground level - sidewalks (reduced)
-  mainNorthSidewalk: { min: 2, max: 4 },
-  mainSouthSidewalk: { min: 3, max: 6 },
-  hotelFrontSidewalkNorth: { min: 1, max: 2 },
-  hotelFrontSidewalkSouth: { min: 1, max: 2 },
-  mainNorthEastSidewalk: { min: 1, max: 3 },
-  mainSouthEastSidewalk: { min: 2, max: 4 },
-  southEastSidewalk: { min: 2, max: 4 },
-  southWestSidewalk: { min: 2, max: 4 },
-  southRoadJunctionWest: { min: 1, max: 2 },
-  southRoadJunctionEast: { min: 1, max: 2 },
-  stairsBottomArea: { min: 2, max: 4 },
-  hotelEntranceArea: { min: 1, max: 3 },
-  belowRightPark: { min: 1, max: 2 },
-
-  // Y=0 Shopping district (reduced significantly)
-  leftPark: { min: 2, max: 4 },
-  shopAlley: { min: 4, max: 8 },
-  rightPark: { min: 2, max: 4 },
-  leftParkToShop: { min: 1, max: 2 },
-  rightParkToShop: { min: 1, max: 2 },
-  shopFrontArea: { min: 2, max: 4 },
-  shopBackArea: { min: 1, max: 3 },
-  rightParkToHotel: { min: 1, max: 2 },
-
-  // Y=0 South building areas (increased with residential reduction)
-  southAreaRight: { min: 45, max: 60 },
-  southAreaCenter: { min: 45, max: 60 },
-  southAreaLeft: { min: 42, max: 55 },
-  farSouthRight: { min: 32, max: 42 },
-  farSouthCenter: { min: 32, max: 42 },
-  farSouthLeft: { min: 30, max: 40 },
-  hotelEastArea: { min: 6, max: 10 },
-  hotelEastAreaNorth: { min: 4, max: 8 },
-
-  // Y=10+ Residential (reduced by half)
-  stairsTopPlatform: { min: 1, max: 2 },
-  residentialPath: { min: 6, max: 10 },
-  slopedPath: { min: 2, max: 5 },
-  flatTopPath: { min: 2, max: 4 },
 };
 
-const MAX_POPULATION = isIOS ? 50 : 350;
+const MAX_POPULATION = isIOS ? 25 : 175;
 
 // ============================================================
 // STATE
@@ -980,8 +980,8 @@ function getRandomWaypointInConnectedZones(currentZone) {
 
 /**
  * Create a pedestrian mesh
- * Structure: [0]=head, [1]=leftEye, [2]=rightEye, [3]=body,
- *            [4]=leftLegPivot, [5]=rightLegPivot, [6]=leftArmPivot, [7]=rightArmPivot
+ * Structure: [0]=head, [1]=body, [2]=leftLegPivot, [3]=rightLegPivot,
+ *            [4]=leftArmPivot, [5]=rightArmPivot
  */
 function createPedestrianMesh() {
   const group = new THREE.Group();
@@ -994,15 +994,7 @@ function createPedestrianMesh() {
   head.position.y = 1.5;
   group.add(head);
 
-  // Eyes (black circles, on front of head - positive z is forward)
-  const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
-  const eyeGeom = new THREE.SphereGeometry(0.035, 8, 8);
-  const leftEye = new THREE.Mesh(eyeGeom, eyeMat);
-  leftEye.position.set(-0.06, 1.52, 0.14);
-  group.add(leftEye);
-  const rightEye = new THREE.Mesh(eyeGeom, eyeMat);
-  rightEye.position.set(0.06, 1.52, 0.14);
-  group.add(rightEye);
+  // Eyes removed for optimization
 
   // Body
   const bodyGeom = new THREE.BoxGeometry(0.5, 0.7, 0.3);
@@ -1175,18 +1167,18 @@ function animateWalk(person, time) {
   }
 
   // Legs - pivot from hip, swing forward/backward
-  // [4]=leftLegPivot, [5]=rightLegPivot
-  if (person.children[4] && person.children[5]) {
-    person.children[4].rotation.x = Math.sin(t) * 0.5;
-    person.children[5].rotation.x = Math.sin(t + Math.PI) * 0.5;
+  // [2]=leftLegPivot, [3]=rightLegPivot
+  if (person.children[2] && person.children[3]) {
+    person.children[2].rotation.x = Math.sin(t) * 0.5;
+    person.children[3].rotation.x = Math.sin(t + Math.PI) * 0.5;
   }
 
   // Arms - pivot from shoulder, swing opposite to legs (cross-body)
-  // [6]=leftArmPivot, [7]=rightArmPivot
+  // [4]=leftArmPivot, [5]=rightArmPivot
   // Left arm swings with right leg, right arm swings with left leg
-  if (person.children[6] && person.children[7]) {
-    person.children[6].rotation.x = Math.sin(t + Math.PI) * 0.4; // Opposite to left leg
-    person.children[7].rotation.x = Math.sin(t) * 0.4; // Opposite to right leg
+  if (person.children[4] && person.children[5]) {
+    person.children[4].rotation.x = Math.sin(t + Math.PI) * 0.4; // Opposite to left leg
+    person.children[5].rotation.x = Math.sin(t) * 0.4; // Opposite to right leg
   }
 }
 
