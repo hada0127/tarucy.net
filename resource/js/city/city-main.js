@@ -244,7 +244,7 @@ const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 // GLB 파일 사용 여부 (true면 GLB 로드, false면 동적 생성)
 // false로 접속 후 콘솔에서 exportSceneToGLB() → meshopt 압축 → true로 변경
-const USE_GLB = true;
+const USE_GLB = false;
 const GLB_PATH = 'https://pub-0c79382ed5a947839fede2eac510554d.r2.dev/city.glb';
 
 /**
@@ -844,7 +844,12 @@ function createAllBuildings(scene, forGLB = false) {
     createAllFurniture(scene);
   }
 
-  // 창문 InstancedMesh 생성
+  // 창문 InstancedMesh 생성 (forGLB=true일 때는 데이터만 수집하고 InstancedMesh는 생성하지 않음)
+  // GLB 로드 후에는 외부에서 createWindowInstances를 호출함
+  if (forGLB) {
+    return { buildings, windowInstancedMesh: null };
+  }
+
   const windowInstancedMesh = createWindowInstances(scene);
 
   return { buildings, windowInstancedMesh };
