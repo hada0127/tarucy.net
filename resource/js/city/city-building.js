@@ -523,7 +523,7 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
       addWindowData(
         x + winX,
         groundY + winY,
-        z + (-depth/2 - 0.01),
+        z + (-depth/2 - 0.05),
         Math.PI,
         towerWinColors[colorIdx],
         1.4, 2,
@@ -537,7 +537,7 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
     for (let col = 0; col < numSideCols; col++) {
       const colorIdx = (row + col + 2) % towerWinColors.length;
       addWindowData(
-        x + (-width/2 - 0.01),
+        x + (-width/2 - 0.05),
         groundY + 2 + row * winSpacingY,
         z + (-depth/2 + winMargin + col * winSpacingX),
         Math.PI / 2,
@@ -553,7 +553,7 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
     for (let col = 0; col < numSideCols; col++) {
       const colorIdx = (row + col + 4) % towerWinColors.length;
       addWindowData(
-        x + (width/2 + 0.01),
+        x + (width/2 + 0.05),
         groundY + 2 + row * winSpacingY,
         z + (-depth/2 + winMargin + col * winSpacingX),
         -Math.PI / 2,
@@ -577,7 +577,7 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
       addWindowData(
         x + winX,
         groundY + winY,
-        z + (depth/2 + 0.01),
+        z + (depth/2 + 0.05),
         0,
         towerWinColors[colorIdx],
         1.4, 2,
@@ -694,7 +694,7 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
       addWindowData(
         x + winX,
         groundY + winY,
-        z + (-depth/2 - 0.01),
+        z + (-depth/2 - 0.05),
         Math.PI,
         smallWinColors[colorIdx],
         1.2, 1.8,
@@ -708,7 +708,7 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
     for (let col = 0; col < numSideCols; col++) {
       const colorIdx = (row + col + 2) % smallWinColors.length;
       addWindowData(
-        x + (-width/2 - 0.01),
+        x + (-width/2 - 0.05),
         groundY + 2 + row * winSpacingY,
         z + (-depth/2 + winMargin + col * winSpacingX),
         Math.PI / 2,
@@ -724,7 +724,7 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
     for (let col = 0; col < numSideCols; col++) {
       const colorIdx = (row + col + 4) % smallWinColors.length;
       addWindowData(
-        x + (width/2 + 0.01),
+        x + (width/2 + 0.05),
         groundY + 2 + row * winSpacingY,
         z + (-depth/2 + winMargin + col * winSpacingX),
         -Math.PI / 2,
@@ -748,7 +748,7 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
       addWindowData(
         x + winX,
         groundY + winY,
-        z + (depth/2 + 0.01),
+        z + (depth/2 + 0.05),
         0,
         smallWinColors[colorIdx],
         1.2, 1.8,
