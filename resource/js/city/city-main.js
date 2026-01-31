@@ -236,6 +236,7 @@ function validateCameraPosition(newX, newY, newZ, currentY) {
 
 // iOS/모바일 감지
 const isIOSorMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 // GLB 파일 사용 여부 (true면 GLB 로드, false면 동적 생성)
 // false로 접속 후 콘솔에서 exportSceneToGLB() → meshopt 압축 → true로 변경

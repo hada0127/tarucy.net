@@ -13,17 +13,21 @@
 
 import * as THREE from 'three';
 
+// iOS 감지
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
 /**
  * Vaporwave/Cyberpunk night sky texture for sky sphere
  */
 function createNightSkyTexture() {
   const canvas = document.createElement('canvas');
-  canvas.width = 2048;
-  canvas.height = 1024;
+  // iOS에서는 작은 텍스처 사용 (메모리 절약)
+  canvas.width = isIOS ? 1024 : 2048;
+  canvas.height = isIOS ? 512 : 1024;
   const ctx = canvas.getContext('2d');
 
   // Gradient sky - darker at top, reddish/warm glow at horizon (0.5 = horizon)
-  const gradient = ctx.createLinearGradient(0, 0, 0, 1024);
+  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
   gradient.addColorStop(0, '#050508');    // Very dark at top (zenith)
   gradient.addColorStop(0.15, '#08080f');
   gradient.addColorStop(0.25, '#0a0a14');
@@ -38,12 +42,12 @@ function createNightSkyTexture() {
   gradient.addColorStop(1, '#0a0a14');     // Below (mirror)
 
   ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 2048, 1024);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Moon (pink/salmon) - positioned behind hotel (+X direction)
-  const moonX = 1050; // Behind hotel direction
-  const moonY = 380; // Upper sky, not too high to avoid distortion
-  const moonRadius = 15; // Small moon
+  const moonX = canvas.width * 0.513; // Behind hotel direction (1050/2048)
+  const moonY = canvas.height * 0.371; // Upper sky (380/1024)
+  const moonRadius = isIOS ? 10 : 15; // Small moon (smaller on iOS)
 
   const moonGradient = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, moonRadius);
   moonGradient.addColorStop(0, '#ffb8a8');
@@ -66,10 +70,11 @@ function createNightSkyTexture() {
   ctx.arc(moonX, moonY, moonRadius * 2, 0, Math.PI * 2);
   ctx.fill();
 
-  // Stars - many tiny stars spread across upper sky
-  for (let i = 0; i < 4500; i++) {
-    const x = Math.random() * 2048;
-    const y = Math.random() * 650; // Upper portion of sky
+  // Stars - many tiny stars spread across upper sky (fewer on iOS)
+  const starCount = isIOS ? 1500 : 4500;
+  for (let i = 0; i < starCount; i++) {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height * 0.635; // Upper portion of sky (650/1024)
     const size = Math.random() * 0.4 + 0.1; // Very tiny stars (0.1 ~ 0.5)
     const brightness = 0.1 + Math.random() * 0.4;
     ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
@@ -117,7 +122,7 @@ function createDistantSilhouettes(scene) {
   });
 
   const radius = 400; // Distance from center
-  const numPanels = 60; // Number of panels around circle
+  const numPanels = isIOS ? 30 : 60; // iOS에서는 절반 (메모리 절약)
 
   for (let i = 0; i < numPanels; i++) {
     const angle = (i / numPanels) * Math.PI * 2;
@@ -167,7 +172,9 @@ function createDistantSilhouettes(scene) {
     scene.add(mesh);
   }
 
-  // Add additional layer for depth
+  // Add additional layer for depth (skip on iOS for memory)
+  if (isIOS) return;
+
   const radius2 = 500;
   const numPanels2 = 40;
 
@@ -238,14 +245,26 @@ export function createScene() {
  */
 export function createRenderer(container) {
   const renderer = new THREE.WebGLRenderer({
-    antialias: true,
-    alpha: false
+    antialias: !isIOS, // iOS에서는 antialias 비활성화 (메모리 절약)
+    alpha: false,
+    powerPreference: isIOS ? 'low-power' : 'high-performance'
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  // iOS에서는 픽셀 비율을 1로 제한 (메모리 절약)
+  renderer.setPixelRatio(isIOS ? 1 : Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
   container.appendChild(renderer.domElement);
+
+  // WebGL context lost 이벤트 처리
+  renderer.domElement.addEventListener('webglcontextlost', (event) => {
+    event.preventDefault();
+    console.warn('WebGL context lost. Reloading...');
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  });
+
   return renderer;
 }
 
