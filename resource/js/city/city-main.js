@@ -914,6 +914,18 @@ export async function initCity() {
     console.log(`Yaw: ${(yaw * 180 / Math.PI).toFixed(3)}, Pitch: ${(pitch * 180 / Math.PI).toFixed(3)}`);
   };
 
+  // 렌더러 정보 출력 함수 (전역으로 노출)
+  window.logRenderInfo = () => {
+    const info = renderer.info;
+    console.log('=== Render Info ===');
+    console.log(`Draw calls: ${info.render.calls}`);
+    console.log(`Triangles: ${info.render.triangles}`);
+    console.log(`Points: ${info.render.points}`);
+    console.log(`Lines: ${info.render.lines}`);
+    console.log(`Geometries: ${info.memory.geometries}`);
+    console.log(`Textures: ${info.memory.textures}`);
+  };
+
   // Joystick analog values (0 to 1 for proportional control)
   const joystickState = {
     moveY: 0,  // -1 (forward) to 1 (backward)
