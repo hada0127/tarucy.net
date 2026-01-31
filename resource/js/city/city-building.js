@@ -17,9 +17,26 @@ const windowDataList = [];
 
 /**
  * 창문 데이터 추가 (개별 메시 대신 데이터만 수집)
+ * @param {number} buildingX - 건물 중심 X 좌표 (필터링용)
+ * @param {number} buildingZ - 건물 중심 Z 좌표 (필터링용)
  */
-function addWindowData(x, y, z, rotationY, color, width, height) {
-  windowDataList.push({ x, y, z, rotationY, color, width, height });
+function addWindowData(x, y, z, rotationY, color, width, height, buildingX = null, buildingZ = null) {
+  windowDataList.push({ x, y, z, rotationY, color, width, height, buildingX, buildingZ });
+}
+
+/**
+ * 특정 건물의 창문 데이터 제거
+ */
+export function removeWindowDataForBuilding(buildingX, buildingZ, tolerance = 1) {
+  for (let i = windowDataList.length - 1; i >= 0; i--) {
+    const win = windowDataList[i];
+    if (win.buildingX !== null && win.buildingZ !== null) {
+      if (Math.abs(win.buildingX - buildingX) < tolerance &&
+          Math.abs(win.buildingZ - buildingZ) < tolerance) {
+        windowDataList.splice(i, 1);
+      }
+    }
+  }
 }
 
 /**
@@ -452,6 +469,7 @@ export function getBuildingVolume(building) {
 
 /**
  * Remove overlapping buildings, keeping larger ones
+ * 제거된 건물의 창문 데이터도 함께 제거
  */
 export function removeOverlappingBuildings(scene, buildings) {
   const toRemove = new Set();
@@ -477,10 +495,14 @@ export function removeOverlappingBuildings(scene, buildings) {
     }
   }
 
-  // Remove from scene
+  // Remove from scene and remove window data
   const removeIndices = Array.from(toRemove).sort((a, b) => b - a);
   removeIndices.forEach(idx => {
-    scene.remove(buildings[idx]);
+    const building = buildings[idx];
+    // 제거된 건물의 창문 데이터도 제거
+    const pos = building.position;
+    removeWindowDataForBuilding(pos.x, pos.z);
+    scene.remove(building);
   });
 
   // Filter out removed buildings
@@ -548,7 +570,8 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
         z + (-depth/2 + winMargin + col * winSpacingX),
         Math.PI / 2,
         towerWinColors[colorIdx],
-        1.4, 2
+        1.4, 2,
+        x, z  // 건물 좌표 (필터링용)
       );
     }
   }
@@ -563,7 +586,8 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
         z + (-depth/2 + winMargin + col * winSpacingX),
         -Math.PI / 2,
         towerWinColors[colorIdx],
-        1.4, 2
+        1.4, 2,
+        x, z  // 건물 좌표 (필터링용)
       );
     }
   }
@@ -584,7 +608,8 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
         z + (depth/2 + 0.01),
         0,
         towerWinColors[colorIdx],
-        1.4, 2
+        1.4, 2,
+        x, z  // 건물 좌표 (필터링용)
       );
     }
   }
@@ -689,7 +714,8 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
         z + (-depth/2 + winMargin + col * winSpacingX),
         Math.PI / 2,
         smallWinColors[colorIdx],
-        1.0, 1.5
+        1.0, 1.5,
+        x, z  // 건물 좌표 (필터링용)
       );
     }
   }
@@ -704,7 +730,8 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
         z + (-depth/2 + winMargin + col * winSpacingX),
         -Math.PI / 2,
         smallWinColors[colorIdx],
-        1.0, 1.5
+        1.0, 1.5,
+        x, z  // 건물 좌표 (필터링용)
       );
     }
   }
@@ -725,7 +752,8 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
         z + (depth/2 + 0.01),
         0,
         smallWinColors[colorIdx],
-        1.2, 1.8
+        1.2, 1.8,
+        x, z  // 건물 좌표 (필터링용)
       );
     }
   }
