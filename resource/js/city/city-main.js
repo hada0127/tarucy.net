@@ -83,6 +83,8 @@ import {
 // Audio system for equalizer effect
 import {
   initAudio,
+  preloadAudio,
+  playAudio,
   toggleAudio,
   isAudioPlaying,
   updateAudioAnalysis,
@@ -585,6 +587,90 @@ function createAudioButton() {
   document.body.appendChild(button);
 }
 
+// ============================================================
+// LOADING SCREEN SYSTEM
+// ============================================================
+
+const loadingMessages = [
+  "Laying the foundation",
+  "Installing roads",
+  "Constructing buildings",
+  "Planting trees",
+  "Setting up street lamps",
+  "Placing furniture",
+  "Tuning the speakers",
+  "Almost ready"
+];
+
+let currentMessageIndex = 0;
+let dotCount = 1;
+let messageInterval = null;
+let dotInterval = null;
+
+/**
+ * Start loading animation (cycling messages with animated dots)
+ */
+function startLoadingAnimation() {
+  const messageEl = document.getElementById('loading-message');
+  if (!messageEl) return;
+
+  // Cycle dots every 400ms
+  dotInterval = setInterval(() => {
+    dotCount = (dotCount % 3) + 1;
+    const dots = '.'.repeat(dotCount);
+    messageEl.textContent = loadingMessages[currentMessageIndex] + dots;
+  }, 400);
+
+  // Cycle messages every 2 seconds
+  messageInterval = setInterval(() => {
+    currentMessageIndex = (currentMessageIndex + 1) % loadingMessages.length;
+  }, 2000);
+}
+
+/**
+ * Stop loading animation
+ */
+function stopLoadingAnimation() {
+  if (dotInterval) {
+    clearInterval(dotInterval);
+    dotInterval = null;
+  }
+  if (messageInterval) {
+    clearInterval(messageInterval);
+    messageInterval = null;
+  }
+}
+
+/**
+ * Show explore button (hide loading message)
+ */
+function showExploreButton() {
+  stopLoadingAnimation();
+
+  const messageEl = document.getElementById('loading-message');
+  if (messageEl) {
+    messageEl.style.display = 'none';
+  }
+
+  const btn = document.getElementById('explore-btn');
+  if (btn) {
+    btn.style.display = 'inline-block';
+  }
+}
+
+/**
+ * Hide loading overlay with fade-out animation
+ */
+function hideLoadingOverlay() {
+  const overlay = document.getElementById('loading-overlay');
+  if (overlay) {
+    overlay.classList.add('fade-out');
+    setTimeout(() => {
+      overlay.remove();
+    }, 1000);
+  }
+}
+
 /**
  * GLB 파일에서 Scene 로드
  */
@@ -683,6 +769,9 @@ export async function initCity() {
     return;
   }
 
+  // Start loading animation
+  startLoadingAnimation();
+
   // Create scene, renderer, camera
   const scene = createScene();
   const renderer = createRenderer(container);
@@ -694,6 +783,27 @@ export async function initCity() {
 
   // Add lighting
   createLighting(scene);
+
+  // Load GLB and audio in parallel
+  let glbLoaded = false;
+  let audioLoaded = false;
+
+  const checkAndShowExplore = () => {
+    if (glbLoaded && audioLoaded) {
+      showExploreButton();
+    }
+  };
+
+  // Start audio preloading
+  preloadAudio().then(() => {
+    audioLoaded = true;
+    console.log('Audio loaded!');
+    checkAndShowExplore();
+  }).catch(e => {
+    console.error('Audio preload failed:', e);
+    audioLoaded = true; // Continue anyway
+    checkAndShowExplore();
+  });
 
   if (USE_GLB) {
     // GLB 파일에서 정적 scene 로드
@@ -707,6 +817,8 @@ export async function initCity() {
       addFurnitureTexts(scene);
       addHotelSignText(scene);
       console.log('Dynamic texts added!');
+      glbLoaded = true;
+      checkAndShowExplore();
     } catch (e) {
       console.error('GLB load failed, falling back to dynamic generation:', e);
       // 실패 시 동적 생성으로 폴백
@@ -718,6 +830,8 @@ export async function initCity() {
         createAllTrees(scene);
         createAllStreetLamps(scene);
       }
+      glbLoaded = true;
+      checkAndShowExplore();
     }
   } else {
     // 동적 생성 (기존 방식)
@@ -729,6 +843,8 @@ export async function initCity() {
       createAllTrees(scene);
       createAllStreetLamps(scene);
     }
+    glbLoaded = true;
+    checkAndShowExplore();
   }
 
   // mesh 수 확인
@@ -747,8 +863,27 @@ export async function initCity() {
     console.log('(캔버스 텍스처 제외, 텍스트는 GLB 로드 후 동적 추가됨)');
   }
 
-  // 오디오 시스템 초기화 및 버튼 생성
+  // 오디오 시스템 초기화 (already preloaded)
   initAudio();
+
+  // Set up explore button click handler
+  const exploreBtn = document.getElementById('explore-btn');
+  if (exploreBtn) {
+    exploreBtn.addEventListener('click', () => {
+      // Hide loading overlay with fade-out
+      hideLoadingOverlay();
+      // Start playing music
+      playAudio();
+      // Update music button state
+      const audioBtn = document.getElementById('audio-toggle-btn');
+      if (audioBtn) {
+        audioBtn.innerHTML = '🎵 Playing';
+        audioBtn.style.background = 'rgba(64, 224, 208, 0.8)';
+      }
+    });
+  }
+
+  // Create audio toggle button
   createAudioButton();
 
   // 동적 객체 추가 (차량, 보행자)

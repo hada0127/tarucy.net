@@ -90,6 +90,67 @@ export function initAudio() {
 }
 
 /**
+ * 오디오 프리로드 (로딩 화면용)
+ * Returns a Promise that resolves when audio is ready to play
+ */
+export function preloadAudio() {
+  return new Promise((resolve) => {
+    if (audioElement && audioElement.readyState >= 3) {
+      // Already loaded
+      resolve();
+      return;
+    }
+
+    // Initialize audio context if needed
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.7;
+      frequencyData = new Uint8Array(analyser.frequencyBinCount);
+    }
+
+    // Create audio element if needed
+    if (!audioElement) {
+      audioElement = new Audio('resource/sound/city-drive.mp3');
+      audioElement.loop = true;
+      audioElement.crossOrigin = 'anonymous';
+    }
+
+    // Wait for canplaythrough event
+    audioElement.addEventListener('canplaythrough', () => {
+      // Connect audio source if not already connected
+      if (!audioSource) {
+        audioSource = audioContext.createMediaElementSource(audioElement);
+        audioSource.connect(analyser);
+        analyser.connect(audioContext.destination);
+      }
+      console.log('Audio preloaded and ready');
+      resolve();
+    }, { once: true });
+
+    // Start loading
+    audioElement.load();
+  });
+}
+
+/**
+ * 오디오 재생 시작 (Explore 버튼 클릭 시)
+ */
+export function playAudio() {
+  if (!audioContext) return;
+
+  if (audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
+
+  audioElement.play().catch(e => {
+    console.error('Audio play failed:', e);
+  });
+  isPlaying = true;
+}
+
+/**
  * 오디오 재생/일시정지 토글
  */
 export function toggleAudio() {
