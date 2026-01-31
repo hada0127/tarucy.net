@@ -85,7 +85,6 @@ import {
   initAudio,
   preloadAudio,
   playAudio,
-  toggleAudio,
   isAudioPlaying,
   updateAudioAnalysis,
   getIntensityForPosition
@@ -543,49 +542,6 @@ function updateWindowBrightness() {
   }
 }
 
-/**
- * 오디오 토글 버튼 생성
- */
-function createAudioButton() {
-  const button = document.createElement('button');
-  button.id = 'audio-toggle-btn';
-  button.innerHTML = '🎵 Music';
-  button.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 12px 20px;
-    font-size: 16px;
-    font-family: monospace;
-    background: rgba(255, 102, 170, 0.8);
-    color: white;
-    border: 2px solid rgba(255, 255, 255, 0.6);
-    border-radius: 8px;
-    cursor: pointer;
-    z-index: 1000;
-    transition: all 0.2s ease;
-  `;
-
-  button.addEventListener('mouseenter', () => {
-    button.style.background = 'rgba(255, 102, 170, 1)';
-    button.style.transform = 'scale(1.05)';
-  });
-
-  button.addEventListener('mouseleave', () => {
-    button.style.background = isAudioPlaying() ?
-      'rgba(64, 224, 208, 0.8)' : 'rgba(255, 102, 170, 0.8)';
-    button.style.transform = 'scale(1)';
-  });
-
-  button.addEventListener('click', () => {
-    const playing = toggleAudio();
-    button.innerHTML = playing ? '🎵 Playing' : '🎵 Music';
-    button.style.background = playing ?
-      'rgba(64, 224, 208, 0.8)' : 'rgba(255, 102, 170, 0.8)';
-  });
-
-  document.body.appendChild(button);
-}
 
 // ============================================================
 // LOADING SCREEN SYSTEM
@@ -874,17 +830,8 @@ export async function initCity() {
       hideLoadingOverlay();
       // Start playing music
       playAudio();
-      // Update music button state
-      const audioBtn = document.getElementById('audio-toggle-btn');
-      if (audioBtn) {
-        audioBtn.innerHTML = '🎵 Playing';
-        audioBtn.style.background = 'rgba(64, 224, 208, 0.8)';
-      }
     });
   }
-
-  // Create audio toggle button
-  createAudioButton();
 
   // 동적 객체 추가 (차량, 보행자)
   // 상점가, 자판기, 공중전화의 기본 지오메트리는 이제 GLB에 포함됨
