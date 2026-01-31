@@ -1337,32 +1337,29 @@ export async function initCity() {
       }
     }
 
-    // 콘솔에 위치/방향 출력 (이동 또는 높이 변경 시)
-    const now = performance.now();
-    if ((positionChanged || heightChanged) && now - lastLogTime > LOG_INTERVAL) {
-      const pos = camera.position;
-      const yawDeg = (cameraState.yaw * 180 / Math.PI).toFixed(1);
-      const pitchDeg = (cameraState.pitch * 180 / Math.PI).toFixed(1);
-      console.log(`Pos: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)}) | Yaw: ${yawDeg}° Pitch: ${pitchDeg}°`);
-      lastLogTime = now;
-    }
+    // 회전 여부 추적
+    let rotationChanged = false;
 
     // Apply rotation from left joystick/keyboard A/D
     if (rotateAmount !== 0) {
       cameraState.yaw += rotSpeed * rotateAmount;
+      rotationChanged = true;
     }
 
     // Arrow Left/Right for rotation (keyboard)
     if (keys.ArrowLeft) {
       cameraState.yaw += rotSpeed;
+      rotationChanged = true;
     }
     if (keys.ArrowRight) {
       cameraState.yaw -= rotSpeed;
+      rotationChanged = true;
     }
 
     // Right joystick X axis for rotation (proportional)
     if (rightJoystickState.lookX !== 0) {
       cameraState.yaw -= rotSpeed * rightJoystickState.lookX;
+      rotationChanged = true;
     }
 
     // Pitch (Arrow Up/Down) - Look up/down
@@ -1380,6 +1377,17 @@ export async function initCity() {
       // Limit pitch to prevent flipping
       if (cameraState.pitch > Math.PI / 2 - 0.1) cameraState.pitch = Math.PI / 2 - 0.1;
       if (cameraState.pitch < -Math.PI / 2 + 0.1) cameraState.pitch = -Math.PI / 2 + 0.1;
+      rotationChanged = true;
+    }
+
+    // 콘솔에 위치/방향 출력 (이동, 높이 변경, 또는 회전 시)
+    const now = performance.now();
+    if ((positionChanged || heightChanged || rotationChanged) && now - lastLogTime > LOG_INTERVAL) {
+      const pos = camera.position;
+      const yawDeg = (cameraState.yaw * 180 / Math.PI).toFixed(1);
+      const pitchDeg = (cameraState.pitch * 180 / Math.PI).toFixed(1);
+      console.log(`Pos: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)}) | Yaw: ${yawDeg}° Pitch: ${pitchDeg}°`);
+      lastLogTime = now;
     }
 
     // Update camera look direction
