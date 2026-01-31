@@ -317,11 +317,14 @@ function addSignTextPanel(scene, x, z, groundY, width, depth, neonColor, signTex
     map: texture,
     transparent: true,
     depthWrite: false,
-    side: THREE.DoubleSide
+    side: THREE.DoubleSide,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1
   });
   const signPanel = new THREE.Mesh(signPanelGeom, signPanelMat);
-  signPanel.renderOrder = 1;
-  signPanel.position.set(x, groundY + 4.0, z - depth/2 - 0.72);
+  signPanel.renderOrder = 10;
+  signPanel.position.set(x, groundY + 4.0, z - depth/2 - 0.85);
   // 상점이 -Z 방향을 바라보므로 플레인도 -Z 방향으로 회전
   signPanel.rotation.y = Math.PI;
   scene.add(signPanel);
