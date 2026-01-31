@@ -143,6 +143,7 @@ export function addBuildingSignTexts(sourceScene, targetScene = null) {
 
   sourceScene.traverse((obj) => {
     if (!obj.isGroup) return;
+    if (!obj.userData.isTowerBuilding) return; // 타워/빌딩만 (상점, 주택 제외)
     if (!obj.userData.buildingSize) return;
 
     const { width, depth, height } = obj.userData.buildingSize;
@@ -607,6 +608,7 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
 
   group.position.set(x, groundY, z);
   group.userData.buildingSize = { width, depth, height };
+  group.userData.isTowerBuilding = true; // 빌딩 간판 대상 마커
   scene.add(group);
   return group;
 }
@@ -740,6 +742,7 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
 
   group.position.set(x, groundY, z);
   group.userData.buildingSize = { width, depth, height };
+  group.userData.isTowerBuilding = true; // 빌딩 간판 대상 마커
   scene.add(group);
   return group;
 }
