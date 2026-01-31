@@ -964,8 +964,8 @@ export async function initCity() {
       progressBar.style.width = (scrollProgress * 100) + '%';
     }
 
-    // Show Walking Mode button when near the end (>= 98%)
-    if (scrollProgress >= 0.98 && walkingModeBtn) {
+    // Show Walking Mode button when near the end (>= 95% of actual scroll)
+    if (targetProgress >= 0.95 && walkingModeBtn) {
       walkingModeBtn.classList.add('visible');
     } else if (walkingModeBtn) {
       walkingModeBtn.classList.remove('visible');
