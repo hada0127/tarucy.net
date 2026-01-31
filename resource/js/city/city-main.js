@@ -43,7 +43,8 @@ import {
   removeOverlappingBuildings,
   createWindowInstances,
   clearWindowData,
-  getWindowDataList
+  getWindowDataList,
+  addBuildingSignTexts
 } from './city-building.js';
 
 // Houses
@@ -268,10 +269,11 @@ function exportSceneToGLB() {
   // 건물과 가구 생성 (텍스트 없이)
   createResidentialDistrict(exportScene);
   createSlopedResidentialArea(exportScene);
-  createLeftBuildings(exportScene);
-  createRightBuildings(exportScene);
-  createCenterBuildings(exportScene);
-  createSouthBuildings(exportScene);
+  // forGLB=true: 빌딩 간판 제외 (외부 PNG 텍스처는 GLTFExporter와 호환되지 않음)
+  createLeftBuildings(exportScene, true);
+  createRightBuildings(exportScene, true);
+  createCenterBuildings(exportScene, true);
+  createSouthBuildings(exportScene, true);
 
   // 상점가 (텍스트 없이)
   createShoppingDistrictBase(exportScene);
@@ -942,6 +944,7 @@ export async function initCity() {
       addShopSignTexts(scene);
       addFurnitureTexts(scene);
       addHotelSignText(scene);
+      addBuildingSignTexts(scene);
       console.log('Dynamic texts added!');
 
       // GLB에는 창문이 없으므로 InstancedMesh로 창문 생성

@@ -132,6 +132,106 @@ export function getWindowDataList() {
 // Building sign text count (must match number of pre-generated textures)
 const buildingSignCount = 22;
 
+/**
+ * Add building sign textures dynamically after GLB load
+ * Finds all building groups with buildingSize userData and adds signs
+ */
+export function addBuildingSignTexts(scene) {
+  let signCount = 0;
+
+  scene.traverse((obj) => {
+    if (!obj.isGroup) return;
+    if (!obj.userData.buildingSize) return;
+
+    const { width, depth, height } = obj.userData.buildingSize;
+
+    // Determine if it's a main tower (larger buildings) or small building
+    const isMainTower = height > 30;
+
+    // Calculate window layout to find top window position
+    const winSpacingY = isMainTower ? 3 : 3.5;
+    const windowHeight = isMainTower ? 2 : 1.8;
+    const numRows = Math.max(1, Math.floor((height - 4) / winSpacingY));
+    const topWindowY = 2 + (numRows - 1) * winSpacingY;
+    const windowTop = topWindowY + windowHeight / 2;
+
+    // Sign position calculation
+    const margin = 0.5;
+    const signStartY = windowTop + margin;
+    const availableHeight = height - signStartY - 0.2;
+    const signHeight = Math.min(Math.max(availableHeight, 2), 6);
+    const signCenterY = signStartY + signHeight / 2;
+
+    // Get next texture index
+    const textIdx = getNextTextIndex();
+    signTextIndex++;
+
+    // Load texture
+    const texturePath = `resource/img/signs/${buildingSignTextureFiles[textIdx]}`;
+    const texture = textureLoader.load(texturePath);
+
+    // Sign configurations for 4 directions
+    const frontBackWidth = width * 0.95;
+    const leftRightWidth = depth * 0.95;
+
+    const signConfigs = [
+      { signWidth: frontBackWidth, position: [0, signCenterY, depth / 2 + 0.1], rotation: [0, 0, 0] },
+      { signWidth: frontBackWidth, position: [0, signCenterY, -depth / 2 - 0.1], rotation: [0, Math.PI, 0] },
+      { signWidth: leftRightWidth, position: [-width / 2 - 0.1, signCenterY, 0], rotation: [0, -Math.PI / 2, 0] },
+      { signWidth: leftRightWidth, position: [width / 2 + 0.1, signCenterY, 0], rotation: [0, Math.PI / 2, 0] }
+    ];
+
+    signConfigs.forEach(config => {
+      const signGeom = new THREE.PlaneGeometry(config.signWidth, signHeight);
+      const signMat = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        side: THREE.FrontSide
+      });
+      const sign = new THREE.Mesh(signGeom, signMat);
+      sign.position.set(...config.position);
+      sign.rotation.set(...config.rotation);
+      obj.add(sign);
+    });
+
+    // Entrance signs
+    const entranceWidth = isMainTower ? 4 : 2;
+    const entranceHeight = isMainTower ? 4 : 3;
+    const backEntranceWidth = isMainTower ? 3 : 1.8;
+    const backEntranceHeight = isMainTower ? 3.5 : 2.8;
+
+    // Front entrance sign
+    const frontSignWidth = Math.max(entranceWidth * 1.5, 5);
+    const frontSignGeom = new THREE.PlaneGeometry(frontSignWidth, 2);
+    const frontSignMat = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      side: THREE.FrontSide
+    });
+    const frontSign = new THREE.Mesh(frontSignGeom, frontSignMat);
+    frontSign.position.set(0, entranceHeight + 1.5, -depth / 2 - 0.15);
+    frontSign.rotation.y = Math.PI;
+    obj.add(frontSign);
+
+    // Back entrance sign
+    const backSignWidth = Math.max(backEntranceWidth * 1.5, 5);
+    const backSignGeom = new THREE.PlaneGeometry(backSignWidth, 2);
+    const backSignMat = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      side: THREE.FrontSide
+    });
+    const backSign = new THREE.Mesh(backSignGeom, backSignMat);
+    backSign.position.set(0, backEntranceHeight + 1.5, depth / 2 + 0.15);
+    backSign.rotation.y = 0;
+    obj.add(backSign);
+
+    signCount++;
+  });
+
+  console.log(`Added building signs to ${signCount} buildings`);
+}
+
 let signTextIndex = 0;
 
 // Shuffled text indices for maximum variety
@@ -357,6 +457,7 @@ export function removeOverlappingBuildings(scene, buildings) {
 
 /**
  * Create a main tower with window grid
+ * @param {boolean} config.skipSign - If true, skip creating building signs (for GLB export)
  */
 export function createMainTower(scene, x, z, groundY, config = {}) {
   const group = new THREE.Group();
@@ -365,6 +466,7 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
   const depth = config.depth || 10;
   const height = config.height || 35;
   const neonColor = config.neonColor || colors.neon.pink;
+  const skipSign = config.skipSign || false;
 
   // Main building body
   const buildingGeom = new THREE.BoxGeometry(width, height, depth);
@@ -487,12 +589,15 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
   }
 
   // Building sign (facing main road) and entrance signs
-  createBuildingSign(group, width, height, depth, true, {
-    frontWidth: entranceWidth,
-    frontHeight: entranceHeight,
-    backWidth: backEntranceWidth,
-    backHeight: backEntranceHeight
-  });
+  // Skip signs for GLB export (textures are loaded externally and incompatible with GLTFExporter)
+  if (!skipSign) {
+    createBuildingSign(group, width, height, depth, true, {
+      frontWidth: entranceWidth,
+      frontHeight: entranceHeight,
+      backWidth: backEntranceWidth,
+      backHeight: backEntranceHeight
+    });
+  }
 
   group.position.set(x, groundY, z);
   group.userData.buildingSize = { width, depth, height };
@@ -502,6 +607,7 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
 
 /**
  * Create a smaller building
+ * @param {boolean} config.skipSign - If true, skip creating building signs (for GLB export)
  */
 export function createSmallBuilding(scene, x, z, groundY, config = {}) {
   const group = new THREE.Group();
@@ -509,6 +615,7 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
   const width = config.width || 8;
   const depth = config.depth || 6;
   const height = config.height || 15;
+  const skipSign = config.skipSign || false;
 
   // Building body
   const buildingGeom = new THREE.BoxGeometry(width, height, depth);
@@ -615,12 +722,15 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
   group.add(backDoor);
 
   // Building sign (facing main road) and entrance signs
-  createBuildingSign(group, width, height, depth, false, {
-    frontWidth: doorWidth,
-    frontHeight: doorHeight,
-    backWidth: backDoorWidth,
-    backHeight: backDoorHeight
-  });
+  // Skip signs for GLB export (textures are loaded externally and incompatible with GLTFExporter)
+  if (!skipSign) {
+    createBuildingSign(group, width, height, depth, false, {
+      frontWidth: doorWidth,
+      frontHeight: doorHeight,
+      backWidth: backDoorWidth,
+      backHeight: backDoorHeight
+    });
+  }
 
   group.position.set(x, groundY, z);
   group.userData.buildingSize = { width, depth, height };
@@ -634,8 +744,9 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
 
 /**
  * Create left side buildings cluster (expanded 2x area - extended to x=-160)
+ * @param {boolean} forGLB - If true, skip building signs (for GLB export)
  */
-export function createLeftBuildings(scene) {
+export function createLeftBuildings(scene, forGLB = false) {
   const buildings = [];
   const groundY = 0;
   const neonPalette = [colors.neon.pink, colors.neon.magenta, colors.neon.cyan, colors.neon.blue];
@@ -692,7 +803,7 @@ export function createLeftBuildings(scene) {
 
   secondaryPositions.forEach(pos => {
     buildings.push(createSmallBuilding(scene, pos.x, pos.z, groundY, {
-      width: pos.w, depth: pos.d, height: pos.h
+      width: pos.w, depth: pos.d, height: pos.h, skipSign: forGLB
     }));
   });
 
@@ -703,8 +814,9 @@ export function createLeftBuildings(scene) {
 
 /**
  * Create right side buildings cluster (expanded 5x area)
+ * @param {boolean} forGLB - If true, skip building signs (for GLB export)
  */
-export function createRightBuildings(scene) {
+export function createRightBuildings(scene, forGLB = false) {
   const buildings = [];
   const groundY = 0;
 
@@ -714,17 +826,17 @@ export function createRightBuildings(scene) {
   //   width: 14, depth: 12, height: 43, neonColor: colors.neon.cyan
   // }));
   buildings.push(createMainTower(scene, 55, -45, groundY, {
-    width: 16, depth: 14, height: 52, neonColor: colors.neon.yellow
+    width: 16, depth: 14, height: 52, neonColor: colors.neon.yellow, skipSign: forGLB
   }));
   // Removed: building between hotel and crosswalk
   // buildings.push(createMainTower(scene, 70, -30, groundY, {
   //   width: 12, depth: 10, height: 40, neonColor: colors.neon.green
   // }));
   buildings.push(createMainTower(scene, 45, -65, groundY, {
-    width: 14, depth: 12, height: 48, neonColor: colors.neon.cyan
+    width: 14, depth: 12, height: 48, neonColor: colors.neon.cyan, skipSign: forGLB
   }));
   buildings.push(createMainTower(scene, 65, -70, groundY, {
-    width: 15, depth: 13, height: 46, neonColor: colors.neon.pink
+    width: 15, depth: 13, height: 46, neonColor: colors.neon.pink, skipSign: forGLB
   }));
 
   // Secondary buildings (many more) - moved down for wider road
@@ -748,7 +860,7 @@ export function createRightBuildings(scene) {
 
   secondaryPositions.forEach(pos => {
     buildings.push(createSmallBuilding(scene, pos.x, pos.z, groundY, {
-      width: pos.w, depth: pos.d, height: pos.h
+      width: pos.w, depth: pos.d, height: pos.h, skipSign: forGLB
     }));
   });
 
@@ -757,26 +869,27 @@ export function createRightBuildings(scene) {
 
 /**
  * Create center bottom buildings cluster (expanded area)
+ * @param {boolean} forGLB - If true, skip building signs (for GLB export)
  */
-export function createCenterBuildings(scene) {
+export function createCenterBuildings(scene, forGLB = false) {
   const buildings = [];
   const groundY = 0;
 
   // Main towers at center bottom - moved down for wider road
   buildings.push(createMainTower(scene, -10, -45, groundY, {
-    width: 12, depth: 10, height: 38, neonColor: colors.neon.magenta
+    width: 12, depth: 10, height: 38, neonColor: colors.neon.magenta, skipSign: forGLB
   }));
   buildings.push(createMainTower(scene, 10, -45, groundY, {
-    width: 12, depth: 10, height: 42, neonColor: colors.neon.yellow
+    width: 12, depth: 10, height: 42, neonColor: colors.neon.yellow, skipSign: forGLB
   }));
   buildings.push(createMainTower(scene, 0, -65, groundY, {
-    width: 14, depth: 12, height: 50, neonColor: colors.neon.pink
+    width: 14, depth: 12, height: 50, neonColor: colors.neon.pink, skipSign: forGLB
   }));
   buildings.push(createMainTower(scene, -18, -75, groundY, {
-    width: 13, depth: 11, height: 44, neonColor: colors.neon.cyan
+    width: 13, depth: 11, height: 44, neonColor: colors.neon.cyan, skipSign: forGLB
   }));
   buildings.push(createMainTower(scene, 18, -75, groundY, {
-    width: 13, depth: 11, height: 46, neonColor: colors.neon.green
+    width: 13, depth: 11, height: 46, neonColor: colors.neon.green, skipSign: forGLB
   }));
 
   // Secondary buildings - moved down for wider road
@@ -795,7 +908,7 @@ export function createCenterBuildings(scene) {
 
   secondaryPositions.forEach(pos => {
     buildings.push(createSmallBuilding(scene, pos.x, pos.z, groundY, {
-      width: pos.w, depth: pos.d, height: pos.h
+      width: pos.w, depth: pos.d, height: pos.h, skipSign: forGLB
     }));
   });
 
@@ -804,8 +917,9 @@ export function createCenterBuildings(scene) {
 
 /**
  * Create south side buildings (fill far south area)
+ * @param {boolean} forGLB - If true, skip building signs (for GLB export)
  */
-export function createSouthBuildings(scene) {
+export function createSouthBuildings(scene, forGLB = false) {
   const buildings = [];
   const groundY = 0;
   const neonPalette = [colors.neon.pink, colors.neon.magenta, colors.neon.cyan, colors.neon.blue, colors.neon.yellow, colors.neon.green];
@@ -908,7 +1022,8 @@ export function createSouthBuildings(scene) {
   mainTowerPositions.forEach((pos, idx) => {
     buildings.push(createMainTower(scene, pos.x, pos.z, groundY, {
       width: pos.w, depth: pos.d, height: pos.h,
-      neonColor: neonPalette[idx % neonPalette.length]
+      neonColor: neonPalette[idx % neonPalette.length],
+      skipSign: forGLB
     }));
   });
 
@@ -1054,7 +1169,7 @@ export function createSouthBuildings(scene) {
 
   secondaryPositions.forEach(pos => {
     buildings.push(createSmallBuilding(scene, pos.x, pos.z, groundY, {
-      width: pos.w, depth: pos.d, height: pos.h
+      width: pos.w, depth: pos.d, height: pos.h, skipSign: forGLB
     }));
   });
 
