@@ -244,7 +244,7 @@ const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 // GLB 파일 사용 여부 (true면 GLB 로드, false면 동적 생성)
 // false로 접속 후 콘솔에서 exportSceneToGLB() → meshopt 압축 → true로 변경
-const USE_GLB = true;
+const USE_GLB = false;
 const GLB_PATH = 'https://pub-0c79382ed5a947839fede2eac510554d.r2.dev/city.glb';
 
 /**
@@ -798,11 +798,32 @@ function createAllBuildings(scene, forGLB = false) {
   clearWindowData();
 
   if (isIOSorMobile) {
-    // iOS/모바일: 경량 모드 - 점진적 추가 테스트
+    // iOS/모바일: 경량 모드 (남쪽 빌딩 제외, 나머지 포함)
     buildings.push(...createResidentialDistrict(scene));
+    buildings.push(...createSlopedResidentialArea(scene));
+    buildings.push(...createLeftBuildings(scene, forGLB));
+    buildings.push(...createRightBuildings(scene, forGLB));
     buildings.push(...createCenterBuildings(scene, forGLB));
+    // SouthBuildings 제외 - 카메라 동선에서 멀리 있음
+
+    if (forGLB) {
+      createShoppingDistrictBase(scene);
+    } else {
+      createShoppingDistrict(scene);
+    }
+
     createPinkHotel(scene, 0, forGLB);
+
+    if (forGLB) {
+      createAllFurnitureBase(scene);
+    } else {
+      createAllFurniture(scene);
+    }
+
     // 창문 InstancedMesh 생성
+    if (forGLB) {
+      return { buildings, windowInstancedMesh: null };
+    }
     const windowInstancedMesh = createWindowInstances(scene);
     return { buildings, windowInstancedMesh };
   }
