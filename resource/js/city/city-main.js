@@ -945,19 +945,23 @@ export async function initCity() {
       await loadSceneFromGLB(scene);
       console.log('GLB loaded!');
 
-      // GLB 로드 후 동적 텍스트 추가
+      // GLB 로드 후 동적 텍스트 추가 (상점, 가구, 호텔)
       addShopSignTexts(scene);
       addFurnitureTexts(scene);
       addHotelSignText(scene);
-      addBuildingSignTexts(scene);
-      console.log('Dynamic texts added!');
 
-      // GLB에는 창문이 없으므로 InstancedMesh로 창문 생성
+      // GLB에는 창문과 빌딩 간판이 없으므로 동적 생성
+      // 먼저 dummyScene에 빌딩을 생성해서 창문 데이터와 빌딩 정보를 수집
       clearWindowData();
       const dummyScene = new THREE.Scene();
       createAllBuildings(dummyScene, true); // 더미 scene에 건물 생성, 창문 데이터 수집
-      windowInstancedMesh = createWindowInstances(scene); // 실제 scene에 창문 InstancedMesh 추가
-      console.log(`Windows added via InstancedMesh: ${windowInstancedMesh ? getWindowDataList().length : 0}`);
+
+      // dummyScene의 빌딩 정보를 사용해서 실제 scene에 빌딩 간판 추가
+      addBuildingSignTexts(dummyScene, scene);
+
+      // 창문 InstancedMesh를 실제 scene에 추가
+      windowInstancedMesh = createWindowInstances(scene);
+      console.log(`Dynamic elements added - Windows: ${windowInstancedMesh ? getWindowDataList().length : 0}`);
 
       glbLoaded = true;
       checkAndShowExplore();

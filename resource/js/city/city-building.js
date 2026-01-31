@@ -134,16 +134,22 @@ const buildingSignCount = 22;
 
 /**
  * Add building sign textures dynamically after GLB load
- * Finds all building groups with buildingSize userData and adds signs
+ * @param {THREE.Scene} sourceScene - Scene to traverse for building data (with userData)
+ * @param {THREE.Scene} targetScene - Scene to add signs to (optional, defaults to sourceScene)
  */
-export function addBuildingSignTexts(scene) {
+export function addBuildingSignTexts(sourceScene, targetScene = null) {
+  const addTo = targetScene || sourceScene;
   let signCount = 0;
 
-  scene.traverse((obj) => {
+  sourceScene.traverse((obj) => {
     if (!obj.isGroup) return;
     if (!obj.userData.buildingSize) return;
 
     const { width, depth, height } = obj.userData.buildingSize;
+
+    // Get building world position
+    const buildingPos = new THREE.Vector3();
+    obj.getWorldPosition(buildingPos);
 
     // Determine if it's a main tower (larger buildings) or small building
     const isMainTower = height > 30;
@@ -170,15 +176,15 @@ export function addBuildingSignTexts(scene) {
     const texturePath = `resource/img/signs/${buildingSignTextureFiles[textIdx]}`;
     const texture = textureLoader.load(texturePath);
 
-    // Sign configurations for 4 directions
+    // Sign configurations for 4 directions (world coordinates)
     const frontBackWidth = width * 0.95;
     const leftRightWidth = depth * 0.95;
 
     const signConfigs = [
-      { signWidth: frontBackWidth, position: [0, signCenterY, depth / 2 + 0.1], rotation: [0, 0, 0] },
-      { signWidth: frontBackWidth, position: [0, signCenterY, -depth / 2 - 0.1], rotation: [0, Math.PI, 0] },
-      { signWidth: leftRightWidth, position: [-width / 2 - 0.1, signCenterY, 0], rotation: [0, -Math.PI / 2, 0] },
-      { signWidth: leftRightWidth, position: [width / 2 + 0.1, signCenterY, 0], rotation: [0, Math.PI / 2, 0] }
+      { signWidth: frontBackWidth, position: [buildingPos.x, buildingPos.y + signCenterY, buildingPos.z + depth / 2 + 0.1], rotation: [0, 0, 0] },
+      { signWidth: frontBackWidth, position: [buildingPos.x, buildingPos.y + signCenterY, buildingPos.z - depth / 2 - 0.1], rotation: [0, Math.PI, 0] },
+      { signWidth: leftRightWidth, position: [buildingPos.x - width / 2 - 0.1, buildingPos.y + signCenterY, buildingPos.z], rotation: [0, -Math.PI / 2, 0] },
+      { signWidth: leftRightWidth, position: [buildingPos.x + width / 2 + 0.1, buildingPos.y + signCenterY, buildingPos.z], rotation: [0, Math.PI / 2, 0] }
     ];
 
     signConfigs.forEach(config => {
@@ -191,7 +197,7 @@ export function addBuildingSignTexts(scene) {
       const sign = new THREE.Mesh(signGeom, signMat);
       sign.position.set(...config.position);
       sign.rotation.set(...config.rotation);
-      obj.add(sign);
+      addTo.add(sign);
     });
 
     // Entrance signs
@@ -200,7 +206,7 @@ export function addBuildingSignTexts(scene) {
     const backEntranceWidth = isMainTower ? 3 : 1.8;
     const backEntranceHeight = isMainTower ? 3.5 : 2.8;
 
-    // Front entrance sign
+    // Front entrance sign (world coordinates)
     const frontSignWidth = Math.max(entranceWidth * 1.5, 5);
     const frontSignGeom = new THREE.PlaneGeometry(frontSignWidth, 2);
     const frontSignMat = new THREE.MeshBasicMaterial({
@@ -209,11 +215,11 @@ export function addBuildingSignTexts(scene) {
       side: THREE.FrontSide
     });
     const frontSign = new THREE.Mesh(frontSignGeom, frontSignMat);
-    frontSign.position.set(0, entranceHeight + 1.5, -depth / 2 - 0.15);
+    frontSign.position.set(buildingPos.x, buildingPos.y + entranceHeight + 1.5, buildingPos.z - depth / 2 - 0.15);
     frontSign.rotation.y = Math.PI;
-    obj.add(frontSign);
+    addTo.add(frontSign);
 
-    // Back entrance sign
+    // Back entrance sign (world coordinates)
     const backSignWidth = Math.max(backEntranceWidth * 1.5, 5);
     const backSignGeom = new THREE.PlaneGeometry(backSignWidth, 2);
     const backSignMat = new THREE.MeshBasicMaterial({
@@ -222,9 +228,9 @@ export function addBuildingSignTexts(scene) {
       side: THREE.FrontSide
     });
     const backSign = new THREE.Mesh(backSignGeom, backSignMat);
-    backSign.position.set(0, backEntranceHeight + 1.5, depth / 2 + 0.15);
+    backSign.position.set(buildingPos.x, buildingPos.y + backEntranceHeight + 1.5, buildingPos.z + depth / 2 + 0.15);
     backSign.rotation.y = 0;
-    obj.add(backSign);
+    addTo.add(backSign);
 
     signCount++;
   });
