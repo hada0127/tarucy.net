@@ -240,7 +240,7 @@ const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 // GLB 파일 사용 여부 (true면 GLB 로드, false면 동적 생성)
 // false로 접속 후 콘솔에서 exportSceneToGLB() → meshopt 압축 → true로 변경
-const USE_GLB = true;
+const USE_GLB = false;
 const GLB_PATH = 'https://pub-0c79382ed5a947839fede2eac510554d.r2.dev/city.glb';
 
 /**
@@ -249,7 +249,7 @@ const GLB_PATH = 'https://pub-0c79382ed5a947839fede2eac510554d.r2.dev/city.glb';
  * 남쪽 빌딩 제외 (카메라 동선에 없음, 메모리 최적화)
  */
 function exportSceneToGLB() {
-  console.log('Creating GLB export scene (without south buildings)...');
+  console.log('Creating GLB export scene...');
 
   // GLB 내보내기용 새 scene 생성 (캔버스 텍스처 제외)
   const exportScene = new THREE.Scene();
@@ -260,14 +260,13 @@ function exportSceneToGLB() {
   createCrosswalks(exportScene);
 
   // 건물과 가구 생성 (텍스트 없이)
-  // 남쪽 빌딩(createSouthBuildings) 제외 - 카메라 동선에 없음
   let buildings = [];
   buildings.push(...createResidentialDistrict(exportScene));
   buildings.push(...createSlopedResidentialArea(exportScene));
   buildings.push(...createLeftBuildings(exportScene));
   buildings.push(...createRightBuildings(exportScene));
   buildings.push(...createCenterBuildings(exportScene));
-  // createSouthBuildings 제외됨
+  buildings.push(...createSouthBuildings(exportScene));
   buildings = removeOverlappingBuildings(exportScene, buildings);
 
   // 상점가 (텍스트 없이)

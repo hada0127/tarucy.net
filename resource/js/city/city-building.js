@@ -426,7 +426,7 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
   group.add(building);
 
   // ===== Fixed Window Grid Pattern for Main Tower =====
-  // 남쪽 면(Back) 창문은 제거됨 - 카메라 동선에 없음
+  // 북쪽 면(Front, -z) 창문은 제거됨 - 카메라 동선에 없음
   const winGeom = new THREE.PlaneGeometry(1.4, 2);
   const winSpacingX = 2.5;  // Horizontal spacing
   const winSpacingY = 3;    // Vertical spacing
@@ -450,23 +450,9 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
   const backEntranceHeight = 3.5;
 
   // Entrance sign dimensions for collision check
-  const entranceSignWidth = Math.max(entranceWidth * 1.5, 5);
+  const backSignWidth = Math.max(backEntranceWidth * 1.5, 5);
 
-  // Front windows - fixed grid (skip windows overlapping with entrance and entrance sign)
-  for (let row = 0; row < numRows; row++) {
-    for (let col = 0; col < numCols; col++) {
-      const winX = -width/2 + winMargin + col * winSpacingX;
-      const winY = 2 + row * winSpacingY;
-      // Skip if overlapping with front entrance or entrance sign area
-      if (Math.abs(winX) < entranceSignWidth/2 + 1 && winY < entranceHeight + 4) {
-        continue;
-      }
-      const colorIdx = (row + col) % towerWinColors.length;
-      const win = new THREE.Mesh(winGeom, new THREE.MeshBasicMaterial({ color: towerWinColors[colorIdx], side: THREE.DoubleSide }));
-      win.position.set(winX, winY, -depth/2 - 0.01);
-      group.add(win);
-    }
-  }
+  // Front windows (북쪽 면, -z) - 제거됨: 카메라 동선에 없어서 최적화
 
   // Left side windows - fixed grid
   for (let row = 0; row < numRows; row++) {
@@ -483,7 +469,6 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
     }
   }
 
-
   // Right side windows - fixed grid
   for (let row = 0; row < numRows; row++) {
     for (let col = 0; col < numSideCols; col++) {
@@ -499,7 +484,21 @@ export function createMainTower(scene, x, z, groundY, config = {}) {
     }
   }
 
-  // Back windows (남쪽 면) - 제거됨: 카메라 동선에 없어서 최적화
+  // Back windows (남쪽 면, +z) - 메인도로에서 보이는 면
+  for (let row = 0; row < numRows; row++) {
+    for (let col = 0; col < numCols; col++) {
+      const winX = -width/2 + winMargin + col * winSpacingX;
+      const winY = 2 + row * winSpacingY;
+      // Skip if overlapping with back entrance or entrance sign area
+      if (Math.abs(winX) < backSignWidth/2 + 1 && winY < backEntranceHeight + 4) {
+        continue;
+      }
+      const colorIdx = (row + col + 6) % towerWinColors.length;
+      const win = new THREE.Mesh(winGeom, new THREE.MeshBasicMaterial({ color: towerWinColors[colorIdx], side: THREE.DoubleSide }));
+      win.position.set(winX, winY, depth/2 + 0.01);
+      group.add(win);
+    }
+  }
 
   // Building entrance (white door) - FRONT
   const entranceMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -563,6 +562,7 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
   group.add(building);
 
   // ===== Fixed Window Grid Pattern for Small Building =====
+  // 북쪽 면(Front, -z) 창문은 제거됨 - 카메라 동선에 없음
   const winGeom = new THREE.PlaneGeometry(1.2, 1.8);
   const sideWinGeom = new THREE.PlaneGeometry(1.0, 1.5);
   const winSpacingX = 2.5;
@@ -587,24 +587,9 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
   const backDoorHeight = 2.8;
 
   // Entrance sign dimensions for collision check
-  const doorSignWidth = Math.max(doorWidth * 1.5, 5);
   const backDoorSignWidth = Math.max(backDoorWidth * 1.5, 5);
 
-  // Front Windows - fixed grid (skip windows overlapping with door and entrance sign)
-  for (let row = 0; row < numRows; row++) {
-    for (let col = 0; col < numCols; col++) {
-      const winX = -width/2 + winMargin + col * winSpacingX;
-      const winY = 2 + row * winSpacingY;
-      // Skip if overlapping with front door or entrance sign area
-      if (Math.abs(winX) < doorSignWidth/2 + 1 && winY < doorHeight + 4) {
-        continue;
-      }
-      const colorIdx = (row + col) % smallWinColors.length;
-      const win = new THREE.Mesh(winGeom, new THREE.MeshBasicMaterial({ color: smallWinColors[colorIdx], side: THREE.DoubleSide }));
-      win.position.set(winX, winY, -depth/2 - 0.01);
-      group.add(win);
-    }
-  }
+  // Front Windows (북쪽 면, -z) - 제거됨: 카메라 동선에 없어서 최적화
 
   // Left Side Windows - fixed grid
   for (let row = 0; row < numRows; row++) {
@@ -636,7 +621,21 @@ export function createSmallBuilding(scene, x, z, groundY, config = {}) {
     }
   }
 
-  // Back Windows (남쪽 면) - 제거됨: 카메라 동선에 없어서 최적화
+  // Back Windows (남쪽 면, +z) - 메인도로에서 보이는 면
+  for (let row = 0; row < numRows; row++) {
+    for (let col = 0; col < numCols; col++) {
+      const winX = -width/2 + winMargin + col * winSpacingX;
+      const winY = 2 + row * winSpacingY;
+      // Skip if overlapping with back door or entrance sign area
+      if (Math.abs(winX) < backDoorSignWidth/2 + 1 && winY < backDoorHeight + 4) {
+        continue;
+      }
+      const colorIdx = (row + col + 6) % smallWinColors.length;
+      const win = new THREE.Mesh(sideWinGeom, new THREE.MeshBasicMaterial({ color: smallWinColors[colorIdx], side: THREE.DoubleSide }));
+      win.position.set(winX, winY, depth/2 + 0.01);
+      group.add(win);
+    }
+  }
 
   // Entrance door - FRONT (white, no frame)
   const doorMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
