@@ -244,7 +244,7 @@ const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 // GLB 파일 사용 여부 (true면 GLB 로드, false면 동적 생성)
 // false로 접속 후 콘솔에서 exportSceneToGLB() → meshopt 압축 → true로 변경
-const USE_GLB = true;
+const USE_GLB = false;
 const GLB_PATH = 'https://pub-0c79382ed5a947839fede2eac510554d.r2.dev/city.glb';
 
 /**
@@ -399,11 +399,6 @@ function discoverWindowsFromGLB(scene) {
     // world 좌표 저장 (X: 주파수 대역, Y: 이퀄라이저 높이)
     const worldPos = new THREE.Vector3();
     obj.getWorldPosition(worldPos);
-
-    // iOS에서는 남쪽 빌딩 창문 제외 (z < -40, 카메라 동선에 없음)
-    if (isIOS && worldPos.z < -40) {
-      return; // 남쪽 창문은 이퀄라이저 대상에서 제외
-    }
 
     obj.userData.worldX = worldPos.x;
     obj.userData.worldY = worldPos.y;
@@ -797,38 +792,7 @@ function createAllBuildings(scene, forGLB = false) {
   // 창문 데이터 초기화
   clearWindowData();
 
-  if (isIOSorMobile) {
-    // iOS/모바일: 경량 모드 (남쪽 빌딩 제외, 나머지 포함)
-    buildings.push(...createResidentialDistrict(scene));
-    buildings.push(...createSlopedResidentialArea(scene));
-    buildings.push(...createLeftBuildings(scene, forGLB));
-    buildings.push(...createRightBuildings(scene, forGLB));
-    buildings.push(...createCenterBuildings(scene, forGLB));
-    // SouthBuildings 제외 - 카메라 동선에서 멀리 있음
-
-    if (forGLB) {
-      createShoppingDistrictBase(scene);
-    } else {
-      createShoppingDistrict(scene);
-    }
-
-    createPinkHotel(scene, 0, forGLB);
-
-    if (forGLB) {
-      createAllFurnitureBase(scene);
-    } else {
-      createAllFurniture(scene);
-    }
-
-    // 창문 InstancedMesh 생성
-    if (forGLB) {
-      return { buildings, windowInstancedMesh: null };
-    }
-    const windowInstancedMesh = createWindowInstances(scene);
-    return { buildings, windowInstancedMesh };
-  }
-
-  // 데스크톱: 전체
+  // PC와 iOS 동일하게 전체 빌딩 생성
   buildings.push(...createResidentialDistrict(scene));
   buildings.push(...createSlopedResidentialArea(scene));
   buildings.push(...createLeftBuildings(scene, forGLB));
@@ -994,10 +958,8 @@ export async function initCity() {
       createCrosswalks(scene);
       const result = createAllBuildings(scene, false);
       windowInstancedMesh = result.windowInstancedMesh;
-      if (!isIOSorMobile) {
-        createAllTrees(scene);
-        createAllStreetLamps(scene);
-      }
+      createAllTrees(scene);
+      createAllStreetLamps(scene);
       glbLoaded = true;
       checkAndShowExplore();
     }
@@ -1008,10 +970,8 @@ export async function initCity() {
     createCrosswalks(scene);
     const result = createAllBuildings(scene, false);
     windowInstancedMesh = result.windowInstancedMesh;
-    if (!isIOSorMobile) {
-      createAllTrees(scene);
-      createAllStreetLamps(scene);
-    }
+    createAllTrees(scene);
+    createAllStreetLamps(scene);
     glbLoaded = true;
     checkAndShowExplore();
   }

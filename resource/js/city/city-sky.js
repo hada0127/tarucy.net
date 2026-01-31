@@ -13,17 +13,13 @@
 
 import * as THREE from 'three';
 
-// iOS 감지
-const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
 /**
  * Vaporwave/Cyberpunk night sky texture for sky sphere
  */
 function createNightSkyTexture() {
   const canvas = document.createElement('canvas');
-  // iOS에서는 작은 텍스처 사용 (메모리 절약)
-  canvas.width = isIOS ? 1024 : 2048;
-  canvas.height = isIOS ? 512 : 1024;
+  canvas.width = 2048;
+  canvas.height = 1024;
   const ctx = canvas.getContext('2d');
 
   // Gradient sky - darker at top, reddish/warm glow at horizon (0.5 = horizon)
@@ -47,7 +43,7 @@ function createNightSkyTexture() {
   // Moon (pink/salmon) - positioned behind hotel (+X direction)
   const moonX = canvas.width * 0.513; // Behind hotel direction (1050/2048)
   const moonY = canvas.height * 0.371; // Upper sky (380/1024)
-  const moonRadius = isIOS ? 10 : 15; // Small moon (smaller on iOS)
+  const moonRadius = 15;
 
   const moonGradient = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, moonRadius);
   moonGradient.addColorStop(0, '#ffb8a8');
@@ -70,8 +66,8 @@ function createNightSkyTexture() {
   ctx.arc(moonX, moonY, moonRadius * 2, 0, Math.PI * 2);
   ctx.fill();
 
-  // Stars - many tiny stars spread across upper sky (fewer on iOS)
-  const starCount = isIOS ? 1500 : 4500;
+  // Stars - many tiny stars spread across upper sky
+  const starCount = 4500;
   for (let i = 0; i < starCount; i++) {
     const x = Math.random() * canvas.width;
     const y = Math.random() * canvas.height * 0.635; // Upper portion of sky (650/1024)
@@ -122,7 +118,7 @@ function createDistantSilhouettes(scene) {
   });
 
   const radius = 400; // Distance from center
-  const numPanels = isIOS ? 30 : 60; // iOS에서는 절반 (메모리 절약)
+  const numPanels = 60;
 
   for (let i = 0; i < numPanels; i++) {
     const angle = (i / numPanels) * Math.PI * 2;
@@ -172,8 +168,7 @@ function createDistantSilhouettes(scene) {
     scene.add(mesh);
   }
 
-  // Add additional layer for depth (skip on iOS for memory)
-  if (isIOS) return;
+  // Add additional layer for depth
 
   const radius2 = 500;
   const numPanels2 = 40;
@@ -245,13 +240,12 @@ export function createScene() {
  */
 export function createRenderer(container) {
   const renderer = new THREE.WebGLRenderer({
-    antialias: !isIOS, // iOS에서는 antialias 비활성화 (메모리 절약)
+    antialias: true,
     alpha: false,
-    powerPreference: isIOS ? 'low-power' : 'high-performance'
+    powerPreference: 'high-performance'
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  // iOS에서는 픽셀 비율을 1로 제한 (메모리 절약)
-  renderer.setPixelRatio(isIOS ? 1 : Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
   container.appendChild(renderer.domElement);
