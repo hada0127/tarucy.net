@@ -844,6 +844,9 @@ function createAllBuildings(scene, forGLB = false) {
  * Initialize 3D City
  */
 export async function initCity() {
+  // 페이지 진입 시 스크롤 초기화
+  window.scrollTo(0, 0);
+
   const container = document.getElementById('city-container');
   if (!container) {
     console.error('city-container not found');
