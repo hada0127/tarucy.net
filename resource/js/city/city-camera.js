@@ -59,6 +59,7 @@ function angleDiff(a, b) {
 
 /**
  * Calculate segment distance (position + rotation)
+ * Applies non-linear weighting for large movements to slow down camera
  */
 function calculateSegmentDistance(from, to) {
   // Position distance
@@ -67,13 +68,18 @@ function calculateSegmentDistance(from, to) {
   const dz = to.pos.z - from.pos.z;
   const posDistance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
+  // Non-linear weighting: larger distances get progressively more weight
+  // This makes long camera movements slower relative to short ones
+  const posWeight = posDistance * (1 + posDistance / 60);
+
   // Rotation distance (scaled to be comparable to position)
   const yawDiff = angleDiff(from.yaw, to.yaw);
   const pitchDiff = Math.abs(to.pitch - from.pitch);
-  const rotDistance = (yawDiff + pitchDiff) * 10; // Scale rotation to ~meters
+  // Increased rotation weight (10 -> 18) for smoother rotation transitions
+  const rotDistance = (yawDiff + pitchDiff) * 18;
 
   // Combined distance with minimum threshold
-  return Math.max(posDistance + rotDistance, 5); // Minimum 5 units to avoid too fast transitions
+  return Math.max(posWeight + rotDistance, 5); // Minimum 5 units to avoid too fast transitions
 }
 
 /**
