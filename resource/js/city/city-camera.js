@@ -33,9 +33,11 @@ export const scrollKeyframes = [
   { section: 'solution', pos: {x: -48.00, y: 1.60, z: -14.00}, yaw: -0.241, pitch: 0.319 },
   { section: 'solution', pos: {x: -73.85, y: 37.26, z: 12.14}, yaw: -0.150, pitch: -0.161 },
   { section: 'solution', pos: {x: -73.85, y: 37.26, z: 12.14}, yaw: -0.960, pitch: -0.161 },
-  // 연락처 시점 (3개)
+  // 연락처 시점 (5개 - 전화부스 시점 확장)
   { section: 'contact', pos: {x: -40.62, y: 1.34, z: -8.28}, yaw: -1.231, pitch: -0.161 },
   { section: 'contact', pos: {x: 42.78, y: 1.60, z: -8.80}, yaw: -0.059, pitch: 0.080 },
+  { section: 'contact', pos: {x: 42.82, y: 1.60, z: -9.55}, yaw: -0.059, pitch: 0.040 },
+  { section: 'contact', pos: {x: 42.87, y: 1.60, z: -10.30}, yaw: -0.059, pitch: 0.000 },
   { section: 'contact', pos: {x: 42.92, y: 1.60, z: -11.05}, yaw: -0.059, pitch: -0.040 },
   // 마지막 시점 (3개)
   { section: 'final', pos: {x: 31.03, y: 1.60, z: 16.33}, yaw: -4.529, pitch: 0.019 },
