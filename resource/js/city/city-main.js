@@ -1007,6 +1007,7 @@ export async function initCity() {
 
   // Set up explore button click handler
   const exploreBtn = document.getElementById('explore-btn');
+  const scrollHint = document.getElementById('scroll-hint');
   if (exploreBtn) {
     exploreBtn.addEventListener('click', () => {
       // Hide loading overlay with fade-out
@@ -1015,6 +1016,10 @@ export async function initCity() {
       playAudio();
       // 스크롤 허용
       document.body.style.overflow = '';
+      // 스크롤 안내 메시지 표시
+      if (scrollHint) {
+        scrollHint.classList.add('visible');
+      }
     });
   }
 
@@ -1128,6 +1133,11 @@ export async function initCity() {
     // Update progress bar
     if (progressBar) {
       progressBar.style.width = (scrollProgress * 100) + '%';
+    }
+
+    // Hide scroll hint when user starts scrolling
+    if (targetProgress > 0.01 && scrollHint) {
+      scrollHint.classList.remove('visible');
     }
 
     // Show Walking Mode button when near the end (>= 95% of actual scroll)
