@@ -1107,12 +1107,6 @@ export async function initCity() {
     }
   });
 
-  // Hide scroll hint if exists
-  const scrollHint = document.querySelector('.scroll-hint');
-  if (scrollHint) {
-    scrollHint.style.display = 'none';
-  }
-
   // ============================================================
   // SCROLL EVENT HANDLER
   // ============================================================
