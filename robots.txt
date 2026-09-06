@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
+# Pages serves this debug page at the clean URL /test and 308s /test.html to it.
+Disallow: /test
 Disallow: /test.html
 
 Sitemap: https://hada0127.net/sitemap.xml
