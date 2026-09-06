@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /test.html
+
+Sitemap: https://hada0127.net/sitemap.xml
+Sitemap: https://type.hada0127.net/sitemap.xml
